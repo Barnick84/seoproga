@@ -10,6 +10,7 @@
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/modules/exporting.js"></script>
     <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             --primary: #ff4d4f;
@@ -1359,6 +1360,7 @@
             <div class="tab" onclick="switchTab(this, 'structure')">Структура</div>
             <div class="tab" onclick="switchTab(this, 'competitors')">Конкуренты</div>
             <div class="tab" onclick="switchTab(this, 'meta')">Мета-теги</div>
+            <div class="tab" onclick="switchTab(this, 'seo')">SEO анализ</div>
         </div>
 
         <!-- Summary Tab -->
@@ -1511,6 +1513,81 @@
             </div>
         </div>
 
+        <!-- SEO Analysis Tab -->
+        <div id="tab-seo" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>План SEO оптимизации</h2>
+                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <style>
+                            .custom-checkbox {
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                cursor: pointer;
+                                user-select: none;
+                                font-size: 14px;
+                                color: var(--text);
+                            }
+                            .custom-checkbox input {
+                                position: absolute;
+                                opacity: 0;
+                                cursor: pointer;
+                                height: 0;
+                                width: 0;
+                            }
+                            .custom-checkbox .checkmark {
+                                position: relative;
+                                height: 20px;
+                                width: 20px;
+                                background-color: #fff;
+                                border: 2px solid #d9d9d9;
+                                border-radius: 4px;
+                                transition: all 0.2s ease;
+                            }
+                            .custom-checkbox:hover input ~ .checkmark {
+                                border-color: var(--primary, #2196F3);
+                            }
+                            .custom-checkbox input:checked ~ .checkmark {
+                                background-color: var(--primary, #2196F3);
+                                border-color: var(--primary, #2196F3);
+                            }
+                            .custom-checkbox .checkmark:after {
+                                content: "";
+                                position: absolute;
+                                display: none;
+                                left: 6px;
+                                top: 2px;
+                                width: 5px;
+                                height: 10px;
+                                border: solid white;
+                                border-width: 0 2px 2px 0;
+                                transform: rotate(45deg);
+                            }
+                            .custom-checkbox input:checked ~ .checkmark:after {
+                                display: block;
+                            }
+                        </style>
+                        
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="rewriteContentCheckbox">
+                            <span class="checkmark"></span>
+                            Переписать контент
+                        </label>
+                        
+                        <select id="seoHistoryDateSelect" class="form-control" style="width: auto; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color);" onchange="loadSeoPlanByDate(this.value)">
+                            <option value="">Загрузка дат...</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="startSeoAnalysisAction()">Сгенерировать на сегодня</button>
+                    </div>
+                </div>
+                <div id="seoAnalysisResult" style="padding: 15px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border-color); min-height: 200px; white-space: pre-wrap; font-family: inherit;">
+                    <p style="color: var(--text-secondary); text-align: center;">Выберите дату из списка или сгенерируйте новый план.</p>
+                </div>
+            </div>
+        </div>
+
+
     </div>
 
     <div id="addSiteModal" class="modal">
@@ -1612,6 +1689,7 @@
 
                 loadingEl.style.display = 'none';
                 mainAppEl.style.display = 'block';
+                loadSeoHistoryDates();
 
                 const clusterKeywords = (dataKeywords.keywords || [])
                     .filter(k => k.clustered == clusterId)
@@ -2359,6 +2437,90 @@
                 }
             } catch (e) {
                 alert('Ошибка: ' + e.message);
+            }
+        }
+
+        // --- SEO Analysis Logic ---
+        
+        async function loadSeoHistoryDates() {
+            try {
+                const res = await authFetch(`/api/seo-history/dates?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}`);
+                const data = await res.json();
+                const select = document.getElementById('seoHistoryDateSelect');
+                
+                if (data.success) {
+                    select.innerHTML = '<option value="">-- Выберите дату --</option>';
+                    if (data.dates.length === 0) {
+                        select.innerHTML = '<option value="">Нет сохраненных планов</option>';
+                    } else {
+                        data.dates.forEach(date => {
+                            const option = document.createElement('option');
+                            option.value = date;
+                            option.textContent = date;
+                            select.appendChild(option);
+                        });
+                        // Load the most recent by default
+                        select.value = data.dates[0];
+                        loadSeoPlanByDate(data.dates[0]);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load SEO dates:', e);
+            }
+        }
+
+        async function loadSeoPlanByDate(date) {
+            if (!date) return;
+            const resultDiv = document.getElementById('seoAnalysisResult');
+            resultDiv.innerHTML = '<p>Загрузка...</p>';
+            
+            try {
+                const res = await authFetch(`/api/seo-history/plan?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}&date=${date}`);
+                const data = await res.json();
+                
+                if (data.success && data.data) {
+                    const plan = data.data.seo_plan_content;
+                    resultDiv.innerHTML = typeof marked !== 'undefined' ? marked.parse(plan) : plan;
+                } else {
+                    resultDiv.innerHTML = `<p style="color:red">Ошибка загрузки плана: ${data.error || 'Не найдено'}</p>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<p style="color:red">Ошибка: ${e.message}</p>`;
+            }
+        }
+
+        async function startSeoAnalysisAction() {
+            if (!domain || !clusterId) return;
+            const btn = document.querySelector('button[onclick="startSeoAnalysisAction()"]');
+            btn.disabled = true;
+            btn.textContent = 'Генерация...';
+            
+            const resultDiv = document.getElementById('seoAnalysisResult');
+            resultDiv.innerHTML = '<p>Идет генерация плана. Пожалуйста, подождите (это может занять до 1 минуты)...</p>';
+
+            const rewriteContent = document.getElementById('rewriteContentCheckbox').checked;
+
+            try {
+                const res = await authFetch('/api/seo-history/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, rewriteContent })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadSeoHistoryDates();
+                    if (data.date) {
+                        document.getElementById('seoHistoryDateSelect').value = data.date;
+                        loadSeoPlanByDate(data.date);
+                    }
+                } else {
+                    resultDiv.innerHTML = `<p style="color:red">Ошибка: ${data.error || 'Неизвестная ошибка'}</p>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<p style="color:red">Ошибка: ${e.message}</p>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Сгенерировать на сегодня';
             }
         }
     </script>

@@ -34,10 +34,17 @@ def load_stop_urls() -> set:
 
 def get_target_url(conn, user_id: int, domain: str, cluster_id: int) -> str | None:
     """Fetch target URL from cluster_mappings."""
+    domain_cyr = domain.lower().strip()
+    if domain_cyr.startswith("xn--"):
+        try:
+            domain_cyr = domain_cyr.encode("ascii").decode("idna")
+        except:
+            pass
+
     cur = conn.cursor()
     cur.execute(
         "SELECT target_url FROM cluster_mappings WHERE user_id = %s AND site_url = %s AND cluster_id = %s",
-        (user_id, domain, cluster_id)
+        (user_id, domain_cyr, cluster_id)
     )
     row = cur.fetchone()
     if row and row.get("target_url"):
@@ -66,13 +73,20 @@ def find_relevant_page(domain: str, main_keyword: str) -> str | None:
 
 def get_cluster_keywords(conn, user_id: int, domain: str, cluster_id: int) -> list:
     """Get keywords sorted by frequency desc."""
+    domain_cyr = domain.lower().strip()
+    if domain_cyr.startswith("xn--"):
+        try:
+            domain_cyr = domain_cyr.encode("ascii").decode("idna")
+        except:
+            pass
+
     cur = conn.cursor()
     cur.execute(
         "SELECT query, COALESCE(frequency, 0) as frequency "
         "FROM yandex_queries "
         "WHERE user_id = %s AND site_url = %s AND clustered = %s AND minus_word = 0 "
         "ORDER BY frequency DESC, hits DESC",
-        (user_id, domain, cluster_id)
+        (user_id, domain_cyr, cluster_id)
     )
     return cur.fetchall()
 
@@ -122,7 +136,13 @@ def main():
         print(json.dumps({"success": False, "error": "Usage: run_seo_analysis.py <domain> <cluster_id> [user_id]"}))
         return
 
-    domain = sys.argv[1]
+    domain = sys.argv[1].lower().strip()
+    if domain.startswith("xn--"):
+        try:
+            domain = domain.encode("ascii").decode("idna")
+        except Exception:
+            pass
+
     cluster_id = int(sys.argv[2])
     user_id = int(sys.argv[3]) if len(sys.argv) > 3 else 1
 
@@ -173,7 +193,7 @@ def main():
                 pass
             resp = requests.get(
                 fetch_url, timeout=20,
-                headers={"User-Agent": "Mozilla/5.0 (compatible; YandexBot/3.0)"}
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
             )
             resp.raise_for_status()
             target_html = resp.text

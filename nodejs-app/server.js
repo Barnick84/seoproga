@@ -1000,6 +1000,65 @@ app.post('/api/cluster/run-seo-analysis', authenticate, async (req, res) => {
     }
 });
 
+// API: Get SEO history dates
+app.get('/api/seo-history/dates', authenticate, async (req, res) => {
+    try {
+        const { domain, clusterId } = req.query;
+        if (!domain || !clusterId) return res.status(400).json({ error: 'Missing parameters' });
+        const normalizedDomain = normalizeUrl(domain);
+        
+        const [rows] = await db.query(
+            "SELECT DATE_FORMAT(analysis_date, '%Y-%m-%d') as date FROM cluster_seo_history WHERE user_id = ? AND site_url = ? AND cluster_id = ? ORDER BY analysis_date DESC",
+            [req.user.user_id, normalizedDomain, clusterId]
+        );
+        res.json({ success: true, dates: rows.map(r => r.date) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API: Get SEO plan by date
+app.get('/api/seo-history/plan', authenticate, async (req, res) => {
+    try {
+        const { domain, clusterId, date } = req.query;
+        if (!domain || !clusterId || !date) return res.status(400).json({ error: 'Missing parameters' });
+        const normalizedDomain = normalizeUrl(domain);
+        
+        const [rows] = await db.query(
+            "SELECT intent_type, seo_plan_content, optimized_html FROM cluster_seo_history WHERE user_id = ? AND site_url = ? AND cluster_id = ? AND analysis_date = ?",
+            [req.user.user_id, normalizedDomain, clusterId, date]
+        );
+        if (rows.length === 0) return res.json({ success: false, error: 'Plan not found' });
+        res.json({ success: true, data: rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API: Generate new SEO plan
+app.post('/api/seo-history/generate', authenticate, async (req, res) => {
+    try {
+        const { domain, clusterId, rewriteContent } = req.body;
+        if (!domain || !clusterId) return res.status(400).json({ error: 'Missing parameters' });
+        const normalizedDomain = normalizeUrl(domain);
+        
+        const result = await callPython(
+            path.join(__dirname, 'scripts', 'generate_seo_plan.py'),
+            [normalizedDomain, clusterId, req.user.user_id, rewriteContent ? '1' : '0']
+        );
+        
+        try {
+            const jsonMatch = result.match(/\{.*\}/s);
+            const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(result);
+            res.json(data);
+        } catch {
+            res.json({ success: false, error: result });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // API: Run competitor analysis (Legacy/Sync)
 app.post('/api/run-competitor-analysis', authenticate, async (req, res) => {
     try {

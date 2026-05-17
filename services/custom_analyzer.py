@@ -60,7 +60,18 @@ class CustomAnalyzer:
             tag.decompose()
         
         # Try to focus on main content if possible
-        main_content = soup.find("main") or soup.find("article")
+        main_content = None
+        main_tag = soup.find("main")
+        if main_tag and len(main_tag.get_text(strip=True)) > 20:
+            main_content = main_tag
+        else:
+            article_tag = soup.find("article")
+            if article_tag and len(article_tag.get_text(strip=True)) > 20:
+                main_content = article_tag
+
+        if not main_content:
+            main_content = soup.find("main") or soup.find("article")
+
         content_soup = main_content if main_content else soup
             
         links = []
