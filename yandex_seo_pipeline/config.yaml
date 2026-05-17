@@ -1,0 +1,11 @@
+pipeline:
+  thresholds:
+    similarity: 0.4
+    density_max: 1.8
+  limits:
+    title_max_len: 60
+    desc_max_len: 155
+  cwv:
+    inp_max: 200
+    lcp_max: 2.5
+    cls_max: 0.1

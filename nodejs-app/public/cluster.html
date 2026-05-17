@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кластер - SEO Keyword Manager</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="top-menu" id="topMenu" style="display:none;">
+        <div class="user-info">
+            <div class="logo">SEO Auto Cluster</div>
+            <div class="balance-display">
+                <span class="balance-label">Баланс:</span>
+                <span class="balance-value">0.00 ₽</span>
+                <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
+            </div>
+            <div class="menu-tabs">
+                <a href="index.html" class="menu-tab">Dashboard</a>
+                <a href="sort.html" class="menu-tab">Сортировка</a>
+                <a href="cluster.html" class="menu-tab active">Кластер</a>
+                <a href="positions.html" class="menu-tab">Позиции</a>
+                <a href="cabinet.html" class="menu-tab">Кабинет</a>
+            </div>
+        </div>
+        <div class="site-selector">
+            <select id="siteSelect" onchange="selectSite()">
+                <option value="">-- Выберите сайт --</option>
+            </select>
+            <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+            <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
+        </div>
+    </div>
+
+    <div class="container" id="mainApp" style="display:none;">
+        <div id="status" class="status"></div>
+
+        <div id="sitesContent">
+            <div id="analysisStatusBanner" class="analysis-status-banner">
+                <div class="loader-mini"></div>
+                <div id="analysisStatusText">Выполняется SEO анализ сайта...</div>
+            </div>
+
+            <div id="wmStatusBanner" class="analysis-status-banner">
+                <div class="loader-mini"></div>
+                <div id="wmStatusText">Загрузка запросов из Яндекс Вебмастера...</div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2>Кластеры</h2>
+                    <div class="header-actions" style="display:flex; gap:10px;">
+                        <button id="btnRunCluster" class="btn btn-primary" onclick="runClustering()">🚀 Запустить кластеризацию</button>
+                        <button id="btnFetchWM" class="btn btn-blue" onclick="fetchWMQueries()">📥 Получить ключи из Y WM</button>
+                        <button class="btn btn-green" onclick="runMapping()">🔗 Маппинг</button>
+                        <button class="btn btn-purple" onclick="runSEOAnalysis()" style="display:none;">📊 СЕО анализ</button>
+                        <button id="btnFrequency" class="btn btn-orange" onclick="showFrequencyModal()">📈 Частота</button>
+                    </div>
+                </div>
+
+                <div class="filter-bar" style="margin-bottom:10px; display: none;">
+                    <button class="btn btn-secondary" onclick="deselectClusterAll()">Снять выбор</button>
+                </div>
+
+                <div class="two-columns">
+                    <div class="cluster-list-wrapper">
+                        <div id="clusterList">
+                            <div class="empty-state">Выберите сайт</div>
+                        </div>
+                        <div class="actions-bar" style="display: none;">
+                        </div>
+                    </div>
+
+                    <div class="unclustered-wrapper">
+                        <h3>Не кластеризовано</h3>
+                        <div id="unclusteredList" class="keyword-list" style="margin-top:10px;">
+                            <div class="empty-state">Нет данных</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals & Sidebar -->
+    <div id="manualUrlModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Указать целевой URL</div>
+            <input type="text" id="manualUrlInput" placeholder="Например: /tours/dagestan">
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeManualUrlModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnSaveManualUrl">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frequency Modal -->
+    <div id="frequencyModal" class="modal" style="z-index:1100;">
+        <div class="modal-content" style="max-width:560px; width:100%;">
+            <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>📈 Получить частотность</span>
+                <button onclick="closeFrequencyModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
+            </div>
+
+            <!-- Collection Mode -->
+            <div style="margin:16px 0 12px;">
+                <div style="font-weight:600;font-size:14px;margin-bottom:10px;">Режим сбора:</div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <label class="freq-mode-option" id="modeAllLabel">
+                        <input type="radio" name="freqMode" value="all" id="modeAll" checked>
+                        <span class="freq-mode-radio"></span>
+                        <div>
+                            <div class="freq-mode-title">🔄 Пересобрать всю частоту</div>
+                            <div class="freq-mode-desc">Запрашивает частоту для всех ключевых слов, включая уже собранные</div>
+                        </div>
+                    </label>
+                    <label class="freq-mode-option" id="modeMissingLabel">
+                        <input type="radio" name="freqMode" value="missing" id="modeMissing">
+                        <span class="freq-mode-radio"></span>
+                        <div>
+                            <div class="freq-mode-title">➕ Дособрать частоту</div>
+                            <div class="freq-mode-desc">Собирает только для слов, у которых частота ещё не определена</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Min Frequency Setting -->
+            <div style="margin:12px 0 16px; display:flex; align-items:center; gap:10px; padding:0 4px;">
+                <label for="minFreqInput" style="font-size:13px; font-weight:500; color:#555;">Минимальная частота для переноса в минус-слова:</label>
+                <input type="text" id="minFreqInput" value="10" 
+                    style="width:60px; padding:6px 8px; border:1px solid #ddd; border-radius:6px; text-align:center; font-size:14px; font-weight:600;"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+
+            <div style="border-top:1px solid #eee;margin:14px 0;"></div>
+
+            <!-- Presets -->
+            <div style="margin:0 0 8px;font-weight:600;font-size:14px;">Выберите настройки:</div>
+            <div id="frequencyPresets" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+            <div style="margin-top:14px;">
+                <button class="btn btn-secondary" onclick="toggleNewFilterForm()" style="width:100%;">+ Создать новый фильтр</button>
+            </div>
+
+            <!-- New filter form -->
+            <div id="newFilterForm" style="display:none;margin-top:14px;border-top:1px solid #eee;padding-top:14px;">
+                <div style="margin-bottom:10px;font-weight:600;font-size:13px;">Новый фильтр</div>
+
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:13px;font-weight:500;">Название фильтра</label>
+                    <input type="text" id="newFilterName" placeholder="Например: Мобильные, Россия" style="width:100%;margin-top:4px;">
+                </div>
+
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:13px;font-weight:500;">Устройство:</label>
+                    <div style="display:flex;gap:16px;margin-top:6px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="checkbox" id="devDesktop" checked> Десктоп
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="checkbox" id="devPhone"> Смартфоны
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="checkbox" id="devTablet"> Планшеты
+                        </label>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:13px;font-weight:500;">Регион:</label>
+                    <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
+                        <input type="text" id="newFilterRegionName" placeholder="Все регионы" readonly
+                            style="flex:1;cursor:pointer;" onclick="openGeoModal()">
+                        <input type="hidden" id="newFilterRegionId" value="">
+                        <button class="btn btn-secondary" onclick="openGeoModal()" style="white-space:nowrap;">Выбрать</button>
+                        <button class="btn btn-secondary" onclick="clearRegion()" style="white-space:nowrap;">✕</button>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="toggleNewFilterForm()" style="flex:1;">Отмена</button>
+                    <button class="btn btn-primary" onclick="saveNewFilter()" style="flex:1;">Сохранить фильтр</button>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="margin-top:16px;">
+                <button class="btn btn-secondary" onclick="closeFrequencyModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="startFrequency()">Запустить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Geo Region Modal -->
+    <div id="geoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1200;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:10px;width:380px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">Выбор региона</span>
+                <button onclick="closeGeoModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
+            </div>
+            <div style="padding:12px 16px;border-bottom:1px solid #eee;">
+                <input type="text" id="geoSearch" placeholder="Поиск региона..." oninput="filterGeoTree(this.value)"
+                    style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+            </div>
+            <div style="flex:1;overflow-y:auto;padding:8px 0;" id="geoTree"></div>
+            <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;">
+                <button class="btn btn-primary" onclick="applyGeoSelection()" style="flex:1;">Выбрать</button>
+                <button class="btn btn-secondary" onclick="clearGeoSelection()" style="flex:1;">Очистить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frequency Progress Banner -->
+    <div id="frequencyProgressBanner" style="display:none;position:fixed;bottom:20px;right:20px;background:#fff;border:1px solid #ddd;border-radius:10px;padding:14px 20px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:2000;min-width:300px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <div class="loader-mini"></div>
+            <span style="font-weight:600;font-size:14px;">Сбор частотности...</span>
+        </div>
+        <div id="frequencyProgressText" style="font-size:12px;color:#666;margin-bottom:8px;">Подготовка...</div>
+        <div style="background:#f0f0f0;border-radius:4px;height:6px;">
+            <div id="frequencyProgressBar" style="background:#2196F3;height:6px;border-radius:4px;width:0%;transition:width 0.3s;"></div>
+        </div>
+        <div id="frequencyProgressCount" style="font-size:11px;color:#999;margin-top:4px;">0 / 0</div>
+    </div>
+
+    <div id="clusteringSidebar" class="sidebar">
+        <div class="sidebar-header">
+            <button class="sidebar-close" onclick="closeSidebar()">&times;</button>
+        </div>
+        <div class="sidebar-actions">
+
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-primary" onclick="moveToSelectedCluster()">Перенести в кластер</button>
+                <button class="btn btn-secondary" onclick="moveToMinusFromSidebar()" style="flex:1;">В минус
+                    слова</button>
+                <button class="btn btn-secondary" onclick="moveToUnclusteredFromSidebar()" style="flex:1;">В
+                    некластеризовано</button>
+            </div>
+            <div class="search-wrapper" style="position: relative; margin-top: 10px;">
+                <input type="text" id="sidebarSearch" class="sidebar-search" value="" placeholder="Поиск кластера..."
+                    oninput="filterSidebarClusters()" autocomplete="off" spellcheck="false" style="width: 100%; margin-top: 0;">
+                <span id="clearSearch" class="clear-icon" onclick="clearSidebarSearch()">&times;</span>
+            </div>
+        </div>
+        <div class="sidebar-content" id="sidebarClusterList">
+            <div class="empty-state">Нет данных</div>
+        </div>
+    </div>
+
+    <div id="authSection" class="auth-section" style="display:none;">
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="showAuthForm('login')">Вход</button>
+            <button class="auth-tab" onclick="showAuthForm('register')">Регистрация</button>
+        </div>
+        <div id="authError" class="status error" style="display:none; margin-bottom:20px;"></div>
+        <div id="authForm">
+            <input type="text" id="authUsername" placeholder="Логин">
+            <div class="password-wrapper">
+                <input type="password" id="authPassword" placeholder="Пароль">
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')">👁️</span>
+            </div>
+            <button class="btn btn-primary" onclick="submitAuth()">Войти</button>
+        </div>
+    </div>
+
+    <div id="addSiteModal" class="modal">
+        <div class="modal-content">
+            <h2>Добавить новый сайт</h2>
+            <input type="text" id="newSiteDomain" placeholder="example.com">
+            <div class="buttons">
+                <button class="btn btn-secondary" onclick="hideAddSiteModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="addSite()">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </div>
+
+    <!-- Topup Modal -->
+    <div id="topupModal" class="modal">
+        <div class="modal-content topup-modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Пополнение баланса</span>
+                <button onclick="closeTopupModal()" class="modal-close">&times;</button>
+            </div>
+            <div class="topup-input-group">
+                <label for="topupAmount">Сумма пополнения (руб.)</label>
+                <input type="number" id="topupAmount" value="500" min="500" step="100">
+                <div class="topup-hints">
+                    <button class="btn-hint" onclick="setTopupAmount(500)">500</button>
+                    <button class="btn-hint" onclick="setTopupAmount(1000)">1000</button>
+                    <button class="btn-hint" onclick="setTopupAmount(5000)">5000</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTopupModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">Оплатить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script>
+        let clusterMetadata = {};
+
+        function onSiteSelected(domain) {
+            if (domain) {
+                window.initializedDefaultCollapsed = false;
+                if (typeof collapsedClusters !== 'undefined') collapsedClusters.clear();
+                loadClusterData(domain);
+                checkAnalysisStatus();
+            }
+        }
+
+        async function loadClusterData(domain) {
+            try {
+                // Load keywords
+                const kwRes = await authFetch(`/api/keywords?domain=${encodeURIComponent(domain)}`);
+                const kwData = await kwRes.json();
+                keywords = kwData.keywords;
+
+                // Load mappings
+                const mRes = await authFetch(`/api/mappings?domain=${encodeURIComponent(domain)}`);
+                const mData = await mRes.json();
+                clusterMappings = mData.mappings || {};
+
+                // Load analysis
+                const aRes = await authFetch(`/api/analysis?domain=${encodeURIComponent(domain)}`);
+                const aData = await aRes.json();
+                clusterAnalysis = aData.analysis || {};
+
+                // Load cluster metadata (names, favorite, pinned)
+                const metadataRes = await authFetch(`/api/cluster-names?domain=${encodeURIComponent(domain)}`);
+                const metadataData = await metadataRes.json();
+                clusterMetadata = metadataData.metadata || {};
+
+                renderClusterView();
+            } catch (e) {
+                console.error('Failed to load cluster data:', e);
+            }
+        }
+
+        async function loadMappings(domain) {
+            try {
+                const resMappings = await authFetch(`/api/mappings?domain=${encodeURIComponent(domain)}`);
+                const dataMappings = await resMappings.json();
+                clusterMappings = dataMappings.mappings || {};
+        
+                const resAnalysis = await authFetch(`/api/analysis?domain=${encodeURIComponent(domain)}`);
+                const dataAnalysis = await resAnalysis.json();
+                clusterAnalysis = dataAnalysis.analysis || {};
+
+                renderClusterView();
+            } catch (e) {
+                console.error('Failed to load mappings or analysis:', e);
+            }
+        }
+
+        function renderClusterView() {
+            const clusterList = document.getElementById('clusterList');
+            const unclusteredList = document.getElementById('unclusteredList');
+
+            if (!keywords || keywords.length === 0) {
+                clusterList.innerHTML = '<div class="empty-state">Нет данных для отображения</div>';
+                unclusteredList.innerHTML = '<div class="empty-state">Нет данных</div>';
+                return;
+            }
+
+            const clusterGroups = {};
+            const unclustered = [];
+
+            keywords.forEach(kw => {
+                if (!kw || kw.minus_word) return;
+                if (kw.clustered) {
+                    const id = kw.clustered;
+                    if (!clusterGroups[id]) clusterGroups[id] = [];
+                    clusterGroups[id].push({ query: kw.query, freq: kw.frequency || 0, hits: kw.hits || 0 });
+                } else {
+                    unclustered.push({ query: kw.query, freq: kw.frequency || 0, hits: kw.hits || 0 });
+                }
+            });
+
+            // Prepare cluster objects with metadata and total frequency
+            const clusters = Object.keys(clusterGroups).map(clusterId => {
+                const kws = clusterGroups[clusterId];
+                kws.sort((a, b) => (b.freq || 0) - (a.freq || 0) || a.query.localeCompare(b.query));
+                const totalFreq = kws.reduce((sum, k) => sum + (k.freq || 0), 0);
+                const meta = clusterMetadata[clusterId] || { name: kws[0].query, is_favorite: false, is_pinned: false, pinned_order: 0 };
+                
+                return {
+                    id: clusterId,
+                    keywords: kws,
+                    totalFreq: totalFreq,
+                    name: meta.name || kws[0].query,
+                    is_favorite: meta.is_favorite,
+                    is_pinned: meta.is_pinned,
+                    pinned_order: meta.pinned_order || 0
+                };
+            });
+
+            // Sorting Logic:
+            // 1. Pinned (by pinned_order ASC)
+            // 2. Favorite (by totalFreq DESC)
+            // 3. Regular (by totalFreq DESC)
+            clusters.sort((a, b) => {
+                if (a.is_pinned && !b.is_pinned) return -1;
+                if (!a.is_pinned && b.is_pinned) return 1;
+                if (a.is_pinned && b.is_pinned) return a.pinned_order - b.pinned_order;
+
+                if (a.is_favorite && !b.is_favorite) return -1;
+                if (!a.is_favorite && b.is_favorite) return 1;
+
+                return b.totalFreq - a.totalFreq;
+            });
+
+            if (!window.initializedDefaultCollapsed && clusters.length > 0) {
+                clusters.forEach(c => {
+                    if (c.is_pinned || c.is_favorite) {
+                        collapsedClusters.add(String(c.id));
+                    }
+                });
+                window.initializedDefaultCollapsed = true;
+            }
+
+            let html = '';
+            clusters.forEach(cluster => {
+                const clusterId = String(cluster.id);
+                const kws = cluster.keywords;
+                const isCollapsed = collapsedClusters.has(clusterId);
+                const firstKw = kws[0];
+
+                html += `<div class="cluster-item ${cluster.is_pinned ? 'pinned' : ''} ${cluster.is_favorite ? 'favorite' : ''}" 
+                             data-id="${clusterId}" 
+                             ${cluster.is_pinned ? 'draggable="true"' : ''}>
+                    <div class="cluster-header" onclick="toggleCluster(this)">
+                        <input type="checkbox" class="cluster-select-all" data-cluster="${clusterId}" onclick="event.stopPropagation(); toggleClusterSelectAll(this)">
+                        
+                        <div class="cluster-meta-actions" onclick="event.stopPropagation()" style="display:flex; gap:5px;">
+                            <span class="btn-pin ${cluster.is_pinned ? 'active' : ''}" onclick="toggleClusterPinned('${clusterId}', ${!cluster.is_pinned})" title="${cluster.is_pinned ? 'Открепить' : 'Закрепить сверху'}">📌</span>
+                            <span class="btn-star ${cluster.is_favorite ? 'active' : ''}" onclick="toggleClusterFavorite('${clusterId}', ${!cluster.is_favorite})" title="${cluster.is_favorite ? 'Убрать из избранного' : 'В избранное'}">⭐</span>
+                        </div>
+
+                        <span class="cluster-name" style="flex:1;">
+                            📁 ${cluster.totalFreq > 0 ? `<span class="kw-freq">[${cluster.totalFreq}]</span>` : ''} 
+                            ${escapeHtml(cluster.name)} (${kws.length})
+                        </span>
+
+                        <div class="mapping-actions" onclick="event.stopPropagation()">
+                            ${clusterMappings[clusterId] ? (() => {
+                                let path = clusterMappings[clusterId];
+                                let fullUrl = path;
+                                if (!path.startsWith('http')) {
+                                    let base = currentDomain;
+                                    if (!base.startsWith('http')) base = 'https://' + base;
+                                    if (base.endsWith('/')) base = base.slice(0, -1);
+                                    if (!path.startsWith('/')) path = '/' + path;
+                                    fullUrl = base + path;
+                                }
+                                return `<a href="${fullUrl}" target="_blank" class="mapping-icon" title="${fullUrl}">🌐</a>`;
+                            })() : ''}
+                            <span class="mapping-icon" onclick="openManualUrlModal(${clusterId})" title="Указать URL">📝</span>
+                            <a href="analysis.html?domain=${encodeURIComponent(currentDomain)}&clusterId=${clusterId}&name=${encodeURIComponent(cluster.name)}" class="mapping-icon" title="СЕО анализ">📊</a>
+                        </div>
+                        <div class="cluster-actions" onclick="event.stopPropagation()">
+                            <button class="btn-disband" onclick="disbandCluster(${clusterId})" title="Расформировать">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="cluster-content ${isCollapsed ? 'collapsed' : ''}">
+                        ${kws.map(k => `
+                            <div class="kw-row">
+                                <input type="checkbox" class="kw-checkbox" data-cluster="${clusterId}" data-kw="${escapeHtml(k.query)}" onchange="updateSidebarVisibility()">
+                                <span class="kw-query-container">• ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}${escapeHtml(k.query)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            });
+            clusterList.innerHTML = html || '<div class="empty-state">Нет кластеров</div>';
+
+            // Initialize Sortable for pinned clusters
+            initSortable();
+
+            // Sort unclustered by frequency desc
+            unclustered.sort((a, b) => (b.freq || 0) - (a.freq || 0) || a.query.localeCompare(b.query));
+            
+            unclusteredList.innerHTML = unclustered.map(k => `
+                <div class="keyword-item kw-row unclustered">
+                    <input type="checkbox" class="kw-checkbox" data-cluster="0" data-kw="${escapeHtml(k.query)}" onchange="updateSidebarVisibility()">
+                    <span class="kw-query-container">• ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}${escapeHtml(k.query)}</span>
+                </div>
+            `).join('') || '<div class="empty-state">Все слова кластеризованы</div>';
+
+            updateSidebarClusterList();
+        }
+
+        function initSortable() {
+            const clusterList = document.getElementById('clusterList');
+            if (window.clusterSortable) window.clusterSortable.destroy();
+
+            window.clusterSortable = Sortable.create(clusterList, {
+                animation: 150,
+                draggable: ".cluster-item.pinned",
+                handle: ".cluster-header",
+                ghostClass: "dragging",
+                onEnd: async function () {
+                    const pinnedItems = [...clusterList.querySelectorAll('.cluster-item.pinned')];
+                    const orders = {};
+                    pinnedItems.forEach((el, index) => {
+                        orders[el.dataset.id] = index;
+                    });
+                    
+                    await authFetch('/api/update-pinned-order', {
+                        method: 'POST',
+                        body: JSON.stringify({ domain: currentDomain, orders })
+                    });
+                    
+                    // Update local metadata to prevent jumpy UI
+                    Object.keys(orders).forEach(id => {
+                        if (clusterMetadata[id]) clusterMetadata[id].pinned_order = orders[id];
+                    });
+                }
+            });
+        }
+
+        async function toggleClusterFavorite(clusterId, isFavorite) {
+            await authFetch('/api/toggle-cluster-favorite', {
+                method: 'POST',
+                body: JSON.stringify({ domain: currentDomain, clusterId, isFavorite })
+            });
+            if (!clusterMetadata[clusterId]) clusterMetadata[clusterId] = {};
+            clusterMetadata[clusterId].is_favorite = isFavorite;
+            renderClusterView();
+        }
+
+        async function toggleClusterPinned(clusterId, isPinned) {
+            await authFetch('/api/toggle-cluster-pinned', {
+                method: 'POST',
+                body: JSON.stringify({ domain: currentDomain, clusterId, isPinned })
+            });
+            if (!clusterMetadata[clusterId]) clusterMetadata[clusterId] = {};
+            clusterMetadata[clusterId].is_pinned = isPinned;
+            renderClusterView();
+        }
+
+        function toggleCluster(header) {
+            const content = header.nextElementSibling;
+            const id = header.querySelector('.cluster-select-all').dataset.cluster;
+            content.classList.toggle('collapsed');
+            content.classList.contains('collapsed') ? collapsedClusters.add(id) : collapsedClusters.delete(id);
+        }
+
+        function toggleClusterSelectAll(checkbox) {
+            const id = checkbox.dataset.cluster;
+            document.querySelectorAll(`.kw-checkbox[data-cluster="${id}"]`).forEach(cb => cb.checked = checkbox.checked);
+            updateSidebarVisibility();
+        }
+
+        function deselectClusterAll() {
+            document.querySelectorAll('.kw-checkbox, .cluster-select-all').forEach(cb => cb.checked = false);
+            updateSidebarVisibility();
+        }
+
+        async function runClustering() {
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
+            
+            const btn = document.getElementById('btnRunCluster');
+            const banner = document.getElementById('wmStatusBanner');
+            const bannerText = document.getElementById('wmStatusText');
+            
+            btn.classList.add('btn-loading');
+            if (banner) {
+                bannerText.innerText = 'Выполняется кластеризация запросов...';
+                banner.style.display = 'flex';
+            }
+            
+            showStatus('Кластеризация запущена...', 'success');
+            try {
+                const res = await authFetch('/api/run-clustering', {
+                    method: 'POST',
+                    body: JSON.stringify({ domain: currentDomain })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus(`Готово: ${data.count} кластеров`, 'success');
+                    loadClusterData(currentDomain);
+                } else {
+                    showStatus(`Ошибка: ${data.error || 'неизвестная ошибка'}`, 'error');
+                }
+            } catch (e) {
+                showStatus('Ошибка соединения с сервером', 'error');
+            } finally {
+                btn.classList.remove('btn-loading');
+                if (banner) {
+                    banner.style.display = 'none';
+                    bannerText.innerText = 'Загрузка запросов из Яндекс Вебмастера...'; // Reset
+                }
+            }
+        }
+
+        async function fetchWMQueries() {
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
+            
+            const btn = document.getElementById('btnFetchWM');
+            const banner = document.getElementById('wmStatusBanner');
+            
+            btn.classList.add('btn-loading');
+            if (banner) banner.style.display = 'flex';
+            
+            showStatus('Загрузка запросов из Вебмастера...', 'success');
+            try {
+                const res = await authFetch(`/api/fetch-wm-queries?domain=${encodeURIComponent(currentDomain)}`);
+                const data = await res.json();
+                if (data.success) {
+                    showStatus(`Загружено новых: ${data.added || 0} запросов`, 'success');
+                    loadClusterData(currentDomain);
+                } else {
+                    showStatus(`Ошибка: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('Ошибка соединения с сервером', 'error');
+            } finally {
+                btn.classList.remove('btn-loading');
+                if (banner) banner.style.display = 'none';
+            }
+        }
+
+        async function runMapping() {
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
+            showStatus('Маппинг запущен...', 'success');
+            try {
+                const res = await authFetch('/api/run-mapping', {
+                    method: 'POST',
+                    body: JSON.stringify({ domain: currentDomain })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus('Маппинг успешно завершен', 'success');
+                    loadMappings(currentDomain);
+                } else {
+                    showStatus(`Ошибка маппинга: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('Ошибка соединения с сервером', 'error');
+            }
+        }
+
+        async function runSEOAnalysis() {
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
+            showStatus('SEO анализ запущен...', 'success');
+            try {
+                authFetch(`/api/run-competitor-analysis-stream?domain=${encodeURIComponent(currentDomain)}`);
+                setTimeout(checkAnalysisStatus, 1000);
+                showStatus('Анализ выполняется в фоновом режиме', 'success');
+            } catch (e) {
+                showStatus('Ошибка запуска анализа', 'error');
+            }
+        }
+
+        async function disbandCluster(id) {
+            if (!confirm('Расформировать кластер?')) return;
+            await authFetch('/api/disband-cluster', {
+                method: 'POST',
+                body: JSON.stringify({ domain: currentDomain, clusterId: id })
+            });
+            loadClusterData(currentDomain);
+        }
+
+        // Sidebar Implementation
+        function updateSidebarClusterList() {
+            const list = document.getElementById('sidebarClusterList');
+            if (!list) return;
+
+            const searchInput = document.getElementById('sidebarSearch');
+            const search = searchInput ? searchInput.value.toLowerCase() : '';
+
+            const clusters = {};
+            keywords.forEach(kw => {
+                if (kw && kw.clustered && !kw.minus_word) {
+                    const id = String(kw.clustered);
+                    if (!clusters[id]) clusters[id] = [];
+                    clusters[id].push({ query: kw.query, freq: kw.frequency || 0 });
+                }
+            });
+
+            // Sort keywords within each cluster by frequency desc for consistent naming
+            Object.values(clusters).forEach(kws => {
+                kws.sort((a, b) => (b.freq || 0) - (a.freq || 0) || a.query.localeCompare(b.query));
+            });
+
+            const clusterIds = Object.keys(clusters);
+            if (clusterIds.length === 0) {
+                list.innerHTML = '<div class="empty-state">Кластеры не найдены</div>';
+                return;
+            }
+
+            let html = '';
+            let matchCount = 0;
+
+            clusterIds.sort((a, b) => clusters[b].length - clusters[a].length).forEach(id => {
+                const headKw = clusters[id][0];
+                if (!search || headKw.query.toLowerCase().includes(search)) {
+                    matchCount++;
+                    const selected = selectedSidebarClusterId === id;
+                    html += `<div class="sidebar-cluster-item ${selected ? 'selected' : ''}" onclick="selectSidebarCluster('${id}')">
+                        <input type="checkbox" ${selected ? 'checked' : ''} onclick="event.stopPropagation(); selectSidebarCluster('${id}')">
+                        <span class="cluster-name" title="${escapeHtml(headKw.query)}">📁 ${headKw.freq > 0 ? `<span class="kw-freq">[${headKw.freq}]</span> ` : ''}${escapeHtml(headKw.query)}</span>
+                        <span class="cluster-count">${clusters[id].length}</span>
+                    </div>`;
+                }
+            });
+
+            if (matchCount === 0 && search) {
+                list.innerHTML = `<div class="empty-state">По запросу "${escapeHtml(search)}" ничего не найдено.<br><button class="btn btn-secondary" style="margin-top:10px; padding: 4px 8px; font-size:12px;" onclick="document.getElementById('sidebarSearch').value=''; updateSidebarClusterList();">Очистить поиск</button></div>`;
+            } else {
+                list.innerHTML = html || '<div class="empty-state">Нет данных</div>';
+            }
+        }
+
+        function filterSidebarClusters() { 
+            const input = document.getElementById('sidebarSearch');
+            const clearIcon = document.getElementById('clearSearch');
+            if (clearIcon) clearIcon.style.display = input.value ? 'block' : 'none';
+            updateSidebarClusterList(); 
+        }
+
+        function clearSidebarSearch() {
+            const input = document.getElementById('sidebarSearch');
+            input.value = '';
+            filterSidebarClusters();
+        }
+
+        function selectSidebarCluster(id) {
+            selectedSidebarClusterId = (selectedSidebarClusterId === id) ? null : id;
+            updateSidebarClusterList();
+        }
+
+        async function performMove(target) {
+            const selected = [...document.querySelectorAll('.kw-checkbox:checked')].map(cb => cb.dataset.kw);
+            if (selected.length === 0) return showStatus('Выберите ключевые слова', 'error');
+
+            const url = target === 'minus' ? '/api/minus-words' : '/api/move-keywords';
+            const body = { domain: currentDomain, keywords: selected, target };
+            
+            try {
+                const res = await authFetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                });
+                
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                
+                const data = await res.json();
+                if (data.success) {
+                    loadClusterData(currentDomain);
+                    updateSidebarVisibility();
+                    showStatus('Перенос успешно выполнен', 'success');
+                } else {
+                    showStatus(`Ошибка переноса: ${data.error || 'неизвестная ошибка'}`, 'error');
+                }
+            } catch (e) {
+                console.error('Move error:', e);
+                showStatus('Ошибка соединения с сервером. Проверьте, запущен ли бэкенд.', 'error');
+            }
+        }
+
+        function moveToSelectedCluster() { if (selectedSidebarClusterId) performMove(selectedSidebarClusterId); }
+        function moveToMinusFromSidebar() { performMove('minus'); }
+        function moveToUnclusteredFromSidebar() { performMove('unclustered'); }
+
+        let statusInterval = null;
+        async function checkAnalysisStatus() {
+            if (!currentDomain) return;
+            try {
+                const res = await authFetch(`/api/analysis-status?domain=${encodeURIComponent(currentDomain)}`);
+                const data = await res.json();
+                const banner = document.getElementById('analysisStatusBanner');
+                if (banner) banner.style.display = data.running ? 'flex' : 'none';
+                
+                if (data.running) {
+                    if (!statusInterval) statusInterval = setInterval(checkAnalysisStatus, 5000);
+                } else {
+                    if (statusInterval) {
+                        clearInterval(statusInterval);
+                        statusInterval = null;
+                        loadClusterData(currentDomain);
+                        showStatus('SEO анализ завершен', 'success');
+                    }
+                }
+            } catch (e) {
+                console.error('Status check error:', e);
+            }
+        }
+
+        function openManualUrlModal(id) {
+            const modal = document.getElementById('manualUrlModal');
+            modal.classList.add('visible');
+            document.getElementById('btnSaveManualUrl').onclick = async () => {
+                const url = document.getElementById('manualUrlInput').value;
+                await authFetch('/api/save-mapping-manual', {
+                    method: 'POST',
+                    body: JSON.stringify({ domain: currentDomain, clusterId: id, url })
+                });
+                modal.classList.remove('visible');
+                loadClusterData(currentDomain);
+            };
+        }
+        function closeManualUrlModal() { document.getElementById('manualUrlModal').classList.remove('visible'); }
+    </script>
+
+    <!-- Frequency Feature Scripts -->
+    <script>
+        /* ============================================================
+           FREQUENCY MODAL STATE
+        ============================================================ */
+        let frequencyPresets = [];
+        let selectedPresetId = null;
+        let geoRegions = [];
+        let selectedGeoId = '';
+        let selectedGeoName = '';
+
+        /* ============================================================
+           MODAL OPEN / CLOSE
+        ============================================================ */
+        async function showFrequencyModal() {
+            document.getElementById('frequencyModal').classList.add('visible');
+            await loadFrequencyPresets();
+        }
+
+        function closeFrequencyModal() {
+            document.getElementById('frequencyModal').classList.remove('visible');
+            document.getElementById('newFilterForm').style.display = 'none';
+        }
+
+        function toggleNewFilterForm() {
+            const form = document.getElementById('newFilterForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form.style.display === 'block') {
+                document.getElementById('devDesktop').checked = true;
+                document.getElementById('devPhone').checked = false;
+                document.getElementById('devTablet').checked = false;
+                document.getElementById('newFilterName').value = '';
+                document.getElementById('newFilterRegionName').value = '';
+                document.getElementById('newFilterRegionId').value = '';
+                selectedGeoId = '';
+                selectedGeoName = '';
+            }
+        }
+
+        /* ============================================================
+           PRESETS
+        ============================================================ */
+        async function loadFrequencyPresets() {
+            try {
+                const res = await authFetch('/api/wordstat-settings');
+                const data = await res.json();
+                frequencyPresets = data.settings || [];
+                renderPresets();
+            } catch (e) {
+                console.error('Failed to load presets:', e);
+            }
+        }
+
+        function renderPresets() {
+            const container = document.getElementById('frequencyPresets');
+            container.innerHTML = '';
+
+            if (frequencyPresets.length === 0) {
+                container.innerHTML = '<div style="color:#999;font-size:13px;">Нет сохранённых фильтров</div>';
+                return;
+            }
+
+            frequencyPresets.forEach(preset => {
+                const isSelected = selectedPresetId === preset.id;
+
+                const deviceParts = (preset.device || '').split(',').filter(Boolean);
+                const deviceMap = { desktop: '🖥 Десктоп', phone: '📱 Смартфоны', tablet: '📋 Планшеты' };
+                const deviceLabel = deviceParts.length > 0
+                    ? deviceParts.map(d => deviceMap[d.trim()] || d).join(' + ')
+                    : '📱 Все устройства';
+                const regionLabel = '📍 ' + (preset.region_name || 'Все регионы');
+
+                const div = document.createElement('label');
+                div.style.cssText = [
+                    'display:block',
+                    'padding:12px 16px',
+                    `border:2px solid ${isSelected ? '#2196F3' : '#e0e0e0'}`,
+                    'border-radius:8px',
+                    'cursor:pointer',
+                    `background:${isSelected ? '#f0f7ff' : '#fafafa'}`,
+                    'transition:border-color 0.15s, background 0.15s',
+                    'user-select:none',
+                    'position:relative',
+                ].join(';');
+
+                div.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <input type="radio" name="freqPreset" ${isSelected ? 'checked' : ''}
+                            style="accent-color:#2196F3;width:16px;height:16px;flex-shrink:0;margin:0;"
+                            onchange="selectedPresetId=${preset.id};renderPresets();">
+                        <div>
+                            <div style="font-weight:600;font-size:14px;color:#222;line-height:1.3;">${escapeHtml(preset.name)}</div>
+                            <div style="font-size:12px;color:#777;margin-top:4px;line-height:1.4;">${deviceLabel}&nbsp;&nbsp;${regionLabel}</div>
+                        </div>
+                        ${!preset.is_default ? `
+                        <button onclick="deletePreset(${preset.id},event)"
+                            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;color:#ccc;cursor:pointer;font-size:16px;padding:4px;line-height:1;"
+                            title="Удалить">✕</button>` : ''}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            if (selectedPresetId === null && frequencyPresets.length > 0) {
+                selectedPresetId = frequencyPresets[0].id;
+                renderPresets();
+            }
+        }
+
+
+        async function deletePreset(id, event) {
+            event.stopPropagation();
+            if (!confirm('Удалить этот фильтр?')) return;
+            await authFetch(`/api/wordstat-settings/${id}`, { method: 'DELETE' });
+            if (selectedPresetId === id) selectedPresetId = null;
+            await loadFrequencyPresets();
+        }
+
+        async function saveNewFilter() {
+            const name = document.getElementById('newFilterName').value.trim();
+            if (!name) { alert('Введите название фильтра'); return; }
+
+            const devices = [];
+            if (document.getElementById('devDesktop').checked) devices.push('desktop');
+            if (document.getElementById('devPhone').checked) devices.push('phone');
+            if (document.getElementById('devTablet').checked) devices.push('tablet');
+            if (devices.length === 0) { alert('Выберите хотя бы одно устройство'); return; }
+
+            const device = devices.join(',');
+            const region = document.getElementById('newFilterRegionId').value || '';
+            const region_name = document.getElementById('newFilterRegionName').value || 'Все регионы';
+        
+            const res = await authFetch('/api/wordstat-settings', {
+                method: 'POST',
+                body: JSON.stringify({ name, device, region, region_name })
+            });
+            const data = await res.json();
+            if (data.success) {
+                selectedPresetId = data.id;
+                toggleNewFilterForm();
+                await loadFrequencyPresets();
+            }
+        }
+
+        /* ============================================================
+           GEO REGION MODAL
+        ============================================================ */
+        async function openGeoModal() {
+            const modal = document.getElementById('geoModal');
+            modal.style.display = 'flex';
+
+            if (geoRegions.length === 0) {
+                document.getElementById('geoTree').innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Загрузка...</div>';
+                try {
+                    const res = await authFetch('/api/geo-regions');
+                    const data = await res.json();
+                    geoRegions = data.regions || [];
+                } catch (e) {
+                    geoRegions = [];
+                }
+            }
+
+            document.getElementById('geoSearch').value = '';
+            renderGeoTree(geoRegions);
+        }
+
+        function closeGeoModal() {
+            document.getElementById('geoModal').style.display = 'none';
+        }
+
+        function renderGeoTree(regions, searchQuery = '') {
+            const container = document.getElementById('geoTree');
+            container.innerHTML = '';
+
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                const matched = regions.filter(r => r.place.toLowerCase().includes(q));
+                matched.forEach(r => container.appendChild(buildGeoItem(r, 0)));
+                return;
+            }
+
+            const buildTree = (parentId, depth) => {
+                const children = regions.filter(r => r.parent === parentId);
+                children.forEach(r => {
+                    container.appendChild(buildGeoItem(r, depth));
+                    buildTree(r.id, depth + 1);
+                });
+            };
+            buildTree('0', 0);
+        }
+
+        function buildGeoItem(region, depth) {
+            const div = document.createElement('div');
+            const isSelected = selectedGeoId === region.id;
+            div.style.cssText = `padding:7px 16px 7px ${16 + depth * 16}px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;background:${isSelected ? '#f0f7ff' : 'transparent'};`;
+            div.innerHTML = `
+                <span style="width:14px;height:14px;border:2px solid ${isSelected ? '#2196F3' : '#ccc'};border-radius:50%;background:${isSelected ? '#2196F3' : 'transparent'};display:inline-block;flex-shrink:0;"></span>
+                <span>${escapeHtml(region.place)}</span>
+            `;
+            div.onmouseover = () => { if (!isSelected) div.style.background = '#f5f5f5'; };
+            div.onmouseout = () => { if (!isSelected) div.style.background = 'transparent'; };
+            div.onclick = () => {
+                selectedGeoId = region.id;
+                selectedGeoName = region.place;
+                renderGeoTree(geoRegions, document.getElementById('geoSearch').value);
+            };
+            return div;
+        }
+
+        function filterGeoTree(query) { renderGeoTree(geoRegions, query); }
+
+        function applyGeoSelection() {
+            document.getElementById('newFilterRegionId').value = selectedGeoId;
+            document.getElementById('newFilterRegionName').value = selectedGeoName || 'Все регионы';
+            closeGeoModal();
+        }
+
+        function clearGeoSelection() {
+            selectedGeoId = '';
+            selectedGeoName = '';
+            renderGeoTree(geoRegions);
+        }
+
+        function clearRegion() {
+            selectedGeoId = '';
+            selectedGeoName = '';
+            document.getElementById('newFilterRegionId').value = '';
+            document.getElementById('newFilterRegionName').value = '';
+        }
+
+        /* ============================================================
+           FREQUENCY COLLECTION
+        ============================================================ */
+        async function startFrequency() {
+            if (!currentDomain) { alert('Выберите сайт'); return; }
+
+            const preset = frequencyPresets.find(p => p.id === selectedPresetId);
+            if (!preset) { alert('Выберите настройки сбора частотности'); return; }
+
+            const modeEl = document.querySelector('input[name="freqMode"]:checked');
+            const mode = modeEl ? modeEl.value : 'all';
+
+            closeFrequencyModal();
+
+            const banner = document.getElementById('frequencyProgressBanner');
+            banner.style.display = 'block';
+            const modeLabel = mode === 'missing' ? 'Дособор частоты...' : 'Пересбор частоты...';
+            document.getElementById('frequencyProgressText').textContent = modeLabel;
+            document.getElementById('frequencyProgressBar').style.width = '0%';
+            document.getElementById('frequencyProgressCount').textContent = '';
+
+            const btn = document.getElementById('btnFrequency');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Сбор...'; }
+
+            const minFreq = document.getElementById('minFreqInput').value || '10';
+            
+            const params = new URLSearchParams({
+                domain: currentDomain,
+                device: preset.device || '',
+                region: preset.region || '',
+                mode: mode,
+                minFrequency: minFreq
+            });
+
+            try {
+                // 1. Create task
+                const startResp = await authFetch(`/api/run-frequency-stream?${params}`);
+                const startData = await startResp.json();
+                
+                if (!startData.success) {
+                    throw new Error(startData.error || 'Failed to start task');
+                }
+
+                const taskId = startData.task_id;
+                
+                // 2. Poll status
+                while (true) {
+                    const statusResp = await authFetch(`/api/tasks/${taskId}`);
+                    const task = await statusResp.json();
+                    
+                    if (task.status === 'completed') {
+                        document.getElementById('frequencyProgressText').textContent = '✅ Сбор завершен!';
+                        document.getElementById('frequencyProgressBar').style.width = '100%';
+                        setTimeout(() => {
+                            banner.style.display = 'none';
+                            loadClusterData(currentDomain);
+                        }, 3000);
+                        break;
+                    } else if (task.status === 'failed') {
+                        document.getElementById('frequencyProgressText').textContent = '❌ Ошибка: ' + task.error;
+                        break;
+                    } else {
+                        // Update progress bar
+                        const pct = task.progress || 0;
+                        const result = task.result ? (typeof task.result === 'string' ? JSON.parse(task.result) : task.result) : {};
+                        const currentQuery = result.current_query || '';
+                        const processed = result.processed || 0;
+                        const total = result.total || 0;
+
+                        document.getElementById('frequencyProgressBar').style.width = pct + '%';
+                        
+                        if (currentQuery) {
+                            document.getElementById('frequencyProgressCount').textContent = `${processed} / ${total}: ${currentQuery}`;
+                        } else {
+                            document.getElementById('frequencyProgressCount').textContent = pct + '%';
+                        }
+
+                        if (task.status === 'running') {
+                            document.getElementById('frequencyProgressText').textContent = 'Выполняется... ' + pct + '%';
+                        } else {
+                            document.getElementById('frequencyProgressText').textContent = 'В очереди...';
+                        }
+                    }
+                    
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            } catch (e) {
+                document.getElementById('frequencyProgressText').textContent = '❌ Ошибка: ' + e.message;
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '📈 Получить частотность'; }
+            }
+        }
+    </script>
+
+    <style>
+        .loader-mini {
+            width: 16px; height: 16px;
+            border: 2px solid #ddd;
+            border-top-color: #2196F3;
+            border-radius: 50%;
+            animation: spinMini 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spinMini { to { transform: rotate(360deg); } }
+
+        /* Custom radio buttons for frequency mode */
+        .freq-mode-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 11px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #fafafa;
+            transition: border-color 0.15s, background 0.15s;
+            user-select: none;
+            position: relative;
+        }
+        .freq-mode-option:has(input:checked) {
+            border-color: #2196F3;
+            background: #f0f7ff;
+        }
+        .freq-mode-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .freq-mode-radio {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: border-color 0.15s;
+            background: #fff;
+            position: relative;
+        }
+        .freq-mode-radio::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2196F3;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .freq-mode-option:has(input:checked) .freq-mode-radio {
+            border-color: #2196F3;
+        }
+        .freq-mode-option:has(input:checked) .freq-mode-radio::after {
+            opacity: 1;
+        }
+        .freq-mode-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #222;
+            line-height: 1.3;
+        }
+        .freq-mode-desc {
+            font-size: 12px;
+            color: #777;
+            margin-top: 3px;
+            line-height: 1.4;
+        }
+    </style>
+</body>
+
+</html>

@@ -1,0 +1,2755 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализ конкурентов - SEO Keyword Manager</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+    <style>
+        :root {
+            --primary: #ff4d4f;
+            --primary-hover: #ff7875;
+            --text: #333;
+            --text-secondary: #999;
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --border: #f0f0f0;
+            --error: #ff4d4f;
+            --warning: #faad14;
+            --success: #52c41a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ccc;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        #progressNotify {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 14px 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 2000;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+            font-size: 14px;
+            min-width: 260px;
+            max-width: 360px;
+            border-left: 4px solid var(--primary);
+            animation: slideInToast 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #progressNotify.hidden {
+            display: none !important;
+        }
+
+        #progressNotify .toast-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        #progressNotify .toast-text {
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        @keyframes slideInToast {
+            from {
+                transform: translateX(30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .loader-mini {
+            display: inline-block;
+            width: 13px;
+            height: 13px;
+            border: 2px solid rgba(255, 77, 79, 0.25);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            vertical-align: middle;
+            margin-right: 5px;
+            flex-shrink: 0;
+        }
+
+        /* Top Menu */
+        .top-menu {
+            background: #333;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 50px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .top-menu .user-info {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .top-menu .logo {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .top-menu .menu-tabs {
+            display: flex;
+            gap: 20px;
+        }
+
+        .top-menu a.menu-tab {
+            color: #ccc;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .top-menu a.menu-tab:hover {
+            color: white;
+        }
+
+        .top-menu a.menu-tab.active {
+            color: white;
+            font-weight: 600;
+        }
+
+        .balance-display {
+            display: flex;
+            align-items: center;
+            background: #444;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #fff;
+            gap: 8px;
+            margin-right: 15px;
+        }
+
+        .balance-value {
+            font-weight: 600;
+            color: #4CAF50;
+        }
+
+        .btn-topup-icon {
+            background: #4CAF50;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .site-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .site-selector select {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            font-size: 13px;
+            min-width: 180px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .sub-header {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            background: transparent;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: transparent;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-box {
+            background: #fafafa;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .metric-comparison {
+            font-size: 12px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #ddd;
+            color: var(--text-secondary);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            background: #fafafa;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:hover td {
+            background: #fafafa;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .diff-plus {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .diff-minus {
+            color: var(--error);
+            font-weight: 600;
+        }
+
+        /* Recommendations */
+        .recommendation {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid #ddd;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-primary:disabled {
+            background: #bfbfbf;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text);
+            border: 1px solid #d9d9d9;
+        }
+
+        .btn-secondary:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-add {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .btn-add:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Topup Modal Specific */
+        .topup-modal-content {
+            max-width: 400px;
+        }
+
+        .topup-input-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .topup-input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .topup-input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .topup-hints {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-hint {
+            flex: 1;
+            padding: 6px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-hint:hover {
+            background: #e0e0e0;
+        }
+
+        /* Tabs Styling */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Structure Editor */
+        .h2-block {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .h2-block:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .h3-block {
+            transition: background 0.2s;
+        }
+
+        .h3-block:hover {
+            background: #f0f5ff !important;
+        }
+
+        .h3-block input, .h2-block input {
+            outline: none;
+            width: 100%;
+            border: none;
+            background: transparent;
+        }
+
+        .h3-block input:focus, .h2-block input:focus {
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-menu" id="topMenu" style="display:none;">
+        <div class="user-info">
+            <div class="logo">SEO Auto Cluster</div>
+            <div class="balance-display">
+                <span class="balance-label">Баланс:</span>
+                <span class="balance-value">0.00 ₽</span>
+                <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
+            </div>
+            <div class="menu-tabs">
+                <a href="index.html" class="menu-tab">Dashboard</a>
+                <a href="sort.html" class="menu-tab">Сортировка</a>
+                <a href="cluster.html" class="menu-tab">Кластер</a>
+                <a href="positions.html" class="menu-tab">Позиции</a>
+                <a href="cabinet.html" class="menu-tab">Кабинет</a>
+            </div>
+        </div>
+        <div class="site-selector">
+            <select id="siteSelect" onchange="selectSite()">
+                <option value="">-- Выберите сайт --</option>
+            </select>
+            <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+            <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
+        </div>
+    </div>
+
+    <div id="authSection" class="auth-section" style="display:none;">
+        <div class="auth-card">
+            <h2>Авторизация</h2>
+            <input type="text" id="username" placeholder="Логин" value="admin">
+            <input type="password" id="password" placeholder="Пароль" value="admin">
+            <button onclick="login()">Войти</button>
+            <div id="authError" style="color:red; margin-top:10px; display:none;"></div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loadingText">Загрузка данных...</div>
+    </div>
+
+    <div id="progressNotify"></div>
+
+    <div class="container" id="mainApp" style="display:none;">
+        <div class="header">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <a id="backBtn" href="#" class="btn btn-secondary"
+                    style="padding: 8px; border-radius: 50%; width: 36px; height: 36px; min-width: 36px;">←</a>
+                <div>
+                    <h1 id="clusterName">Загрузка...</h1>
+                    <div id="subHeader" class="sub-header"></div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn btn-secondary" id="btnCheckPositions" onclick="checkPositions()">Позиции</button>
+                <button class="btn btn-secondary" id="btnFrequency" onclick="showFrequencyModal()">Частота</button>
+                <button class="btn btn-secondary" title="Настройки съема" onclick="showSettingsModal()">⚙️</button>
+                <button class="btn btn-secondary" id="btnSetTargetUrl" onclick="showTargetUrlModal()">URL
+                    страницы</button>
+                <button class="btn btn-primary" id="btnSeoAnalysis" onclick="startSeoAnalysis()">SEO анализ</button>
+                <button class="btn btn-secondary" id="btnSeoOptimize" onclick="startSeoOptimize()" disabled>SEO
+                    оптимизировать</button>
+                <button class="btn btn-secondary" id="btnPublish" style="display: none;">Опубликовать</button>
+            </div>
+        </div>
+
+        <div class="container" style="margin-bottom: 24px;">
+            <details id="detailsKeywords"
+                style="padding: 12px; background: #fafafa; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 12px;">
+                <summary style="cursor: pointer; font-weight: bold; color: var(--text);">Ключевые запросы кластера
+                </summary>
+                <div id="clusterKeywordsList" style="margin-top: 10px;">
+                    Загрузка...
+                </div>
+            </details>
+
+            <details style="padding: 12px; background: #fafafa; border-radius: 6px; border: 1px solid var(--border);">
+                <summary style="cursor: pointer; font-weight: bold; color: var(--text);">LSI ключевые запросы</summary>
+                <div id="clusterLsiList" style="margin-top: 10px;">
+                    Загрузка...
+                </div>
+            </details>
+        </div>
+
+        <!-- Progress Overlay for LLM -->
+        <div id="llmProgress" class="loading-overlay" style="display: none;">
+            <div class="spinner"></div>
+            <div id="llmProgressText">ИИ изучает анализ и готовит рекомендации...</div>
+        </div>
+
+        <!-- Result Modal for Brief/Optimized Content -->
+        <div id="resultModal" class="loading-overlay"
+            style="display: none; background: rgba(0,0,0,0.7); align-items: stretch; padding: 40px;">
+            <div class="card"
+                style="width: 100%; max-width: 1200px; margin: auto; height: 90vh; display: flex; flex-direction: column; position: relative;">
+                <button onclick="closeResultModal()"
+                    style="position: absolute; right: 20px; top: 20px; border: none; background: none; font-size: 28px; cursor: pointer; color: #999;">&times;</button>
+                <h2 id="modalTitle" style="margin-bottom: 20px;">Результат оптимизации</h2>
+                <div class="tabs" style="margin-bottom: 20px;">
+                    <div class="tab active" id="tabBtnBrief" onclick="switchModalTab('brief')">Техзадание (ТЗ)</div>
+                    <div class="tab" id="tabBtnPreview" onclick="switchModalTab('preview')">Предпросмотр</div>
+                </div>
+                <div id="modalContentBrief" class="tab-content active"
+                    style="flex: 1; overflow-y: auto; padding: 20px; border: 1px solid var(--border); border-radius: 8px; background: #fafafa;">
+                    <!-- Brief content here -->
+                </div>
+                <div id="modalContentPreview" class="tab-content" style="flex: 1; display: none;">
+                    <iframe id="previewIframe"
+                        style="width: 100%; height: 100%; border: 1px solid var(--border); border-radius: 8px;"></iframe>
+                </div>
+                <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeResultModal()">Закрыть</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="loading-overlay" style="display: none;">
+            <div class="card" style="width: 400px;">
+                <h2>Настройки съема</h2>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px;">Регион Yandex:</label>
+                    <select id="yandexRegionInput" class="form-control"
+                        style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px;">
+                        <option value="225" selected>Россия (225)</option>
+                        <option value="73">Дальний Восток (73)</option>
+                        <option value="11375">-- Амурская область (11375)</option>
+                        <option value="11374">---- Белогорск (11374)</option>
+                        <option value="77">---- Благовещенск (77)</option>
+                        <option value="11387">---- Свободный (11387)</option>
+                        <option value="11391">---- Тында (11391)</option>
+                        <option value="10243">-- Еврейская автономная область (10243)</option>
+                        <option value="21949">-- Забайкальский край (21949)</option>
+                        <option value="68">---- Чита (68)</option>
+                        <option value="11398">-- Камчатский край (11398)</option>
+                        <option value="78">---- Петропавловск-Камчатский (78)</option>
+                        <option value="11403">-- Магаданская область (11403)</option>
+                        <option value="79">---- Магадан (79)</option>
+                        <option value="11409">-- Приморский край (11409)</option>
+                        <option value="11405">---- Арсеньев (11405)</option>
+                        <option value="11406">---- Артём (11406)</option>
+                        <option value="75">---- Владивосток (75)</option>
+                        <option value="11411">---- Дальнегорск (11411)</option>
+                        <option value="974">---- Находка (974)</option>
+                        <option value="11426">---- Уссурийск (11426)</option>
+                        <option value="11330">-- Республика Бурятия (11330)</option>
+                        <option value="11327">---- Северобайкальск (11327)</option>
+                        <option value="198">---- Улан-Удэ (198)</option>
+                        <option value="11443">-- Республика Саха (Якутия) (11443)</option>
+                        <option value="101987">---- Нерюнгринский район (101987)</option>
+                        <option value="74">---- Якутск (74)</option>
+                        <option value="11450">-- Сахалинская область (11450)</option>
+                        <option value="80">---- Южно-Сахалинск (80)</option>
+                        <option value="11457">-- Хабаровский край (11457)</option>
+                        <option value="100398">---- Амурский район (100398)</option>
+                        <option value="11451">---- Амурск (11451)</option>
+                        <option value="11453">---- Комсомольск-на-Амуре (11453)</option>
+                        <option value="76">---- Хабаровск (76)</option>
+                        <option value="10251">-- Чукотский автономный округ (10251)</option>
+                        <option value="40">Поволжье (40)</option>
+                        <option value="11070">-- Кировская область (11070)</option>
+                        <option value="20020">---- Вятские Поляны (20020)</option>
+                        <option value="46">---- Киров (46)</option>
+                        <option value="11071">---- Кирово-Чепецк (11071)</option>
+                        <option value="11079">-- Нижегородская область (11079)</option>
+                        <option value="11080">---- Арзамас (11080)</option>
+                        <option value="20040">---- Выкса (20040)</option>
+                        <option value="972">---- Дзержинск (972)</option>
+                        <option value="99555">---- Кстовский район (99555)</option>
+                        <option value="20044">---- Кстово (20044)</option>
+                        <option value="47">---- Нижний Новгород (47)</option>
+                        <option value="99560">---- Павловский район (99560)</option>
+                        <option value="11082">---- Павлово (11082)</option>
+                        <option value="11083">---- Саров (11083)</option>
+                        <option value="11084">-- Оренбургская область (11084)</option>
+                        <option value="11086">---- Бузулук (11086)</option>
+                        <option value="11087">---- Гай (11087)</option>
+                        <option value="11090">---- Новотроицк (11090)</option>
+                        <option value="48">---- Оренбург (48)</option>
+                        <option value="11091">---- Орск (11091)</option>
+                        <option value="11095">-- Пензенская область (11095)</option>
+                        <option value="11101">---- Кузнецк (11101)</option>
+                        <option value="49">---- Пенза (49)</option>
+                        <option value="11108">-- Пермский край (11108)</option>
+                        <option value="20237">---- Березники (20237)</option>
+                        <option value="20244">---- Лысьва (20244)</option>
+                        <option value="50">---- Пермь (50)</option>
+                        <option value="11110">---- Соликамск (11110)</option>
+                        <option value="110916">---- Чайковский район (110916)</option>
+                        <option value="20243">---- Чайковский (20243)</option>
+                        <option value="11111">-- Республика Башкортостан (11111)</option>
+                        <option value="99675">---- Белебеевский район (99675)</option>
+                        <option value="20714">---- Белебей (20714)</option>
+                        <option value="99677">---- Белорецкий район (99677)</option>
+                        <option value="20259">---- Белорецк (20259)</option>
+                        <option value="99694">---- Ишимбайский район (99694)</option>
+                        <option value="20718">---- Ишимбай (20718)</option>
+                        <option value="11113">---- Кумертау (11113)</option>
+                        <option value="99703">---- Мелеузовский район (99703)</option>
+                        <option value="20715">---- Мелеуз (20715)</option>
+                        <option value="11114">---- Нефтекамск (11114)</option>
+                        <option value="20235">---- Октябрьский (20235)</option>
+                        <option value="11115">---- Салават (11115)</option>
+                        <option value="20716">---- Сибай (20716)</option>
+                        <option value="11116">---- Стерлитамак (11116)</option>
+                        <option value="99712">---- Туймазинский район (99712)</option>
+                        <option value="20717">---- Туймазы (20717)</option>
+                        <option value="172">---- Уфа (172)</option>
+                        <option value="99714">---- Учалинский район (99714)</option>
+                        <option value="20680">---- Учалы (20680)</option>
+                        <option value="11077">-- Республика Марий Эл (11077)</option>
+                        <option value="20721">---- Волжск (20721)</option>
+                        <option value="41">---- Йошкар-Ола (41)</option>
+                        <option value="11117">-- Республика Мордовия (11117)</option>
+                        <option value="99737">---- Рузаевский район (99737)</option>
+                        <option value="20010">---- Рузаевка (20010)</option>
+                        <option value="42">---- Саранск (42)</option>
+                        <option value="11119">-- Республика Татарстан (11119)</option>
+                        <option value="11121">---- Альметьевск (11121)</option>
+                        <option value="11122">---- Бугульма (11122)</option>
+                        <option value="43">---- Казань (43)</option>
+                        <option value="236">---- Набережные Челны (236)</option>
+                        <option value="11127">---- Нижнекамск (11127)</option>
+                        <option value="11131">-- Самарская область (11131)</option>
+                        <option value="11132">---- Жигулёвск (11132)</option>
+                        <option value="51">---- Самара (51)</option>
+                        <option value="11139">---- Сызрань (11139)</option>
+                        <option value="240">---- Тольятти (240)</option>
+                        <option value="11146">-- Саратовская область (11146)</option>
+                        <option value="99817">---- Балаковский район (99817)</option>
+                        <option value="11143">---- Балаково (11143)</option>
+                        <option value="99818">---- Балашовский район (99818)</option>
+                        <option value="11144">---- Балашов (11144)</option>
+                        <option value="194">---- Саратов (194)</option>
+                        <option value="99850">---- Энгельсский район (99850)</option>
+                        <option value="11147">---- Энгельс (11147)</option>
+                        <option value="11148">-- Удмуртская Республика (11148)</option>
+                        <option value="11149">---- Воткинск (11149)</option>
+                        <option value="11150">---- Глазов (11150)</option>
+                        <option value="44">---- Ижевск (44)</option>
+                        <option value="11152">---- Сарапул (11152)</option>
+                        <option value="11153">-- Ульяновская область (11153)</option>
+                        <option value="11155">---- Димитровград (11155)</option>
+                        <option value="195">---- Ульяновск (195)</option>
+                        <option value="11156">-- Чувашская Республика (11156)</option>
+                        <option value="37133">---- Новочебоксарск (37133)</option>
+                        <option value="45">---- Чебоксары (45)</option>
+                        <option value="20078">---- Шумерля (20078)</option>
+                        <option value="977">Республика Крым (977)</option>
+                        <option value="11471">-- Алушта (11471)</option>
+                        <option value="28892">-- Армянск (28892)</option>
+                        <option value="24696">-- Бахчисарайский район (24696)</option>
+                        <option value="27217">---- Бахчисарай (27217)</option>
+                        <option value="27555">-- Джанкой (27555)</option>
+                        <option value="11463">-- Евпатория (11463)</option>
+                        <option value="11464">-- Керчь (11464)</option>
+                        <option value="27693">-- Красноперекопск (27693)</option>
+                        <option value="24702">-- Ленинский район (24702)</option>
+                        <option value="28786">---- Щёлкино (28786)</option>
+                        <option value="20556">-- Саки (20556)</option>
+                        <option value="959">-- Севастополь (959)</option>
+                        <option value="146">-- Симферополь (146)</option>
+                        <option value="11472">-- Судак (11472)</option>
+                        <option value="11469">-- Феодосия (11469)</option>
+                        <option value="11470">-- Ялта (11470)</option>
+                        <option value="102444">Северный Кавказ (102444)</option>
+                        <option value="11013">-- Кабардино-Балкарская Республика (11013)</option>
+                        <option value="30">---- Нальчик (30)</option>
+                        <option value="11020">-- Карачаево-Черкесская Республика (11020)</option>
+                        <option value="1104">---- Черкесск (1104)</option>
+                        <option value="11010">-- Республика Дагестан (11010)</option>
+                        <option value="11006">---- Буйнакск (11006)</option>
+                        <option value="11007">---- Дербент (11007)</option>
+                        <option value="21521">---- Избербаш (21521)</option>
+                        <option value="11008">---- Каспийск (11008)</option>
+                        <option value="11009">---- Кизляр (11009)</option>
+                        <option value="28">---- Махачкала (28)</option>
+                        <option value="11011">---- Хасавюрт (11011)</option>
+                        <option value="11012">-- Республика Ингушетия (11012)</option>
+                        <option value="1092">---- Назрань (1092)</option>
+                        <option value="11021">-- Республика Северная Осетия — Алания (11021)</option>
+                        <option value="33">---- Владикавказ (33)</option>
+                        <option value="11069">-- Ставропольский край (11069)</option>
+                        <option value="99456">---- Будённовский район (99456)</option>
+                        <option value="11055">---- Будённовск (11055)</option>
+                        <option value="11056">---- Георгиевск (11056)</option>
+                        <option value="11057">---- Ессентуки (11057)</option>
+                        <option value="11062">---- Кисловодск (11062)</option>
+                        <option value="11063">---- Минеральные Воды (11063)</option>
+                        <option value="11064">---- Невинномысск (11064)</option>
+                        <option value="11067">---- Пятигорск (11067)</option>
+                        <option value="36">---- Ставрополь (36)</option>
+                        <option value="11024">-- Чеченская Республика (11024)</option>
+                        <option value="1106">---- Грозный (1106)</option>
+                        <option value="17">Северо-Запад (17)</option>
+                        <option value="10842">-- Архангельская область (10842)</option>
+                        <option value="20">---- Архангельск (20)</option>
+                        <option value="10846">---- Котлас (10846)</option>
+                        <option value="10849">---- Северодвинск (10849)</option>
+                        <option value="10853">-- Вологодская область (10853)</option>
+                        <option value="21">---- Вологда (21)</option>
+                        <option value="968">---- Череповец (968)</option>
+                        <option value="10857">-- Калининградская область (10857)</option>
+                        <option value="22">---- Калининград (22)</option>
+                        <option value="10860">---- Советск (10860)</option>
+                        <option value="10897">-- Мурманская область (10897)</option>
+                        <option value="10894">---- Апатиты (10894)</option>
+                        <option value="101749">---- Кандалакшский район (101749)</option>
+                        <option value="10895">---- Кандалакша (10895)</option>
+                        <option value="10896">---- Мончегорск (10896)</option>
+                        <option value="23">---- Мурманск (23)</option>
+                        <option value="20155">---- Оленегорск (20155)</option>
+                        <option value="10176">-- Ненецкий автономный округ (10176)</option>
+                        <option value="10902">---- Нарьян-Мар (10902)</option>
+                        <option value="10904">-- Новгородская область (10904)</option>
+                        <option value="99146">---- Боровичский район (99146)</option>
+                        <option value="10906">---- Боровичи (10906)</option>
+                        <option value="24">---- Великий Новгород (24)</option>
+                        <option value="99161">---- Старорусский район (99161)</option>
+                        <option value="10923">---- Старая Русса (10923)</option>
+                        <option value="10926">-- Псковская область (10926)</option>
+                        <option value="10928">---- Великие Луки (10928)</option>
+                        <option value="25">---- Псков (25)</option>
+                        <option value="10933">-- Республика Карелия (10933)</option>
+                        <option value="99193">---- Кондопожский район (99193)</option>
+                        <option value="10934">---- Кондопога (10934)</option>
+                        <option value="10935">---- Костомукша (10935)</option>
+                        <option value="18">---- Петрозаводск (18)</option>
+                        <option value="99203">---- Сегежский район (99203)</option>
+                        <option value="10936">---- Сегежа (10936)</option>
+                        <option value="110934">---- Сортавальский район (110934)</option>
+                        <option value="10937">---- Сортавала (10937)</option>
+                        <option value="10939">-- Республика Коми (10939)</option>
+                        <option value="10940">---- Воркута (10940)</option>
+                        <option value="10941">---- Инта (10941)</option>
+                        <option value="99210">---- Район Печора (99210)</option>
+                        <option value="10942">---- Печора (10942)</option>
+                        <option value="19">---- Сыктывкар (19)</option>
+                        <option value="10944">---- Усинск (10944)</option>
+                        <option value="10945">---- Ухта (10945)</option>
+                        <option value="10174">-- Санкт-Петербург и Ленинградская область (10174)</option>
+                        <option value="98620">---- Волховский район (98620)</option>
+                        <option value="10864">---- Волхов (10864)</option>
+                        <option value="98621">---- Всеволожский район (98621)</option>
+                        <option value="10865">---- Всеволожск (10865)</option>
+                        <option value="98622">---- Выборгский район (98622)</option>
+                        <option value="969">---- Выборг (969)</option>
+                        <option value="98623">---- Гатчинский район (98623)</option>
+                        <option value="10867">---- Гатчина (10867)</option>
+                        <option value="98624">---- Кингисеппский район (98624)</option>
+                        <option value="10870">---- Кингисепп (10870)</option>
+                        <option value="98625">---- Киришский район (98625)</option>
+                        <option value="10871">---- Кириши (10871)</option>
+                        <option value="98626">---- Кировский район (98626)</option>
+                        <option value="10872">---- Кировск (10872)</option>
+                        <option value="98629">---- Лужский район (98629)</option>
+                        <option value="10876">---- Луга (10876)</option>
+                        <option value="98630">---- Подпорожский район (98630)</option>
+                        <option value="10881">---- Подпорожье (10881)</option>
+                        <option value="98631">---- Приозерский район (98631)</option>
+                        <option value="10883">---- Приозерск (10883)</option>
+                        <option value="2">---- Санкт-Петербург (2)</option>
+                        <option value="20293">---- Колпинский район (20293)</option>
+                        <option value="26081">---- Колпино (26081)</option>
+                        <option value="20297">---- Пушкинский район (20297)</option>
+                        <option value="10884">---- Пушкин (10884)</option>
+                        <option value="98632">---- Сланцевский район (98632)</option>
+                        <option value="10888">---- Сланцы (10888)</option>
+                        <option value="10891">---- Сосновый Бор (10891)</option>
+                        <option value="98633">---- Тихвинский район (98633)</option>
+                        <option value="10892">---- Тихвин (10892)</option>
+                        <option value="98634">---- Тосненский район (98634)</option>
+                        <option value="10893">---- Тосно (10893)</option>
+                        <option value="59">Сибирь (59)</option>
+                        <option value="11235">-- Алтайский край (11235)</option>
+                        <option value="197">---- Барнаул (197)</option>
+                        <option value="975">---- Бийск (975)</option>
+                        <option value="11240">---- Заринск (11240)</option>
+                        <option value="11251">---- Рубцовск (11251)</option>
+                        <option value="11266">-- Иркутская область (11266)</option>
+                        <option value="11256">---- Ангарск (11256)</option>
+                        <option value="976">---- Братск (976)</option>
+                        <option value="63">---- Иркутск (63)</option>
+                        <option value="100109">---- Нижнеудинский район (100109)</option>
+                        <option value="11268">---- Нижнеудинск (11268)</option>
+                        <option value="100112">---- Тайшетский район (100112)</option>
+                        <option value="11270">---- Тайшет (11270)</option>
+                        <option value="11271">---- Тулун (11271)</option>
+                        <option value="11272">---- Усолье-Сибирское (11272)</option>
+                        <option value="11273">---- Усть-Илимск (11273)</option>
+                        <option value="100116">---- Усть-Кутский район (100116)</option>
+                        <option value="20097">---- Усть-Кут (20097)</option>
+                        <option value="11274">---- Черемхово (11274)</option>
+                        <option value="11282">-- Кемеровская область (11282)</option>
+                        <option value="11276">---- Анжеро-Судженск (11276)</option>
+                        <option value="11277">---- Белово (11277)</option>
+                        <option value="64">---- Кемерово (64)</option>
+                        <option value="11283">---- Киселёвск (11283)</option>
+                        <option value="11285">---- Ленинск-Кузнецкий (11285)</option>
+                        <option value="11287">---- Междуреченск (11287)</option>
+                        <option value="11288">---- Мыски (11288)</option>
+                        <option value="237">---- Новокузнецк (237)</option>
+                        <option value="11292">---- Полысаево (11292)</option>
+                        <option value="11291">---- Прокопьевск (11291)</option>
+                        <option value="11299">---- Юрга (11299)</option>
+                        <option value="11309">-- Красноярский край (11309)</option>
+                        <option value="11302">---- Ачинск (11302)</option>
+                        <option value="20086">---- Железногорск (20086)</option>
+                        <option value="20088">---- Зеленогорск (20088)</option>
+                        <option value="62">---- Красноярск (62)</option>
+                        <option value="11310">---- Минусинск (11310)</option>
+                        <option value="11311">---- Норильск (11311)</option>
+                        <option value="11316">-- Новосибирская область (11316)</option>
+                        <option value="20100">---- Искитим (20100)</option>
+                        <option value="65">---- Новосибирск (65)</option>
+                        <option value="11318">-- Омская область (11318)</option>
+                        <option value="66">---- Омск (66)</option>
+                        <option value="10231">-- Республика Алтай (10231)</option>
+                        <option value="11319">---- Горно-Алтайск (11319)</option>
+                        <option value="10233">-- Республика Тыва (10233)</option>
+                        <option value="11340">-- Республика Хакасия (11340)</option>
+                        <option value="1095">---- Абакан (1095)</option>
+                        <option value="11353">-- Томская область (11353)</option>
+                        <option value="11351">---- Северск (11351)</option>
+                        <option value="11352">---- Стрежевой (11352)</option>
+                        <option value="67">---- Томск (67)</option>
+                        <option value="52">Урал (52)</option>
+                        <option value="11158">-- Курганская область (11158)</option>
+                        <option value="53">---- Курган (53)</option>
+                        <option value="11159">---- Шадринск (11159)</option>
+                        <option value="11162">-- Свердловская область (11162)</option>
+                        <option value="11160">---- Асбест (11160)</option>
+                        <option value="29397">---- Берёзовский (29397)</option>
+                        <option value="20720">---- Верхняя Пышма (20720)</option>
+                        <option value="11161">---- Верхняя Салда (11161)</option>
+                        <option value="54">---- Екатеринбург (54)</option>
+                        <option value="11164">---- Каменск-Уральский (11164)</option>
+                        <option value="20234">---- Качканар (20234)</option>
+                        <option value="11165">---- Краснотурьинск (11165)</option>
+                        <option value="20691">---- Красноуфимск (20691)</option>
+                        <option value="11166">---- Кушва (11166)</option>
+                        <option value="11167">---- Лесной (11167)</option>
+                        <option value="20654">---- Невьянск (20654)</option>
+                        <option value="11168">---- Нижний Тагил (11168)</option>
+                        <option value="11169">---- Нижняя Тура (11169)</option>
+                        <option value="11170">---- Новоуральск (11170)</option>
+                        <option value="11171">---- Первоуральск (11171)</option>
+                        <option value="21726">---- Полевской (21726)</option>
+                        <option value="20224">---- Ревда (20224)</option>
+                        <option value="20684">---- Реж (20684)</option>
+                        <option value="20672">---- Североуральск (20672)</option>
+                        <option value="11172">---- Серов (11172)</option>
+                        <option value="11176">-- Тюменская область (11176)</option>
+                        <option value="11173">---- Ишим (11173)</option>
+                        <option value="11175">---- Тобольск (11175)</option>
+                        <option value="55">---- Тюмень (55)</option>
+                        <option value="11178">---- Ялуторовск (11178)</option>
+                        <option value="11193">-- Ханты-Мансийский автономный округ - Югра (11193)</option>
+                        <option value="11180">---- Когалым (11180)</option>
+                        <option value="11181">---- Лангепас (11181)</option>
+                        <option value="11182">---- Мегион (11182)</option>
+                        <option value="11184">---- Нефтеюганск (11184)</option>
+                        <option value="1091">---- Нижневартовск (1091)</option>
+                        <option value="11186">---- Нягань (11186)</option>
+                        <option value="11188">---- Пыть-Ях (11188)</option>
+                        <option value="11189">---- Радужный (11189)</option>
+                        <option value="973">---- Сургут (973)</option>
+                        <option value="11192">---- Урай (11192)</option>
+                        <option value="57">---- Ханты-Мансийск (57)</option>
+                        <option value="11177">---- Югорск (11177)</option>
+                        <option value="11225">-- Челябинская область (11225)</option>
+                        <option value="11200">---- Верхний Уфалей (11200)</option>
+                        <option value="11202">---- Златоуст (11202)</option>
+                        <option value="11207">---- Копейск (11207)</option>
+                        <option value="235">---- Магнитогорск (235)</option>
+                        <option value="11212">---- Миасс (11212)</option>
+                        <option value="11214">---- Озёрск (11214)</option>
+                        <option value="100020">---- Саткинский район (100020)</option>
+                        <option value="11217">---- Сатка (11217)</option>
+                        <option value="11218">---- Снежинск (11218)</option>
+                        <option value="11220">---- Троицк (11220)</option>
+                        <option value="11223">---- Усть-Катав (11223)</option>
+                        <option value="56">---- Челябинск (56)</option>
+                        <option value="11232">-- Ямало-Ненецкий автономный округ (11232)</option>
+                        <option value="11228">---- Губкинский (11228)</option>
+                        <option value="100028">---- Надымский район (100028)</option>
+                        <option value="11229">---- Надым (11229)</option>
+                        <option value="11230">---- Новый Уренгой (11230)</option>
+                        <option value="11231">---- Ноябрьск (11231)</option>
+                        <option value="58">---- Салехард (58)</option>
+                        <option value="3">Центр (3)</option>
+                        <option value="10645">-- Белгородская область (10645)</option>
+                        <option value="98697">---- Алексеевский район (98697)</option>
+                        <option value="20192">---- Алексеевка (20192)</option>
+                        <option value="4">---- Белгород (4)</option>
+                        <option value="10646">---- Губкин (10646)</option>
+                        <option value="10649">---- Старый Оскол (10649)</option>
+                        <option value="98716">---- Шебекинский район (98716)</option>
+                        <option value="20196">---- Шебекино (20196)</option>
+                        <option value="98717">---- Яковлевский район (98717)</option>
+                        <option value="20587">---- Строитель (20587)</option>
+                        <option value="10650">-- Брянская область (10650)</option>
+                        <option value="191">---- Брянск (191)</option>
+                        <option value="10653">---- Клинцы (10653)</option>
+                        <option value="10658">-- Владимирская область (10658)</option>
+                        <option value="98745">---- Александровский район (98745)</option>
+                        <option value="10656">---- Александров (10656)</option>
+                        <option value="192">---- Владимир (192)</option>
+                        <option value="10661">---- Гусь-Хрустальный (10661)</option>
+                        <option value="98750">---- Киржачский район (98750)</option>
+                        <option value="10663">---- Киржач (10663)</option>
+                        <option value="10664">---- Ковров (10664)</option>
+                        <option value="10668">---- Муром (10668)</option>
+                        <option value="98755">---- Петушинский район (98755)</option>
+                        <option value="37129">---- Покров (37129)</option>
+                        <option value="10672">-- Воронежская область (10672)</option>
+                        <option value="193">---- Воронеж (193)</option>
+                        <option value="98787">---- Россошанский район (98787)</option>
+                        <option value="10681">---- Россошь (10681)</option>
+                        <option value="10687">-- Ивановская область (10687)</option>
+                        <option value="5">---- Иваново (5)</option>
+                        <option value="10689">---- Кинешма (10689)</option>
+                        <option value="10691">---- Шуя (10691)</option>
+                        <option value="10693">-- Калужская область (10693)</option>
+                        <option value="6">---- Калуга (6)</option>
+                        <option value="98826">---- Малоярославецкий район (98826)</option>
+                        <option value="10697">---- Малоярославец (10697)</option>
+                        <option value="967">---- Обнинск (967)</option>
+                        <option value="10699">-- Костромская область (10699)</option>
+                        <option value="7">---- Кострома (7)</option>
+                        <option value="10705">-- Курская область (10705)</option>
+                        <option value="10710">---- Железногорск (10710)</option>
+                        <option value="8">---- Курск (8)</option>
+                        <option value="20707">---- Курчатов (20707)</option>
+                        <option value="10712">-- Липецкая область (10712)</option>
+                        <option value="10713">---- Елец (10713)</option>
+                        <option value="9">---- Липецк (9)</option>
+                        <option value="1">Москва и область (1)</option>
+                        <option value="10716">-- Балашиха (10716)</option>
+                        <option value="10717">-- Бронницы (10717)</option>
+                        <option value="98580">-- Волоколамский район (98580)</option>
+                        <option value="10721">---- Волоколамск (10721)</option>
+                        <option value="98581">-- Воскресенский район (98581)</option>
+                        <option value="10722">---- Воскресенск (10722)</option>
+                        <option value="21735">-- Дзержинский (21735)</option>
+                        <option value="98582">-- Дмитровский район (98582)</option>
+                        <option value="10723">---- Дмитров (10723)</option>
+                        <option value="214">-- Долгопрудный (214)</option>
+                        <option value="10725">-- Домодедово (10725)</option>
+                        <option value="215">-- Дубна (215)</option>
+                        <option value="98584">-- Егорьевск (городской округ) (98584)</option>
+                        <option value="10727">---- Егорьевск (10727)</option>
+                        <option value="20571">-- Жуковский (20571)</option>
+                        <option value="98585">-- Зарайск (городской округ) (98585)</option>
+                        <option value="10728">---- Зарайск (10728)</option>
+                        <option value="10729">-- Звенигород (10729)</option>
+                        <option value="21623">-- Ивантеевка (21623)</option>
+                        <option value="98586">-- Истра (городской округ) (98586)</option>
+                        <option value="21627">---- Дедовск (21627)</option>
+                        <option value="10731">---- Истра (10731)</option>
+                        <option value="98587">-- Кашира (городской округ) (98587)</option>
+                        <option value="10732">---- Кашира (10732)</option>
+                        <option value="98588">-- Клин (городской округ) (98588)</option>
+                        <option value="10733">---- Клин (10733)</option>
+                        <option value="10734">-- Коломна (10734)</option>
+                        <option value="20728">-- Королёв (20728)</option>
+                        <option value="100471">-- Красноармейск (100471)</option>
+                        <option value="98590">-- Красногорск (городской округ) (98590)</option>
+                        <option value="10735">---- Красногорск (10735)</option>
+                        <option value="21745">---- Нахабино (21745)</option>
+                        <option value="21647">-- Краснознаменск (21647)</option>
+                        <option value="98591">-- Ленинский район (98591)</option>
+                        <option value="10719">---- Видное (10719)</option>
+                        <option value="21641">-- Лобня (21641)</option>
+                        <option value="21635">-- Лосино-Петровский (21635)</option>
+                        <option value="98593">-- Луховицы (городской округ) (98593)</option>
+                        <option value="10737">---- Луховицы (10737)</option>
+                        <option value="21630">-- Лыткарино (21630)</option>
+                        <option value="98594">-- Люберцы (городской округ) (98594)</option>
+                        <option value="10738">---- Люберцы (10738)</option>
+                        <option value="98595">-- Можайский район (98595)</option>
+                        <option value="10739">---- Можайск (10739)</option>
+                        <option value="213">-- Москва (213)</option>
+                        <option value="216">---- Зеленоград (216)</option>
+                        <option value="20674">---- Троицк (20674)</option>
+                        <option value="21624">---- Щербинка (21624)</option>
+                        <option value="98596">-- Мытищи (городской округ) (98596)</option>
+                        <option value="10740">---- Мытищи (10740)</option>
+                        <option value="98597">-- Наро-Фоминский городской округ (98597)</option>
+                        <option value="10715">---- Апрелевка (10715)</option>
+                        <option value="10741">---- Наро-Фоминск (10741)</option>
+                        <option value="98598">-- Ногинский район (98598)</option>
+                        <option value="10742">---- Ногинск (10742)</option>
+                        <option value="21656">---- Старая Купавна (21656)</option>
+                        <option value="21642">---- Электроугли (21642)</option>
+                        <option value="98599">-- Одинцовский район (98599)</option>
+                        <option value="21646">---- Голицыно (21646)</option>
+                        <option value="21625">---- Кубинка (21625)</option>
+                        <option value="10743">---- Одинцово (10743)</option>
+                        <option value="10745">-- Орехово-Зуево (10745)</option>
+                        <option value="98602">-- Павловский Посад (городской округ) (98602)</option>
+                        <option value="10746">---- Павловский Посад (10746)</option>
+                        <option value="10747">-- Подольск (10747)</option>
+                        <option value="20576">-- Протвино (20576)</option>
+                        <option value="98604">-- Пушкинский район (98604)</option>
+                        <option value="10748">---- Пушкино (10748)</option>
+                        <option value="217">-- Пущино (217)</option>
+                        <option value="98605">-- Раменский район (98605)</option>
+                        <option value="10750">---- Раменское (10750)</option>
+                        <option value="21621">-- Реутов (21621)</option>
+                        <option value="98606">-- Рузский городской округ (98606)</option>
+                        <option value="10751">---- Руза (10751)</option>
+                        <option value="98608">-- Сергиево-Посадский район (98608)</option>
+                        <option value="10752">---- Сергиев Посад (10752)</option>
+                        <option value="21645">---- Хотьково (21645)</option>
+                        <option value="10754">-- Серпухов (10754)</option>
+                        <option value="98611">-- Солнечногорский район (98611)</option>
+                        <option value="10755">---- Солнечногорск (10755)</option>
+                        <option value="98607">-- Ступино (городской округ) (98607)</option>
+                        <option value="10756">---- Ступино (10756)</option>
+                        <option value="21619">-- Фрязино (21619)</option>
+                        <option value="10758">-- Химки (10758)</option>
+                        <option value="219">-- Черноголовка (219)</option>
+                        <option value="98614">-- Чехов (городской округ) (98614)</option>
+                        <option value="10761">---- Чехов (10761)</option>
+                        <option value="98615">-- Шатура (городской округ) (98615)</option>
+                        <option value="10762">---- Шатура (10762)</option>
+                        <option value="98617">-- Щёлковский район (98617)</option>
+                        <option value="10765">---- Щелково (10765)</option>
+                        <option value="20523">-- Электросталь (20523)</option>
+                        <option value="10772">-- Орловская область (10772)</option>
+                        <option value="10">---- Орёл (10)</option>
+                        <option value="10776">-- Рязанская область (10776)</option>
+                        <option value="10773">---- Касимов (10773)</option>
+                        <option value="11">---- Рязань (11)</option>
+                        <option value="10795">-- Смоленская область (10795)</option>
+                        <option value="98958">---- Вяземский район (98958)</option>
+                        <option value="10782">---- Вязьма (10782)</option>
+                        <option value="98959">---- Гагаринский район (98959)</option>
+                        <option value="10783">---- Гагарин (10783)</option>
+                        <option value="12">---- Смоленск (12)</option>
+                        <option value="98981">---- Ярцевский район (98981)</option>
+                        <option value="10801">---- Ярцево (10801)</option>
+                        <option value="10802">-- Тамбовская область (10802)</option>
+                        <option value="10803">---- Мичуринск (10803)</option>
+                        <option value="13">---- Тамбов (13)</option>
+                        <option value="10819">-- Тверская область (10819)</option>
+                        <option value="99008">---- Бологовский район (99008)</option>
+                        <option value="10805">---- Бологое (10805)</option>
+                        <option value="10807">---- Вышний Волочёк (10807)</option>
+                        <option value="10811">---- Кимры (10811)</option>
+                        <option value="99019">---- Конаковский район (99019)</option>
+                        <option value="10812">---- Конаково (10812)</option>
+                        <option value="10820">---- Ржев (10820)</option>
+                        <option value="14">---- Тверь (14)</option>
+                        <option value="99039">---- Удомельский район (99039)</option>
+                        <option value="10824">---- Удомля (10824)</option>
+                        <option value="10832">-- Тульская область (10832)</option>
+                        <option value="99044">---- Богородицкий район (99044)</option>
+                        <option value="20667">---- Богородицк (20667)</option>
+                        <option value="10828">---- Ефремов (10828)</option>
+                        <option value="10830">---- Новомосковск (10830)</option>
+                        <option value="15">---- Тула (15)</option>
+                        <option value="10841">-- Ярославская область (10841)</option>
+                        <option value="10837">---- Переславль-Залесский (10837)</option>
+                        <option value="10839">---- Рыбинск (10839)</option>
+                        <option value="99078">---- Тутаевский район (99078)</option>
+                        <option value="21154">---- Тутаев (21154)</option>
+                        <option value="99079">---- Угличский район (99079)</option>
+                        <option value="10840">---- Углич (10840)</option>
+                        <option value="16">---- Ярославль (16)</option>
+                        <option value="26">Юг (26)</option>
+                        <option value="10946">-- Астраханская область (10946)</option>
+                        <option value="37">---- Астрахань (37)</option>
+                        <option value="99221">---- Ахтубинский район (99221)</option>
+                        <option value="20167">---- Ахтубинск (20167)</option>
+                        <option value="10950">-- Волгоградская область (10950)</option>
+                        <option value="38">---- Волгоград (38)</option>
+                        <option value="10951">---- Волжский (10951)</option>
+                        <option value="10959">---- Камышин (10959)</option>
+                        <option value="10965">---- Михайловка (10965)</option>
+                        <option value="10981">---- Урюпинск (10981)</option>
+                        <option value="10995">-- Краснодарский край (10995)</option>
+                        <option value="1107">---- Анапа (1107)</option>
+                        <option value="10987">---- Армавир (10987)</option>
+                        <option value="99269">---- Белореченский район (99269)</option>
+                        <option value="10988">---- Белореченск (10988)</option>
+                        <option value="10990">---- Геленджик (10990)</option>
+                        <option value="99274">---- Ейский район (99274)</option>
+                        <option value="10993">---- Ейск (10993)</option>
+                        <option value="99275">---- Кавказский район (99275)</option>
+                        <option value="10996">---- Кропоткин (10996)</option>
+                        <option value="35">---- Краснодар (35)</option>
+                        <option value="99281">---- Крымский район (99281)</option>
+                        <option value="10997">---- Крымск (10997)</option>
+                        <option value="970">---- Новороссийск (970)</option>
+                        <option value="99293">---- Славянский район (99293)</option>
+                        <option value="20704">---- Славянск-на-Кубани (20704)</option>
+                        <option value="239">---- Сочи (239)</option>
+                        <option value="99297">---- Тимашевский район (99297)</option>
+                        <option value="21141">---- Тимашевск (21141)</option>
+                        <option value="99298">---- Тихорецкий район (99298)</option>
+                        <option value="11002">---- Тихорецк (11002)</option>
+                        <option value="99299">---- Туапсинский район (99299)</option>
+                        <option value="1058">---- Туапсе (1058)</option>
+                        <option value="11004">-- Республика Адыгея (11004)</option>
+                        <option value="1093">---- Майкоп (1093)</option>
+                        <option value="11015">-- Республика Калмыкия (11015)</option>
+                        <option value="1094">---- Элиста (1094)</option>
+                        <option value="11029">-- Ростовская область (11029)</option>
+                        <option value="11030">---- Азов (11030)</option>
+                        <option value="99411">---- Белокалитвинский район (99411)</option>
+                        <option value="11034">---- Белая Калитва (11034)</option>
+                        <option value="11036">---- Волгодонск (11036)</option>
+                        <option value="11043">---- Каменск-Шахтинский (11043)</option>
+                        <option value="238">---- Новочеркасск (238)</option>
+                        <option value="39">---- Ростов-на-Дону (39)</option>
+                        <option value="971">---- Таганрог (971)</option>
+                        <option value="11053">---- Шахты (11053)</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="closeSettingsModal()">Отмена</button>
+                    <button class="btn btn-primary" onclick="saveUserSettings()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab(this, 'summary')">Сводка</div>
+            <div class="tab" onclick="switchTab(this, 'tech')">Тех. аудит</div>
+            <div class="tab" onclick="switchTab(this, 'keywords')">Слова</div>
+            <div class="tab" onclick="switchTab(this, 'ngrams')">N-граммы</div>
+            <div class="tab" onclick="switchTab(this, 'structure')">Структура</div>
+            <div class="tab" onclick="switchTab(this, 'competitors')">Конкуренты</div>
+            <div class="tab" onclick="switchTab(this, 'meta')">Мета-теги</div>
+        </div>
+
+        <!-- Summary Tab -->
+        <div id="tab-summary" class="tab-content active">
+            <div class="card">
+                <h2>Основные показатели текста</h2>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div id="intentDisplay" style="padding: 10px 20px; border-radius: 8px; font-weight: bold; background: #eef2ff; color: #4338ca;">Интент: ...</div>
+                </div>
+                <div class="metrics-grid" id="summaryGrid">
+                    <!-- Dynamic Summary Metrics -->
+                </div>
+            </div>
+
+            <div class="card" id="top20ChartCard">
+                <h2>Топ-20 слов по плотности (%)</h2>
+                <div id="top20DensityContainer" style="height: 400px; width: 100%;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Рекомендации</h2>
+                <div id="recommendationsList" class="metrics-grid" style="grid-template-columns: 1fr;">
+                    <!-- Recommendations -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Audit Tab -->
+        <div id="tab-tech" class="tab-content">
+            <div class="card">
+                <h2>Технический аудит</h2>
+                <div id="techAuditContent" class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <!-- Tech Audit Items -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Keywords Tab -->
+        <div id="tab-keywords" class="tab-content">
+            <div class="card">
+                <h2>Анализ вхождений слов (лемм)</h2>
+                <div style="overflow-x: auto;">
+                    <table id="keywordsTable">
+                        <thead>
+                            <tr>
+                                <th>Слово</th>
+                                <th class="text-center">Поп-сть</th>
+                                <th class="text-center">Сайты</th>
+                                <th class="text-center">Медиана ТОП</th>
+                                <th class="text-center">Ваша страница</th>
+                                <th class="text-center">Разница</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- N-grams Tab -->
+        <div id="tab-ngrams" class="tab-content">
+            <div class="card">
+                <h2>Популярные биграммы</h2>
+                <table id="bigramsTable">
+                    <thead>
+                        <tr>
+                            <th>Фраза</th>
+                            <th class="text-center">Медиана ТОП</th>
+                            <th class="text-center">Ваша страница</th>
+                            <th class="text-center">Разница</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="card" style="margin-top: 24px;">
+                <h2>Популярные триграммы</h2>
+                <table id="trigramsTable">
+                    <thead>
+                        <tr>
+                            <th>Фраза</th>
+                            <th class="text-center">Медиана ТОП</th>
+                            <th class="text-center">Ваша страница</th>
+                            <th class="text-center">Разница</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Structure Tab -->
+        <div id="tab-structure" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin:0;">Рекомендуемая структура (H2-H3)</h2>
+                        <div id="structureSavedDate" style="font-size:12px; color:var(--text-secondary); margin-top:4px;"></div>
+                    </div>
+                    <button id="btnGenerateStructure" class="btn btn-primary" onclick="generateIdealStructure()">✨ Сгенерировать ИИ-структуру</button>
+                </div>
+                <div id="idealStructureContainer" style="padding: 20px; background: #fafafa; border: 1px dashed var(--border); border-radius: 8px;">
+                    <p style="color: var(--text-secondary); text-align: center;">Нажмите кнопку выше, чтобы ИИ составил идеальный план на основе конкурентов</p>
+                </div>
+                <div id="structureEditor" style="margin-top: 20px; display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin:0;">Интерактивный редактор</h3>
+                        <button class="btn btn-primary" onclick="saveStructure()" style="padding: 6px 16px;">💾 Сохранить структуру</button>
+                    </div>
+                    <div id="structureBlocks" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+            </div>
+            
+            <div class="card" style="margin-top: 24px;">
+                <h2>Заголовки конкурентов</h2>
+                <div id="competitorsHeadersList" style="display: flex; flex-direction: column; gap: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- Competitors Tab -->
+        <div id="tab-competitors" class="tab-content">
+            <div class="card">
+                <h2>Сравнение всех конкурентов</h2>
+                <div style="overflow-x: auto;">
+                    <table id="competitorsTable">
+                        <thead>
+                            <tr>
+                                <th>URL</th>
+                                <th class="text-center">Симв. (с пр.)</th>
+                                <th class="text-center">Слова</th>
+                                <th class="text-center">Интент</th>
+                                <th class="text-center">Тех. аудит</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meta Tab -->
+        <div id="tab-meta" class="tab-content">
+            <div class="card">
+                <h2>Анализ Title и Description</h2>
+                <div id="metaAnalysisContent"></div>
+            </div>
+            <div class="card" style="margin-top: 24px;">
+                <h2>Мета-теги всех конкурентов</h2>
+                <div id="metaList"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="addSiteModal" class="modal">
+        <div class="modal-content">
+            <h3>Добавить новый сайт</h3>
+            <input type="text" id="newSiteDomain" placeholder="example.com">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-add" onclick="addSite()">Добавить</button>
+                <button class="btn-add" onclick="closeAddSiteModal()" style="background:#ccc;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Target URL Modal -->
+    <div id="targetUrlModal" class="modal">
+        <div class="modal-content">
+            <h3>Указать релевантную страницу</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">Укажите существующую
+                релевантную ключевому запросу страницу сайта. Если ее нет, создайте и укажите URL созданной страницы.
+            </p>
+            <input type="text" id="targetUrlInput" placeholder="https://example.com/page">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-primary" onclick="saveTargetUrl()"
+                    style="padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">Сохранить</button>
+                <button class="btn-secondary" onclick="closeTargetUrlModal()"
+                    style="padding: 8px 16px; border-radius: 4px; cursor: pointer;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topup Modal -->
+    <div id="topupModal" class="modal">
+        <div class="modal-content topup-modal-content">
+            <div class="modal-header">
+                <h3>Пополнение баланса</h3>
+            </div>
+            <div class="topup-input-group">
+                <label for="topupAmount">Сумма пополнения (руб.)</label>
+                <input type="number" id="topupAmount" value="500" min="500" step="100">
+                <div class="topup-hints">
+                    <button class="btn-hint" onclick="setTopupAmount(500)">500</button>
+                    <button class="btn-hint" onclick="setTopupAmount(1000)">1000</button>
+                    <button class="btn-hint" onclick="setTopupAmount(5000)">5000</button>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeTopupModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">Оплатить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const domain = params.get('domain');
+        const clusterId = params.get('clusterId');
+        const clusterName = params.get('name') || `Кластер #${clusterId}`;
+
+        document.getElementById('clusterName').textContent = clusterName;
+        if (domain && clusterId) {
+            document.getElementById('backBtn').href = `cluster.html?site=${encodeURIComponent(domain)}`;
+            loadAnalysis();
+        } else {
+            document.getElementById('loadingText').textContent = 'Ошибка: не указаны параметры.';
+        }
+
+        function switchTab(el, tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+
+        function onSiteSelected(selectedDomain) {
+            const params = new URLSearchParams(window.location.search);
+            const currentAnalysisDomain = params.get('domain');
+            // Only redirect if the user selects a DIFFERENT site from the dropdown
+            if (selectedDomain && selectedDomain !== currentAnalysisDomain) {
+                window.location.href = `index.html?site=${encodeURIComponent(selectedDomain)}&tab=cluster`;
+            }
+        }
+
+        async function loadAnalysis() {
+            const loadingEl = document.getElementById('loading');
+            const mainAppEl = document.getElementById('mainApp');
+
+            try {
+                const [resAnalysis, resMappings, resKeywords, resLsi] = await Promise.all([
+                    authFetch(`/api/analysis?domain=${encodeURIComponent(domain)}`),
+                    authFetch(`/api/mappings?domain=${encodeURIComponent(domain)}`),
+                    authFetch(`/api/keywords?domain=${encodeURIComponent(domain)}`),
+                    authFetch(`/api/cluster-lsi?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}`)
+                ]);
+                const dataAnalysis = await resAnalysis.json();
+                const dataMappings = await resMappings.json();
+                const dataKeywords = await resKeywords.json();
+                const dataLsi = await resLsi.json();
+
+                loadingEl.style.display = 'none';
+                mainAppEl.style.display = 'block';
+
+                const clusterKeywords = (dataKeywords.keywords || [])
+                    .filter(k => k.clustered == clusterId)
+                    .sort((a, b) => (b.frequency || 0) - (a.frequency || 0));
+
+                // Target URL
+                let targetUrl = dataMappings.mappings ? dataMappings.mappings[clusterId] : null;
+                let fullTargetUrl = targetUrl;
+                if (targetUrl && !targetUrl.startsWith('http')) {
+                    const protocol = window.location.protocol === 'https:' ? 'https://' : 'http://';
+                    const baseUrl = domain.startsWith('http') ? '' : 'https://';
+                    fullTargetUrl = (baseUrl + domain).replace(/\/$/, '') + (targetUrl.startsWith('/') ? '' : '/') + targetUrl;
+                }
+
+                // Show the full URL in the subHeader and the input field
+                // Check ranking status for the header icon
+                let headerIcon = '';
+                if (clusterKeywords.length > 0 && clusterKeywords.some(k => k.found_url)) {
+                    const target = (fullTargetUrl || "").replace(/\/$/, "").toLowerCase();
+                    const diffKeywords = clusterKeywords.filter(k => k.found_url && k.found_url.replace(/\/$/, "").toLowerCase() !== target);
+                    if (diffKeywords.length > 0) {
+                        const diffUrls = [...new Set(diffKeywords.map(k => k.found_url))];
+                        headerIcon = `<span title="Внимание! Обнаружены нерелевантные страницы: ${diffUrls.join(', ')}" style="color:orange; cursor:help; margin-right:8px; font-size:16px;">⚠️</span>`;
+                    } else {
+                        headerIcon = `<span title="В поиске релевантная страница" style="color:green; cursor:help; margin-right:8px; font-size:16px;">✅</span>`;
+                    }
+                }
+
+                const targetUrlDisplay = fullTargetUrl
+                    ? `${headerIcon}<a href="${fullTargetUrl}" target="_blank" style="text-decoration:none;">🌐 ${fullTargetUrl}</a>`
+                    : '<span style="color:var(--text-secondary)">не задана</span>';
+
+                document.getElementById('subHeader').innerHTML = `Релевантная страница: ${targetUrlDisplay}`;
+                if (fullTargetUrl) {
+                    document.getElementById('targetUrlInput').value = fullTargetUrl;
+                }
+
+                // Keywords table
+                let kwHtml = '<table style="margin:0; font-size:13px;" id="clusterKeywordsTable"><tr><th>Ключ</th><th style="width:80px;">Частота</th><th style="width:60px;" title="Yandex Desktop">Я.Д</th><th style="width:60px;" title="Yandex Mobile">Я.М</th><th style="width:60px;" title="Google">G</th></tr>';
+                if (clusterKeywords.length > 0) {
+                    clusterKeywords.forEach((k, idx) => {
+                        let rowStatus = '';
+                        if (k.found_url) {
+                            const found = k.found_url.replace(/\/$/, "").toLowerCase();
+                            const target = (fullTargetUrl || "").replace(/\/$/, "").toLowerCase();
+                            if (found === target) {
+                                rowStatus = `<span title="В поиске релевантная страница" style="color:green; cursor:help; margin-right:4px;">✅</span>`;
+                            } else {
+                                rowStatus = `<span title="Обнаружена другая страница: ${k.found_url}" style="color:orange; cursor:help; margin-right:4px;">⚠️</span>`;
+                            }
+                        }
+                        kwHtml += `<tr id="row-kw-${idx}" data-query="${k.query.replace(/"/g, '&quot;')}">
+                            <td style="display:flex;align-items:center;gap:4px;"><span class="kw-status" style="display:inline-flex;align-items:center;"></span><span>${k.query}</span></td>
+                            <td>${k.frequency || 0}</td>
+                            <td class="kw-hits-yd">${rowStatus}${k.hits || '-'}</td>
+                            <td class="kw-hits-ym">${k.hits_ym || '-'}</td>
+                            <td class="kw-hits-google">${k.hits_google || '-'}</td>
+                        </tr>`;
+                    });
+                } else {
+                    kwHtml += '<tr><td colspan="5">Ключи не найдены</td></tr>';
+                }
+                kwHtml += '</table>';
+                document.getElementById('clusterKeywordsList').innerHTML = kwHtml;
+
+                // Load settings
+                loadUserSettings();
+
+                // LSI
+                const lsiList = dataLsi.lsi || [];
+                let lsiHtml = '<div style="display:flex; flex-wrap:wrap; gap:8px;">';
+                if (lsiList.length > 0) {
+                    lsiList.forEach(l => {
+                        lsiHtml += `
+                            <span class="lsi-tag" style="background:#e0e7ff; color:#3730a3; padding:4px 8px; border-radius:4px; font-size:12px; display:inline-flex; align-items:center; gap:5px;">
+                                ${l.keyword} (${l.frequency})
+                                <button onclick="removeLsi('${l.keyword.replace(/'/g, "\\'")}')" style="background:none; border:none; color:#3730a3; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1; font-size:16px;">×</button>
+                            </span>`;
+                    });
+                } else {
+                    lsiHtml += '<span style="color:var(--text-secondary); font-size:13px;">LSI не собраны</span>';
+                }
+                lsiHtml += '</div>';
+                document.getElementById('clusterLsiList').innerHTML = lsiHtml;
+
+                const analysis = dataAnalysis && dataAnalysis.analysis ? dataAnalysis.analysis[clusterId] : null;
+                if (!analysis) {
+                    const recList = document.getElementById('recommendationsList');
+                    if (recList) {
+                        recList.innerHTML = '<div class="recommendation" style="border-left-color: var(--error)">Анализ для данного кластера не найден. Нажмите кнопку "SEO анализ", чтобы запустить его.</div>';
+                    }
+                    document.getElementById('clusterName').textContent = clusterName + ' (Анализ не найден)';
+                    return;
+                }
+
+                renderReport(analysis);
+            } catch (e) {
+                loadingEl.style.display = 'none';
+                mainAppEl.style.display = 'block';
+                alert('Ошибка загрузки данных: ' + e.message);
+            }
+        }
+
+        function renderReport(data) {
+            if (!data || !data.text_metrics) {
+                const recList = document.getElementById('recommendationsList');
+                if (recList) {
+                    recList.innerHTML = '<div class="recommendation" style="border-left-color: var(--warning)">Данные анализа устарели или неполны. Рекомендуется запустить "SEO анализ" повторно.</div>';
+                }
+                return;
+            }
+
+            const target = data.text_metrics.target || {};
+            const median = data.text_metrics.competitors_median || {};
+
+            // 1. Intent Display
+            const intentEl = document.getElementById('intentDisplay');
+            if (intentEl && data.intent) {
+                intentEl.textContent = `Интент: ${data.intent.target || 'Не определен'}`;
+                intentEl.style.background = data.intent.target === 'Коммерческий' ? '#fff1f0' : '#e6f7ff';
+                intentEl.style.color = data.intent.target === 'Коммерческий' ? '#cf1322' : '#0050b3';
+            }
+
+            // 2. Summary Metrics
+            const metrics = [
+                { label: 'Символов (с пробелами)', val: target.characters_with_spaces || 0, med: median.characters_with_spaces || 0 },
+                { label: 'Слов всего', val: target.words_total || 0, med: median.words_total || 0 },
+                { label: 'Уникальных слов', val: target.words_unique || 0, med: median.words_unique || 0 },
+                { label: 'Тошнота (stuffing)', val: (target.stuffing || 0) + '%', med: (median.stuffing || 0) + '%' },
+                { label: 'Водянистость', val: (target.wateriness || 0) + '%', med: (median.wateriness || 0) + '%' },
+                { label: 'Закон Ципфа', val: target.zipf || 0, med: median.zipf || 0 }
+            ];
+
+            const summaryGrid = document.getElementById('summaryGrid');
+            summaryGrid.innerHTML = metrics.map(m => `
+                <div class="metric-box">
+                    <span class="metric-value">${m.val}</span>
+                    <span class="metric-label">${m.label}</span>
+                    <div class="metric-comparison">Медиана ТОП: <b>${m.med}</b></div>
+                </div>
+            `).join('');
+
+            // 3. Highcharts: Top 20 Density
+            renderDensityChart(data.top_20_density);
+
+            // 4. Recommendations
+            renderRecommendations(target, median);
+
+            // 5. Technical Audit
+            renderTechAudit(data.tech_audit);
+
+            // 6. Keywords
+            const kwBody = document.querySelector('#keywordsTable tbody');
+            kwBody.innerHTML = (data.keywords || []).map(kw => {
+                const diff = kw.diff;
+                const diffClass = diff < 0 ? 'diff-plus' : (diff > 0 ? 'diff-minus' : '');
+                const diffSign = diff < 0 ? `+${Math.abs(diff)}` : (diff > 0 ? `-${diff}` : '0');
+
+                return `
+                    <tr>
+                        <td><b>${kw.lemma}</b></td>
+                        <td class="text-center">${kw.popularity}%</td>
+                        <td class="text-center">${kw.sites_count}</td>
+                        <td class="text-center">${kw.median}</td>
+                        <td class="text-center">${kw.current}</td>
+                        <td class="text-center ${diffClass}">${diffSign}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 7. N-grams
+            const bgBody = document.querySelector('#bigramsTable tbody');
+            bgBody.innerHTML = (data.bigrams || []).map(bg => `
+                <tr>
+                    <td>${bg.phrase}</td>
+                    <td class="text-center">${bg.median}</td>
+                    <td class="text-center">${bg.current}</td>
+                    <td class="text-center ${bg.diff < 0 ? 'diff-plus' : (bg.diff > 0 ? 'diff-minus' : '')}">${bg.diff < 0 ? '+' + Math.abs(bg.diff) : (bg.diff > 0 ? '-' + bg.diff : '0')}</td>
+                </tr>
+            `).join('');
+
+            const tgBody = document.querySelector('#trigramsTable tbody');
+            tgBody.innerHTML = (data.trigrams || []).map(tg => `
+                <tr>
+                    <td>${tg.phrase}</td>
+                    <td class="text-center">${tg.median}</td>
+                    <td class="text-center">${tg.current}</td>
+                    <td class="text-center ${tg.diff < 0 ? 'diff-plus' : (tg.diff > 0 ? 'diff-minus' : '')}">${tg.diff < 0 ? '+' + Math.abs(tg.diff) : (tg.diff > 0 ? '-' + tg.diff : '0')}</td>
+                </tr>
+            `).join('');
+
+            // 8. Competitors Table
+            const compBody = document.querySelector('#competitorsTable tbody');
+            compBody.innerHTML = (data.competitors_details || []).map(c => `
+                <tr>
+                    <td><a href="${c.url}" target="_blank" style="font-size:12px;">${c.url}</a></td>
+                    <td class="text-center">${c.metrics.characters_with_spaces}</td>
+                    <td class="text-center">${c.metrics.words_total}</td>
+                    <td class="text-center">${c.intent}</td>
+                    <td class="text-center">${c.tech_audit.https ? '✅' : '❌'} HTTPS | ${c.tech_audit.schema ? '✅' : '❌'} Schema</td>
+                </tr>
+            `).join('');
+
+            // 9. Meta Analysis
+            renderMetaAnalysis(data);
+
+            // 10. Structure - Competitor Headers
+            const compHeadersList = document.getElementById('competitorsHeadersList');
+            compHeadersList.innerHTML = (data.competitors_details || []).map((c, i) => `
+                <details style="background:#fff; border:1px solid #eee; border-radius:6px; padding:10px;">
+                    <summary style="cursor:pointer; font-weight:600;">Конкурент ${i+1}: ${c.url}</summary>
+                    <div style="margin-top:10px; padding-left:15px; border-left:2px solid #ddd; font-size:13px;">
+                        ${Object.entries(c.meta.headers || {}).map(([tag, list]) => 
+                            (list || []).map(txt => `<div style="margin-bottom:4px;"><b style="color:var(--primary);">${tag.toUpperCase()}:</b> ${txt}</div>`).join('')
+                        ).join('')}
+                    </div>
+                </details>
+            `).join('');
+
+            // 11. Load Saved Structure if exists
+            if (data.saved_structure) {
+                renderStructureEditor(data.saved_structure.data);
+                document.getElementById('btnGenerateStructure').style.display = 'none';
+                const date = new Date(data.saved_structure.saved_at).toLocaleString();
+                document.getElementById('structureSavedDate').textContent = `Сохранено: ${date}`;
+            } else {
+                document.getElementById('btnGenerateStructure').style.display = 'block';
+                document.getElementById('structureSavedDate').textContent = '';
+            }
+            
+            // Save global data for AI generation
+            window.lastAnalysisData = data;
+        }
+
+        function renderDensityChart(stats) {
+            if (!stats || !stats.length) return;
+            const categories = stats.map(s => s.lemma);
+            const medianData = stats.map(s => s.median_density);
+            const targetData = stats.map(s => s.target_density);
+
+            Highcharts.chart('top20DensityContainer', {
+                chart: { type: 'bar', height: 500 },
+                title: { text: null },
+                xAxis: { categories: categories, title: { text: null } },
+                yAxis: { title: { text: 'Плотность (%)' }, min: 0 },
+                tooltip: { shared: true },
+                series: [{
+                    name: 'Медиана ТОП',
+                    data: medianData,
+                    color: '#999'
+                }, {
+                    name: 'Ваша страница',
+                    data: targetData,
+                    color: '#ff4d4f'
+                }]
+            });
+        }
+
+        function renderRecommendations(target, median) {
+            const recList = document.getElementById('recommendationsList');
+            if (!recList) return;
+            let recs = [];
+
+            const targetWords = target.words_total || 0;
+            const medianWords = median.words_total || 0;
+            const wordDiff = medianWords - targetWords;
+            
+            if (Math.abs(wordDiff) > 100) {
+                recs.push({
+                    type: wordDiff > 0 ? 'warning' : 'error',
+                    text: `<b>Объем текста:</b> Ваш текст ${wordDiff > 0 ? 'меньше' : 'больше'} медианы конкурентов на ${Math.abs(wordDiff)} слов. Рекомендуется ${wordDiff > 0 ? 'дописать' : 'сократить'} контент.`
+                });
+            }
+
+            const stuffing = parseFloat(target.stuffing) || 0;
+            if (stuffing > 10) {
+                recs.push({ type: 'error', text: `<b>Переоптимизация:</b> Показатель "Тошнота" слишком высок (${stuffing}%). Снизьте частоту употребления самых популярных слов.` });
+            }
+
+            recList.innerHTML = recs.length ? recs.map(r => `
+                <div class="recommendation" style="border-left-color: var(--${r.type})">${r.text}</div>
+            `).join('') : '<div class="recommendation">Критичных проблем не обнаружено.</div>';
+        }
+
+        function renderTechAudit(tech) {
+            const content = document.getElementById('techAuditContent');
+            if (!content || !tech) return;
+            const target = tech.target || {};
+            
+            const altTags = target.alt_tags || { percent: 0, with_alt: 0, total: 0 };
+
+            const items = [
+                { label: 'HTTPS', status: target.https },
+                { label: 'Разметка Schema.org', status: target.schema },
+                { label: 'Иерархия заголовков', status: target.header_hierarchy },
+                { label: 'Семантическая верстка', status: target.semantic_markup },
+                { label: 'Атрибуты ALT', status: altTags.percent > 70, info: `${altTags.percent}% (${altTags.with_alt}/${altTags.total})` }
+            ];
+
+            content.innerHTML = items.map(item => `
+                <div class="metric-box" style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 10px;">${item.status ? '✅' : '❌'}</div>
+                    <span class="metric-label">${item.label}</span>
+                    ${item.info ? `<div style="font-size:12px; color:var(--text-secondary);">${item.info}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderMetaAnalysis(data) {
+            const target = data.target_meta || {};
+            const popular = data.meta_analysis || {};
+            const content = document.getElementById('metaAnalysisContent');
+            if (!content) return;
+            
+            function highlightWords(text, words) {
+                if (!text) return '';
+                let html = text;
+                (words || []).forEach(w => {
+                    const regex = new RegExp(`(${w})`, 'gi');
+                    html = html.replace(regex, '<span style="background: #fffb8f; padding: 0 2px;">$1</span>');
+                });
+                return html;
+            }
+
+            content.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom:10px;">Ваш Title</h4>
+                    <div style="padding:15px; background:#fafafa; border-radius:6px; border:1px solid #eee;">
+                        ${highlightWords(target.title, popular.title_popular_words)}
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom:10px;">Частые слова в Title конкурентов</h4>
+                    <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                        ${(popular.title_popular_words || []).map(w => `<span style="font-size:12px; padding:2px 6px; background:#f0f0f0; border-radius:3px;">${w}</span>`).join('')}
+                    </div>
+                </div>
+                <hr style="margin:20px 0; border:none; border-top:1px solid #eee;">
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom:10px;">Ваш Description</h4>
+                    <div style="padding:15px; background:#fafafa; border-radius:6px; border:1px solid #eee;">
+                        ${highlightWords(target.description, popular.description_popular_words)}
+                    </div>
+                </div>
+                <div>
+                    <h4 style="margin-bottom:10px;">Частые слова в Description конкурентов</h4>
+                    <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                        ${(popular.description_popular_words || []).map(w => `<span style="font-size:12px; padding:2px 6px; background:#f0f0f0; border-radius:3px;">${w}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+            
+            // Meta List (Detailed per competitor)
+            const metaList = document.getElementById('metaList');
+            metaList.innerHTML = (data.competitors_details || []).map((c, i) => `
+                <div style="margin-bottom:15px; padding:10px; border:1px solid #eee; border-radius:6px;">
+                    <div style="font-weight:bold; font-size:12px; color:var(--text-secondary); margin-bottom:5px;">${c.url}</div>
+                    <div style="margin-bottom:5px;"><b>Title:</b> ${c.meta.title || '-'}</div>
+                    <div><b>Desc:</b> ${c.meta.description || '-'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function generateIdealStructure() {
+            if (!window.lastAnalysisData) return;
+            const container = document.getElementById('idealStructureContainer');
+            container.innerHTML = '<div class="spinner" style="margin: 20px auto; display: block;"></div><p style="text-align:center;">ИИ анализирует заголовки конкурентов...</p>';
+            
+            const competitors_headers = window.lastAnalysisData.competitors_details.map(c => c.meta.headers);
+            
+            try {
+                const res = await authFetch('/api/cluster/generate-structure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ competitors_headers })
+                });
+                const data = await res.json();
+                
+                if (data.structure) {
+                    renderStructureEditor(data.structure);
+                    document.getElementById('btnGenerateStructure').style.display = 'none';
+                } else {
+                    container.innerHTML = '<p style="color:var(--error);">Не удалось сгенерировать структуру. Попробуйте еще раз.</p>';
+                }
+            } catch (e) {
+                container.innerHTML = `<p style="color:var(--error);">Ошибка: ${e.message}</p>`;
+            }
+        }
+
+        async function saveStructure() {
+            const blocks = document.querySelectorAll('.h2-block');
+            const structure = [];
+            
+            blocks.forEach(block => {
+                const h2Text = block.querySelector('input').value;
+                const h3Items = [];
+                block.querySelectorAll('.h3-block input').forEach(input => {
+                    h3Items.push({ tag: 'h3', text: input.value });
+                });
+                structure.push({
+                    tag: 'h2',
+                    text: h2Text,
+                    items: h3Items
+                });
+            });
+            
+            try {
+                const res = await authFetch('/api/cluster/save-structure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, structure })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Структура успешно сохранена!');
+                    const date = new Date().toLocaleString();
+                    document.getElementById('structureSavedDate').textContent = `Сохранено: ${date}`;
+                } else {
+                    alert('Ошибка при сохранении: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
+        function renderStructureEditor(structure) {
+            const container = document.getElementById('idealStructureContainer');
+            container.style.display = 'none';
+            const editor = document.getElementById('structureEditor');
+            editor.style.display = 'block';
+            
+            const blocks = document.getElementById('structureBlocks');
+            blocks.innerHTML = '';
+            
+            structure.forEach((h2, i) => {
+                const h2Block = document.createElement('div');
+                h2Block.className = 'structure-item h2-block';
+                h2Block.style = 'background: #fff; border: 1px solid #d9d9d9; border-radius: 6px; padding: 15px; margin-bottom: 10px; cursor: default;';
+                h2Block.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                            <span style="color:var(--primary); font-weight:bold;">H2</span>
+                            <input type="text" value="${h2.text}" style="flex:1; border:none; background:transparent; font-weight:600; font-size:16px;">
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            <button onclick="addH3(this)" style="background:#f0f0f0; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">+H3</button>
+                            <button onclick="this.closest('.h2-block').remove()" style="background:none; border:none; color:var(--error); cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="h3-container" style="margin-top:10px; padding-left:25px; display:flex; flex-direction:column; gap:8px;">
+                        ${(h2.items || []).map(h3 => `
+                            <div class="h3-block" style="display:flex; align-items:center; gap:10px; background:#f9f9f9; padding:8px; border-radius:4px;">
+                                <span style="color:#1890ff; font-weight:bold; font-size:12px;">H3</span>
+                                <input type="text" value="${h3.text}" style="flex:1; border:none; background:transparent; font-size:14px;">
+                                <button onclick="this.closest('.h3-block').remove()" style="background:none; border:none; color:var(--text-secondary); cursor:pointer;">×</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                blocks.appendChild(h2Block);
+            });
+            
+            // Add "Add H2" button if not already there
+            if (!document.getElementById('addH2Btn')) {
+                const addH2Btn = document.createElement('button');
+                addH2Btn.id = 'addH2Btn';
+                addH2Btn.className = 'btn btn-secondary';
+                addH2Btn.style = 'width:100%; margin-top:10px;';
+                addH2Btn.textContent = '+ Добавить раздел H2';
+                addH2Btn.onclick = () => {
+                    const newH2 = document.createElement('div');
+                    newH2.className = 'structure-item h2-block';
+                    newH2.style = 'background: #fff; border: 1px solid #d9d9d9; border-radius: 6px; padding: 15px; margin-bottom: 10px;';
+                    newH2.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                                <span style="color:var(--primary); font-weight:bold;">H2</span>
+                                <input type="text" value="Новый раздел" style="flex:1; border:none; background:transparent; font-weight:600; font-size:16px;">
+                            </div>
+                            <div style="display:flex; gap:5px;">
+                                <button onclick="addH3(this)" style="background:#f0f0f0; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">+H3</button>
+                                <button onclick="this.closest('.h2-block').remove()" style="background:none; border:none; color:var(--error); cursor:pointer;">🗑️</button>
+                            </div>
+                        </div>
+                        <div class="h3-container" style="margin-top:10px; padding-left:25px; display:flex; flex-direction:column; gap:8px;"></div>
+                    `;
+                    blocks.appendChild(newH2);
+                };
+                blocks.after(addH2Btn);
+            }
+        }
+
+        function addH3(btn) {
+            const container = btn.closest('.h2-block').querySelector('.h3-container');
+            const h3 = document.createElement('div');
+            h3.className = 'h3-block';
+            h3.style = 'display:flex; align-items:center; gap:10px; background:#f9f9f9; padding:8px; border-radius:4px;';
+            h3.innerHTML = `
+                <span style="color:#1890ff; font-weight:bold; font-size:12px;">H3</span>
+                <input type="text" value="Новый подраздел" style="flex:1; border:none; background:transparent; font-size:14px;">
+                <button onclick="this.closest('.h3-block').remove()" style="background:none; border:none; color:var(--text-secondary); cursor:pointer;">×</button>
+            `;
+            container.appendChild(h3);
+        }
+
+
+        function showTargetUrlModal() {
+            document.getElementById('targetUrlModal').classList.add('visible');
+        }
+
+        function closeTargetUrlModal() {
+            document.getElementById('targetUrlModal').classList.remove('visible');
+        }
+
+        function showToast(icon, text) {
+            const el = document.getElementById('progressNotify');
+            el.classList.remove('hidden');
+            el.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-text">${text}</span>`;
+            el.style.display = 'flex';
+        }
+
+        function hideToast(delayMs = 0) {
+            const el = document.getElementById('progressNotify');
+            if (delayMs > 0) {
+                setTimeout(() => { el.style.display = 'none'; }, delayMs);
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        async function checkPositions() {
+            if (!domain || !clusterId) return;
+            const btn = document.getElementById('btnCheckPositions');
+
+            btn.disabled = true;
+            btn.textContent = 'Проверка...';
+
+            // Развернуть список запросов, если свернут
+            const details = document.getElementById('detailsKeywords');
+            if (details) details.open = true;
+
+            // Показать стартовое уведомление
+            showToast('🔍', 'Запуск проверки позиций...');
+
+            try {
+                // Сбросить все статусы
+                document.querySelectorAll('.kw-status').forEach(el => el.innerHTML = '');
+
+                const regionInput = document.getElementById('yandexRegionInput');
+                const region = regionInput ? regionInput.value : '';
+                const token = localStorage.getItem('session');
+                const response = await fetch(`/api/cluster/check-positions-stream?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}&region=${region}`, {
+                    headers: { 'Authorization': token || '' }
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                if (data.type === 'progress') {
+                                    const query = data.message.replace('PROGRESS: ', '');
+
+                                    // Обновить toast
+                                    showToast('⏳', `Проверяем: <b>${query}</b>`);
+
+                                    // Убрать спиннеры со всех строк, добавить к текущей
+                                    document.querySelectorAll('.kw-status').forEach(el => el.innerHTML = '');
+                                    const row = document.querySelector(`#clusterKeywordsTable tr[data-query="${query.replace(/"/g, '&quot;')}"]`);
+                                    if (row) {
+                                        const statusEl = row.querySelector('.kw-status');
+                                        if (statusEl) statusEl.innerHTML = '<div class="loader-mini"></div>';
+                                        // Мягко подсветить строку
+                                        row.style.background = 'rgba(255,77,79,0.06)';
+                                        // Сбросить фон у остальных
+                                        document.querySelectorAll('#clusterKeywordsTable tr[data-query]').forEach(r => {
+                                            if (r !== row) r.style.background = '';
+                                        });
+                                    }
+                                } else if (data.type === 'done') {
+                                    // Убрать все спиннеры и подсветку
+                                    document.querySelectorAll('.kw-status').forEach(el => el.innerHTML = '');
+                                    document.querySelectorAll('#clusterKeywordsTable tr[data-query]').forEach(r => r.style.background = '');
+
+                                    showToast('✅', 'Проверка позиций завершена!');
+                                    hideToast(3000);
+                                    btn.disabled = false;
+                                    btn.textContent = 'Позиции';
+                                    if (data.result && data.result.success) {
+                                        location.reload();
+                                    } else {
+                                        alert('Ошибка: ' + ((data.result && data.result.error) || 'Неизвестная ошибка'));
+                                    }
+                                    return;
+                                } else if (data.type === 'error') {
+                                    showToast('❌', 'Ошибка: ' + data.message);
+                                    hideToast(4000);
+                                    btn.disabled = false;
+                                    btn.textContent = 'Позиции';
+                                    document.querySelectorAll('.kw-status').forEach(el => el.innerHTML = '');
+                                    return;
+                                }
+                            } catch (parseErr) {
+                                console.error('Parse error in stream:', parseErr, line);
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                showToast('❌', 'Ошибка: ' + e.message);
+                hideToast(4000);
+                btn.disabled = false;
+                btn.textContent = 'Позиции';
+                document.querySelectorAll('.kw-status').forEach(el => el.innerHTML = '');
+            }
+        }
+
+        async function loadUserSettings() {
+            try {
+                const res = await authFetch('/api/user/settings');
+                const data = await res.json();
+                if (data.yandex_region_id) {
+                    document.getElementById('yandexRegionInput').value = data.yandex_region_id;
+                }
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
+        }
+
+        function showSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        async function saveUserSettings() {
+            const region = document.getElementById('yandexRegionInput').value;
+            try {
+                const res = await authFetch('/api/user/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ yandex_region_id: region })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Настройки сохранены');
+                    closeSettingsModal();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
+        async function saveTargetUrl() {
+            const url = document.getElementById('targetUrlInput').value.trim();
+            if (!url) {
+                alert('Укажите URL');
+                return;
+            }
+            try {
+                const res = await authFetch('/api/cluster/target-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, targetUrl: url })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('URL сохранен');
+                    closeTargetUrlModal();
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
+
+
+        async function startSeoAnalysis() {
+            if (!domain || !clusterId) return;
+            const btn = document.getElementById('btnSeoAnalysis');
+            btn.disabled = true;
+            btn.textContent = 'Анализирую...';
+
+            const loader = document.getElementById('loading');
+            const containers = document.querySelectorAll('.container');
+            loader.style.display = 'flex';
+            containers.forEach(c => c.style.opacity = '0.5');
+
+            try {
+                const res = await authFetch('/api/cluster/run-seo-analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'SEO анализ';
+                loader.style.display = 'none';
+                containers.forEach(c => c.style.opacity = '1');
+            }
+        }
+
+        async function startSeoOptimize() {
+            alert('В разработке');
+        }
+
+        async function removeLsi(keyword) {
+            if (!confirm(`Перенести "${keyword}" в минус-слова и удалить из этого кластера?`)) return;
+
+            try {
+                const res = await authFetch('/api/cluster/remove-lsi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, keyword })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadAnalysis();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+    </script>
+    <div id="frequencyModal" class="modal" style="z-index:1100;">
+        <div class="modal-content" style="max-width:560px; width:100%;">
+            <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>📈 Получить частотность</span>
+                <button onclick="closeFrequencyModal()"
+                    style="border:none;background:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
+            </div>
+
+            <div style="margin:16px 0 12px;">
+                <div style="font-weight:600;font-size:14px;margin-bottom:10px;">Режим сбора:</div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <label class="freq-mode-option" id="modeAllLabel">
+                        <input type="radio" name="freqMode" value="all" id="modeAll" checked>
+                        <span class="freq-mode-radio"></span>
+                        <div>
+                            <div class="freq-mode-title">🔄 Пересобрать всю частоту</div>
+                            <div class="freq-mode-desc">Запрашивает частоту для всех ключевых слов в кластере</div>
+                        </div>
+                    </label>
+                    <label class="freq-mode-option" id="modeMissingLabel">
+                        <input type="radio" name="freqMode" value="missing" id="modeMissing">
+                        <span class="freq-mode-radio"></span>
+                        <div>
+                            <div class="freq-mode-title">➕ Дособрать частоту</div>
+                            <div class="freq-mode-desc">Собирает только для слов кластера, у которых частота ещё не
+                                определена</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div style="margin:12px 0 16px; display:flex; align-items:center; gap:10px; padding:0 4px;">
+                <label for="minFreqInput" style="font-size:13px; font-weight:500; color:#555;">Минимальная частота для
+                    переноса в минус-слова:</label>
+                <input type="text" id="minFreqInput" value="10"
+                    style="width:60px; padding:6px 8px; border:1px solid #ddd; border-radius:6px; text-align:center; font-size:14px; font-weight:600;"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+
+            <div style="border-top:1px solid #eee;margin:14px 0;"></div>
+            <div style="margin:0 0 8px;font-weight:600;font-size:14px;">Выберите настройки:</div>
+            <div id="frequencyPresets" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div style="margin-top:14px;">
+                <button class="btn btn-secondary" onclick="toggleNewFilterForm()" style="width:100%;">+ Создать новый
+                    фильтр</button>
+            </div>
+
+            <div id="newFilterForm" style="display:none;margin-top:14px;border-top:1px solid #eee;padding-top:14px;">
+                <div style="margin-bottom:10px;font-weight:600;font-size:13px;">Новый фильтр</div>
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:13px;font-weight:500;">Название фильтра</label>
+                    <input type="text" id="newFilterName" placeholder="Например: Мобильные, Россия"
+                        style="width:100%;margin-top:4px;">
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:13px;font-weight:500;">Устройство:</label>
+                    <div style="display:flex;gap:16px;margin-top:6px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="checkbox" id="devDesktop" checked> Десктоп
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="checkbox" id="devPhone"> Смартфоны
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="checkbox" id="devTablet"> Планшеты
+                        </label>
+                    </div>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:13px;font-weight:500;">Регион:</label>
+                    <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
+                        <input type="text" id="newFilterRegionName" placeholder="Все регионы" readonly
+                            style="flex:1;cursor:pointer;" onclick="openGeoModal()">
+                        <input type="hidden" id="newFilterRegionId" value="">
+                        <button class="btn btn-secondary" onclick="openGeoModal()"
+                            style="white-space:nowrap;">Выбрать</button>
+                        <button class="btn btn-secondary" onclick="clearRegion()" style="white-space:nowrap;">✕</button>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="toggleNewFilterForm()" style="flex:1;">Отмена</button>
+                    <button class="btn btn-primary" onclick="saveNewFilter()" style="flex:1;">Сохранить фильтр</button>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="margin-top:16px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeFrequencyModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="startFrequency()">Запустить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="geoModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1200;align-items:center;justify-content:center;">
+        <div
+            style="background:#fff;border-radius:10px;width:380px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div
+                style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;">Выбор региона</span>
+                <button onclick="closeGeoModal()"
+                    style="border:none;background:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
+            </div>
+            <div style="padding:12px 16px;border-bottom:1px solid #eee;">
+                <input type="text" id="geoSearch" placeholder="Поиск региона..." oninput="filterGeoTree(this.value)"
+                    style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+            </div>
+            <div style="flex:1;overflow-y:auto;padding:8px 0;" id="geoTree"></div>
+            <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;">
+                <button class="btn btn-primary" onclick="applyGeoSelection()" style="flex:1;">Выбрать</button>
+                <button class="btn btn-secondary" onclick="clearGeoSelection()" style="flex:1;">Очистить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="frequencyProgressBanner"
+        style="display:none;position:fixed;bottom:20px;right:20px;background:#fff;border:1px solid #ddd;border-radius:10px;padding:14px 20px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:2000;min-width:300px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <div class="loader-mini"></div>
+            <span style="font-weight:600;font-size:14px;">Сбор частотности...</span>
+        </div>
+        <div id="frequencyProgressText" style="font-size:12px;color:#666;margin-bottom:8px;">Подготовка...</div>
+        <div style="background:#f0f0f0;border-radius:4px;height:6px;">
+            <div id="frequencyProgressBar"
+                style="background:#2196F3;height:6px;border-radius:4px;width:0%;transition:width 0.3s;"></div>
+        </div>
+        <div id="frequencyProgressCount" style="font-size:11px;color:#999;margin-top:4px;">0 / 0</div>
+    </div>
+
+    <script>
+        let frequencyPresets = [];
+        let selectedPresetId = null;
+        let geoRegions = [];
+        let selectedGeoId = '';
+        let selectedGeoName = '';
+
+        async function showFrequencyModal() {
+            document.getElementById('frequencyModal').classList.add('visible');
+            await loadFrequencyPresets();
+        }
+
+        function closeFrequencyModal() {
+            document.getElementById('frequencyModal').classList.remove('visible');
+            document.getElementById('newFilterForm').style.display = 'none';
+        }
+
+        function toggleNewFilterForm() {
+            const form = document.getElementById('newFilterForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function loadFrequencyPresets() {
+            try {
+                const res = await authFetch('/api/wordstat-settings');
+                const data = await res.json();
+                frequencyPresets = data.settings || [];
+                renderPresets();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderPresets() {
+            const container = document.getElementById('frequencyPresets');
+            container.innerHTML = '';
+            frequencyPresets.forEach(preset => {
+                const isSelected = selectedPresetId === preset.id;
+                const div = document.createElement('label');
+                div.className = 'freq-mode-option';
+                if (isSelected) div.style.borderColor = '#2196F3';
+                div.innerHTML = `
+                    <input type="radio" name="freqPreset" ${isSelected ? 'checked' : ''} onchange="selectedPresetId=${preset.id};renderPresets();">
+                    <span class="freq-mode-radio"></span>
+                    <div>
+                        <div class="freq-mode-title">${escapeHtml(preset.name)}</div>
+                        <div class="freq-mode-desc">${preset.device} | ${preset.region_name || 'Все регионы'}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            if (selectedPresetId === null && frequencyPresets.length > 0) {
+                selectedPresetId = frequencyPresets[0].id;
+                renderPresets();
+            }
+        }
+
+        async function saveNewFilter() {
+            const name = document.getElementById('newFilterName').value.trim();
+            const devices = [];
+            if (document.getElementById('devDesktop').checked) devices.push('desktop');
+            if (document.getElementById('devPhone').checked) devices.push('phone');
+            if (document.getElementById('devTablet').checked) devices.push('tablet');
+            const device = devices.join(',');
+            const region = document.getElementById('newFilterRegionId').value || '';
+            const region_name = document.getElementById('newFilterRegionName').value || 'Все регионы';
+            const res = await authFetch('/api/wordstat-settings', {
+                method: 'POST',
+                body: JSON.stringify({ name, device, region, region_name })
+            });
+            const data = await res.json();
+            if (data.success) {
+                selectedPresetId = data.id;
+                toggleNewFilterForm();
+                await loadFrequencyPresets();
+            }
+        }
+
+        async function openGeoModal() {
+            const modal = document.getElementById('geoModal');
+            modal.style.display = 'flex';
+            if (geoRegions.length === 0) {
+                const res = await authFetch('/api/geo-regions');
+                const data = await res.json();
+                geoRegions = data.regions || [];
+            }
+            renderGeoTree(geoRegions);
+        }
+
+        function closeGeoModal() { document.getElementById('geoModal').style.display = 'none'; }
+
+        function renderGeoTree(regions, searchQuery = '') {
+            const container = document.getElementById('geoTree');
+            container.innerHTML = '';
+            const q = searchQuery.toLowerCase();
+            regions.filter(r => !q || r.place.toLowerCase().includes(q)).forEach(r => {
+                const div = document.createElement('div');
+                div.style.padding = '8px 16px';
+                div.style.cursor = 'pointer';
+                div.textContent = r.place;
+                div.onclick = () => {
+                    selectedGeoId = r.id;
+                    selectedGeoName = r.place;
+                    applyGeoSelection();
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function applyGeoSelection() {
+            document.getElementById('newFilterRegionId').value = selectedGeoId;
+            document.getElementById('newFilterRegionName').value = selectedGeoName;
+            closeGeoModal();
+        }
+
+        function clearRegion() {
+            selectedGeoId = '';
+            selectedGeoName = '';
+            document.getElementById('newFilterRegionId').value = '';
+            document.getElementById('newFilterRegionName').value = 'Все регионы';
+        }
+
+        async function startFrequency() {
+            if (!domain) return;
+            const preset = frequencyPresets.find(p => p.id === selectedPresetId);
+            if (!preset) return alert('Выберите настройки');
+            const mode = document.querySelector('input[name="freqMode"]:checked').value;
+            const minFreq = document.getElementById('minFreqInput').value || '10';
+
+            closeFrequencyModal();
+            const banner = document.getElementById('frequencyProgressBanner');
+            banner.style.display = 'block';
+
+            const btn = document.getElementById('btnFrequency');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Сбор...'; }
+
+            const params = new URLSearchParams({
+                domain,
+                device: preset.device,
+                region: preset.region,
+                mode,
+                minFrequency: minFreq,
+                clusterId: clusterId
+            });
+
+            try {
+                const startResp = await authFetch(`/api/run-frequency-stream?${params}`);
+                const startData = await startResp.json();
+                if (!startData.success) throw new Error(startData.error);
+
+                const taskId = startData.task_id;
+                while (true) {
+                    const statusResp = await authFetch(`/api/tasks/${taskId}`);
+                    const task = await statusResp.json();
+                    if (task.status === 'completed') {
+                        document.getElementById('frequencyProgressBar').style.width = '100%';
+                        document.getElementById('frequencyProgressText').textContent = '✅ Готово';
+                        setTimeout(() => { banner.style.display = 'none'; loadAnalysis(); }, 2000);
+                        break;
+                    } else if (task.status === 'failed') {
+                        alert('Ошибка: ' + task.error);
+                        banner.style.display = 'none';
+                        break;
+                    } else {
+                        // Update progress bar
+                        const pct = task.progress || 0;
+                        const result = task.result ? (typeof task.result === 'string' ? JSON.parse(task.result) : task.result) : {};
+                        const currentQuery = result.current_query || '';
+                        const processed = result.processed || 0;
+                        const total = result.total || 0;
+
+                        document.getElementById('frequencyProgressBar').style.width = pct + '%';
+                        
+                        if (currentQuery) {
+                            document.getElementById('frequencyProgressCount').textContent = `${processed} / ${total}: ${currentQuery}`;
+                        } else {
+                            document.getElementById('frequencyProgressCount').textContent = pct + '%';
+                        }
+
+                        if (task.status === 'running') {
+                            document.getElementById('frequencyProgressText').textContent = 'Выполняется... ' + pct + '%';
+                        } else {
+                            document.getElementById('frequencyProgressText').textContent = 'В очереди...';
+                        }
+                    }
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+                banner.style.display = 'none';
+            }
+        }
+    </script>
+
+    <style>
+        .loader-mini {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ddd;
+            border-top-color: #2196F3;
+            border-radius: 50%;
+            animation: spinMini 0.8s linear infinite;
+        }
+
+        @keyframes spinMini {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .freq-mode-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 11px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #fafafa;
+            margin-bottom: 8px;
+        }
+
+        .freq-mode-radio {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .freq-mode-option input[type="radio"] {
+            display: none;
+        }
+
+        .freq-mode-option input:checked+.freq-mode-radio {
+            border-color: #2196F3;
+        }
+
+        .freq-mode-option input:checked+.freq-mode-radio::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2196F3;
+        }
+
+        .freq-mode-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #222;
+        }
+
+        .freq-mode-desc {
+            font-size: 12px;
+            color: #777;
+            margin-top: 3px;
+        }
+    </style>
+</body>
+
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Позиции - SEO Keyword Manager</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="top-menu" id="topMenu" style="display:none;">
+        <div class="user-info">
+            <div class="logo">SEO Auto Cluster</div>
+            <div class="balance-display">
+                <span class="balance-label">Баланс:</span>
+                <span class="balance-value">0.00 ₽</span>
+                <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
+            </div>
+            <div class="menu-tabs">
+                <a href="index.html" class="menu-tab">Dashboard</a>
+                <a href="sort.html" class="menu-tab">Сортировка</a>
+                <a href="cluster.html" class="menu-tab">Кластер</a>
+                <a href="positions.html" class="menu-tab active">Позиции</a>
+                <a href="cabinet.html" class="menu-tab">Кабинет</a>
+            </div>
+        </div>
+        <div class="site-selector">
+            <select id="siteSelect" onchange="selectSite()">
+                <option value="">-- Выберите сайт --</option>
+            </select>
+            <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+            <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
+        </div>
+    </div>
+
+    <div class="container" id="mainApp" style="display:none;">
+        <div class="card">
+            <h2>Мониторинг позиций</h2>
+            <div class="empty-state">Этот раздел находится в разработке. Здесь будет отображаться динамика позиций ваших сайтов.</div>
+        </div>
+    </div>
+
+    <div id="authSection" class="auth-section" style="display:none;">
+        <!-- Auth section same as others -->
+    </div>
+
+    <div id="addSiteModal" class="modal">
+        <!-- Modal same as others -->
+    </div>
+
+    <!-- Topup Modal -->
+    <div id="topupModal" class="modal">
+        <div class="modal-content topup-modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Пополнение баланса</span>
+                <button onclick="closeTopupModal()" class="modal-close">&times;</button>
+            </div>
+            <div class="topup-input-group">
+                <label for="topupAmount">Сумма пополнения (руб.)</label>
+                <input type="number" id="topupAmount" value="500" min="500" step="100">
+                <div class="topup-hints">
+                    <button class="btn-hint" onclick="setTopupAmount(500)">500</button>
+                    <button class="btn-hint" onclick="setTopupAmount(1000)">1000</button>
+                    <button class="btn-hint" onclick="setTopupAmount(5000)">5000</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTopupModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">Оплатить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function onSiteSelected(domain) {
+            console.log('Site selected:', domain);
+        }
+    </script>
+</body>
+</html>

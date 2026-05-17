@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SEO Keyword Manager</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .dashboard-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        .dashboard-card i {
+            font-size: 40px;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .dashboard-card h3 {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+        .dashboard-card p {
+            color: #666;
+            font-size: 14px;
+        }
+        .welcome-hero {
+            padding: 40px;
+            background: linear-gradient(135deg, #2196F3 0%, #00BCD4 100%);
+            color: white;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .no-sites-container {
+            max-width: 600px;
+            margin: 100px auto;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .no-sites-container h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .no-sites-container p {
+            margin-bottom: 30px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-menu" id="topMenu" style="display:none;">
+        <div class="user-info">
+            <div class="logo">SEO Auto Cluster</div>
+            <div class="balance-display">
+                <span class="balance-label">Баланс:</span>
+                <span class="balance-value">0.00 ₽</span>
+                <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
+            </div>
+            <div class="menu-tabs">
+                <a href="index.html" class="menu-tab active">Dashboard</a>
+                <a href="sort.html" class="menu-tab">Сортировка</a>
+                <a href="cluster.html" class="menu-tab">Кластер</a>
+                <a href="positions.html" class="menu-tab">Позиции</a>
+                <a href="cabinet.html" class="menu-tab">Кабинет</a>
+            </div>
+        </div>
+        <div class="site-selector">
+            <select id="siteSelect" onchange="selectSite()">
+                <option value="">-- Выберите сайт --</option>
+            </select>
+            <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+            <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
+        </div>
+    </div>
+
+    <div class="container" id="mainApp" style="display:none;">
+        <div id="noSitesMessage" style="display:none;">
+            <div class="no-sites-container">
+                <span style="font-size: 60px; display: block; margin-bottom: 20px;">🌐</span>
+                <h2>Добро пожаловать в SEO Auto Cluster!</h2>
+                <p>У вас еще нет добавленных сайтов. Добавьте ваш первый домен, чтобы начать работу с семантическим ядром.</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <select id="newSiteDomainHero" style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 350px;">
+                        <option value="">Загрузка списка сайтов...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addSiteHero()">Добавить сайт</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="sitesContent" style="display:none;">
+            <div class="welcome-hero">
+                <h1>Панель управления</h1>
+                <p>Выберите раздел для работы с текущим сайтом или переключите домен в верхнем меню.</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <a href="sort.html" class="dashboard-card">
+                    <i>📥</i>
+                    <h3>Сортировка</h3>
+                    <p>Загрузка ключей из Вебмастера, фильтрация и работа с минус-словами.</p>
+                </a>
+                <a href="cluster.html" class="dashboard-card">
+                    <i>📁</i>
+                    <h3>Кластеризация</h3>
+                    <p>Группировка запросов по SERP, маппинг URL и полный SEO анализ.</p>
+                </a>
+                <a href="positions.html" class="dashboard-card">
+                    <i>📊</i>
+                    <h3>Позиции</h3>
+                    <p>Мониторинг видимости и позиций в поисковых системах.</p>
+                </a>
+                <a href="cabinet.html" class="dashboard-card">
+                    <i>👤</i>
+                    <h3>Кабинет</h3>
+                    <p>Настройки профиля, API ключи и управление аккаунтом.</p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="authSection" class="auth-section" style="display:none;">
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="showAuthForm('login')">Вход</button>
+            <button class="auth-tab" onclick="showAuthForm('register')">Регистрация</button>
+        </div>
+        <div id="authError" class="status error" style="display:none; margin-bottom:20px;"></div>
+        
+        <div id="authForm">
+            <input type="text" id="authUsername" placeholder="Логин">
+            <div class="password-wrapper">
+                <input type="password" id="authPassword" placeholder="Пароль">
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')">👁️</span>
+            </div>
+            <button class="btn btn-primary" onclick="submitAuth()">Войти</button>
+        </div>
+        
+        <div id="registerFields" style="display:none;">
+            <input type="text" id="authUsernameReg" placeholder="Придумайте логин">
+            <input type="email" id="authEmailReg" placeholder="Email">
+            <input type="text" id="authYandexTokenReg" placeholder="Токен Яндекс Вебмастер">
+            <div class="password-wrapper">
+                <input type="password" id="authPasswordReg" placeholder="Пароль">
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordReg')">👁️</span>
+            </div>
+            <div class="password-wrapper">
+                <input type="password" id="authPasswordConfirmReg" placeholder="Подтвердите пароль">
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordConfirmReg')">👁️</span>
+            </div>
+            <button class="btn btn-primary" onclick="submitRegister()">Зарегистрироваться</button>
+        </div>
+    </div>
+
+    <div id="addSiteModal" class="modal">
+        <div class="modal-content">
+            <h2>Добавить новый сайт</h2>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Выберите сайт, подтвержденный в вашем Яндекс Вебмастере:</p>
+            <select id="newSiteDomain" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
+                <option value="">Загрузка списка сайтов...</option>
+            </select>
+            <div class="buttons">
+                <button class="btn btn-secondary" onclick="hideAddSiteModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="addSite()">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </div>
+
+    <!-- Topup Modal -->
+    <div id="topupModal" class="modal">
+        <div class="modal-content topup-modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Пополнение баланса</span>
+                <button onclick="closeTopupModal()" class="modal-close">&times;</button>
+            </div>
+            <div class="topup-input-group">
+                <label for="topupAmount">Сумма пополнения (руб.)</label>
+                <input type="number" id="topupAmount" value="500" min="500" step="100">
+                <div class="topup-hints">
+                    <button class="btn-hint" onclick="setTopupAmount(500)">500</button>
+                    <button class="btn-hint" onclick="setTopupAmount(1000)">1000</button>
+                    <button class="btn-hint" onclick="setTopupAmount(5000)">5000</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTopupModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">Оплатить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        async function addSiteHero() {
+            const domain = document.getElementById('newSiteDomainHero').value.trim();
+            if (!domain) return;
+            const res = await authFetch('/api/sites', {
+                method: 'POST',
+                body: JSON.stringify({domain})
+            });
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        }
+        
+        function onSiteSelected(domain) {
+            // Dashboard might show site-specific summary here if needed
+            const cards = document.querySelectorAll('.dashboard-card');
+            cards.forEach(card => {
+                const url = new URL(card.href);
+                if (domain) {
+                    url.searchParams.set('site', domain);
+                } else {
+                    url.searchParams.delete('site');
+                }
+                card.href = url.toString();
+            });
+        }
+    </script>
+</body>
+</html>

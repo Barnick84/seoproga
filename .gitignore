@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+nodejs-app/node_modules/
+
+# Environment and secrets
+.env
+credentials.json
+token.json
+
+# Databases and data
+data/
+sql/
+results/
+*.db
+*.sqlite
+
+# Project specific temporary files
+html_temp/
+scratch/
+miratext_img/
+.tmp/
+nul
+output_article.html
+*.xlsx
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

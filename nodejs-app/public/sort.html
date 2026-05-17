@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сортировка - SEO Keyword Manager</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="top-menu" id="topMenu" style="display:none;">
+        <div class="user-info">
+            <div class="logo">SEO Auto Cluster</div>
+            <div class="balance-display">
+                <span class="balance-label">Баланс:</span>
+                <span class="balance-value">0.00 ₽</span>
+                <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
+            </div>
+            <div class="menu-tabs">
+                <a href="index.html" class="menu-tab">Dashboard</a>
+                <a href="sort.html" class="menu-tab active">Сортировка</a>
+                <a href="cluster.html" class="menu-tab">Кластер</a>
+                <a href="positions.html" class="menu-tab">Позиции</a>
+                <a href="cabinet.html" class="menu-tab">Кабинет</a>
+            </div>
+        </div>
+        <div class="site-selector">
+            <select id="siteSelect" onchange="selectSite()">
+                <option value="">-- Выберите сайт --</option>
+            </select>
+            <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+            <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
+        </div>
+    </div>
+
+    <div class="container" id="mainApp" style="display:none;">
+        <div id="status" class="status"></div>
+        
+        <div id="sitesContent">
+            <div id="wmStatusBanner" class="analysis-status-banner">
+                <div class="loader-mini"></div>
+                <div id="wmStatusText">Загрузка запросов из Яндекс Вебмастера...</div>
+            </div>
+
+            <div class="card">
+                <div class="filter-bar">
+                    <div class="filter-input-wrapper">
+                        <input type="text" id="filter" placeholder="Фильтр по словам..." oninput="filterKeywords()">
+                        <span class="clear-filter" onclick="clearFilter()">×</span>
+                    </div>
+                    <div class="checkbox-filter" onclick="document.getElementById('showNonClustered').click()">
+                        <input type="checkbox" id="showNonClustered" onchange="filterKeywords()">
+                        <span class="checkmark"></span>
+                        <label for="showNonClustered">Только некластеризованные</label>
+                    </div>
+                    <div class="freq-filter">
+                        <input type="number" id="minFreq" placeholder="Частота от..." oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        <button class="btn btn-secondary btn-sm" onclick="filterKeywords()">Фильтровать</button>
+                    </div>
+                    <div style="margin-left: auto;">
+                        <button id="btnFetchWM" class="btn btn-primary btn-sm" onclick="fetchFromWM()">Загрузить из Вебмастера</button>
+                    </div>
+                </div>
+                
+                <div class="stats-bar">
+                    <div class="stats-info">
+                        <div>Всего: <span id="totalCount">0</span></div>
+                        <div>Некластеризовано: <span id="nonClusteredCount">0</span></div>
+                        <div>Выбрано: <span id="selectedCount">0</span></div>
+                    </div>
+                    <div class="stats-actions">
+                        <button class="btn btn-blue btn-sm" onclick="selectAll()">Выбрать все</button>
+                        <button class="btn btn-gray btn-sm" onclick="deselectAll()">Снять выбор</button>
+                        <button class="btn btn-orange btn-sm" onclick="addToMinus()">В минус слова</button>
+                    </div>
+                </div>
+                
+                <div class="two-columns">
+                    <div class="keyword-list-wrapper">
+                        <h3>Ключевые слова</h3>
+                        <div id="keywordList" class="keyword-list">
+                            <div class="empty-state">Выберите сайт или загрузите ключи</div>
+                        </div>
+                    </div>
+                    
+                    <div class="minus-list-wrapper">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3>Минус слова</h3>
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size:12px;" onclick="clearAllMinus()">Очистить всё</button>
+                        </div>
+                        <div id="minusList" class="keyword-list minus-list" style="margin-top:40px;">
+                            <div class="empty-state">Нет минус слов</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="authSection" class="auth-section" style="display:none;">
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="showAuthForm('login')">Вход</button>
+            <button class="auth-tab" onclick="showAuthForm('register')">Регистрация</button>
+        </div>
+        <div id="authError" class="status error" style="display:none; margin-bottom:20px;"></div>
+        
+        <div id="authForm">
+            <input type="text" id="authUsername" placeholder="Логин">
+            <div class="password-wrapper">
+                <input type="password" id="authPassword" placeholder="Пароль">
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')">👁️</span>
+            </div>
+            <button class="btn btn-primary" onclick="submitAuth()">Войти</button>
+        </div>
+        
+        <div id="registerFields" style="display:none;">
+            <input type="text" id="authUsernameReg" placeholder="Придумайте логин">
+            <input type="email" id="authEmailReg" placeholder="Email">
+            <div class="password-wrapper">
+                <input type="password" id="authPasswordReg" placeholder="Пароль">
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordReg')">👁️</span>
+            </div>
+            <div class="password-wrapper">
+                <input type="password" id="authPasswordConfirmReg" placeholder="Подтвердите пароль">
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordConfirmReg')">👁️</span>
+            </div>
+            <button class="btn btn-primary" onclick="submitRegister()">Зарегистрироваться</button>
+        </div>
+    </div>
+
+    <div id="addSiteModal" class="modal">
+        <div class="modal-content">
+            <h2>Добавить новый сайт</h2>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Выберите сайт, подтвержденный в вашем Яндекс Вебмастере:</p>
+            <select id="newSiteDomain" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
+                <option value="">Загрузка списка сайтов...</option>
+            </select>
+            <div class="buttons">
+                <button class="btn btn-secondary" onclick="hideAddSiteModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="addSite()">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </div>
+
+    <!-- Topup Modal -->
+    <div id="topupModal" class="modal">
+        <div class="modal-content topup-modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Пополнение баланса</span>
+                <button onclick="closeTopupModal()" class="modal-close">&times;</button>
+            </div>
+            <div class="topup-input-group">
+                <label for="topupAmount">Сумма пополнения (руб.)</label>
+                <input type="number" id="topupAmount" value="500" min="500" step="100">
+                <div class="topup-hints">
+                    <button class="btn-hint" onclick="setTopupAmount(500)">500</button>
+                    <button class="btn-hint" onclick="setTopupAmount(1000)">1000</button>
+                    <button class="btn-hint" onclick="setTopupAmount(5000)">5000</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTopupModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">Оплатить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function onSiteSelected(domain) {
+            if (domain) loadKeywords(domain);
+        }
+
+        async function loadKeywords(domain) {
+            const res = await authFetch(`/api/keywords?domain=${encodeURIComponent(domain)}`);
+            const data = await res.json();
+            keywords = data.keywords;
+            renderKeywords();
+        }
+
+        function renderKeywords() {
+            const list = document.getElementById('keywordList');
+            const minusList = document.getElementById('minusList');
+            
+            // Сортировка по уменьшению частотности
+            const sortedKeywords = [...keywords].sort((a, b) => (b.frequency || 0) - (a.frequency || 0));
+            
+            const normalKeywords = sortedKeywords.filter(k => k && !k.minus_word);
+            const minusKeywords = sortedKeywords.filter(k => k && k.minus_word);
+            
+            list.innerHTML = normalKeywords.map((k, i) => `
+                <div class="keyword-item ${k.clustered ? 'clustered' : 'not-clustered'}" data-index="${keywords.indexOf(k)}">
+                    <input type="checkbox" class="checkbox" data-index="${keywords.indexOf(k)}">
+                    <span class="query">${k.frequency > 0 ? `<span style="color:#4CAF50;font-weight:600;margin-right:4px;">[${k.frequency}]</span>` : ''}${escapeHtml(k.query)}</span>
+                    <span class="hits">${k.hits || 0}</span>
+                </div>
+            `).join('') || '<div class="empty-state">Нет ключей</div>';
+            
+            minusList.innerHTML = minusKeywords.map(k => `
+                <div class="keyword-item in-minus">
+                    <span class="query">${escapeHtml(k.query)}</span>
+                </div>
+            `).join('') || '<div class="empty-state">Нет минус слов</div>';
+            
+            filterKeywords();
+        }
+
+        function filterKeywords() {
+            const filter = document.getElementById('filter').value.toLowerCase();
+            const showOnlyNonClustered = document.getElementById('showNonClustered').checked;
+            const minFreqValue = document.getElementById('minFreq').value;
+            const items = document.querySelectorAll('#keywordList .keyword-item');
+            
+            let total = 0, nonClustered = 0, selected = 0;
+            
+            items.forEach(item => {
+                const kw = keywords[item.dataset.index];
+                if (!kw) return;
+                
+                const isClustered = kw.clustered || 0;
+                const queryMatch = !filter || (kw.query || '').toLowerCase().includes(filter);
+                const clusteredMatch = !showOnlyNonClustered || !isClustered;
+                
+                // Фильтр по частотности: вывести только те, у которых частота <= minFreq
+                const freqMatch = minFreqValue === '' || (kw.frequency || 0) <= (parseInt(minFreqValue) || 0);
+                
+                const visible = queryMatch && clusteredMatch && freqMatch;
+                
+                if (visible) {
+                    total++;
+                    if (!isClustered) nonClustered++;
+                    if (item.querySelector('input[type="checkbox"]')?.checked) selected++;
+                }
+                
+                item.classList.toggle('hidden', !visible);
+            });
+            
+            const minusCount = keywords.filter(k => k && (k.minus_word || 0)).length;
+            document.getElementById('totalCount').textContent = keywords.length - minusCount;
+            document.getElementById('nonClusteredCount').textContent = nonClustered;
+            document.getElementById('selectedCount').textContent = selected;
+        }
+
+        function selectAll() {
+            document.querySelectorAll('#keywordList .keyword-item:not(.hidden) .checkbox').forEach(cb => cb.checked = true);
+            filterKeywords();
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('.checkbox').forEach(cb => cb.checked = false);
+            filterKeywords();
+        }
+
+        async function addToMinus() {
+            const selected = [...document.querySelectorAll('#keywordList .keyword-item:not(.hidden) input:checked')]
+                .map(cb => keywords[cb.dataset.index].query);
+            
+            if (selected.length === 0) {
+                showStatus('Выберите ключи', 'error');
+                return;
+            }
+            
+            try {
+                const res = await authFetch('/api/minus-words', {
+                    method: 'POST',
+                    body: JSON.stringify({domain: currentDomain, keywords: selected})
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showStatus(`Добавлено в минус: ${data.updated || selected.length}`, 'success');
+                    loadKeywords(currentDomain);
+                } else {
+                    showStatus('Ошибка: ' + (data.error || 'Не удалось обновить'), 'error');
+                }
+            } catch (e) {
+                showStatus('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function clearAllMinus() {
+            if (!currentDomain) return;
+            try {
+                await authFetch('/api/clear-minus', {
+                    method: 'POST',
+                    body: JSON.stringify({domain: currentDomain})
+                });
+                showStatus('Минус слова очищены', 'success');
+                loadKeywords(currentDomain);
+            } catch (e) {
+                showStatus('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        function clearFilter() {
+            const filterInput = document.getElementById('filter');
+            filterInput.value = '';
+            filterKeywords();
+            filterInput.focus();
+        }
+
+        async function fetchFromWM() {
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
+            
+            const btn = document.getElementById('btnFetchWM');
+            const banner = document.getElementById('wmStatusBanner');
+            
+            btn.classList.add('btn-loading');
+            if (banner) banner.style.display = 'flex';
+            
+            showStatus('Загрузка из Вебмастера...', 'success');
+            try {
+                const res = await authFetch(`/api/fetch-wm-queries?domain=${encodeURIComponent(currentDomain)}`);
+                const data = await res.json();
+                if (data.success) {
+                    showStatus(`Загружено новых: ${data.added || 0} ключей`, 'success');
+                    loadKeywords(currentDomain);
+                } else {
+                    showStatus('Ошибка: ' + (data.error || 'Не удалось загрузить'), 'error');
+                }
+            } catch (e) {
+                showStatus('Ошибка: ' + e.message, 'error');
+            } finally {
+                btn.classList.remove('btn-loading');
+                if (banner) banner.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
