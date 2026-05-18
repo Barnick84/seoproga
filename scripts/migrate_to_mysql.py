@@ -258,11 +258,25 @@ def migrate():
                 query VARCHAR(500) NOT NULL,
                 position INT,
                 found_url TEXT,
+                engine VARCHAR(50) DEFAULT 'yandex',
+                device VARCHAR(50) DEFAULT 'desktop',
+                region_id INT DEFAULT 0,
                 checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_query_date (user_id, site_url, query(255), checked_at),
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             ) ENGINE=InnoDB
         """)
+
+        # Ensure engine, device, region_id columns exist (in case table already exists)
+        try:
+            cur.execute("ALTER TABLE query_history ADD COLUMN engine VARCHAR(50) DEFAULT 'yandex' AFTER found_url")
+        except: pass
+        try:
+            cur.execute("ALTER TABLE query_history ADD COLUMN device VARCHAR(50) DEFAULT 'desktop' AFTER engine")
+        except: pass
+        try:
+            cur.execute("ALTER TABLE query_history ADD COLUMN region_id INT DEFAULT 0 AFTER device")
+        except: pass
 
         # 15. Payment History
         cur.execute("""
