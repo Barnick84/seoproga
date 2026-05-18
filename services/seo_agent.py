@@ -152,7 +152,16 @@ class SEOAgent:
                 {"role": "user", "content": prompt},
             ],
             temperature=0.4,
+            max_tokens=self.max_tokens,
             response_format={"type": "json_object"}
         )
         
-        return response.choices[0].message.content
+        raw_output = response.choices[0].message.content or ""
+        cleaned = raw_output.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:].strip()
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:].strip()
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3].strip()
+        return cleaned
