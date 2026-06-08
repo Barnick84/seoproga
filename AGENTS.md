@@ -3,6 +3,12 @@
 Python SEO automation project clustering keywords via SERP similarity.
 Integrates: **XMLRiver**, **Yandex Webmaster**, **Miratext**, **OpenAI**
 
+## Global Rules
+
+1. **ARCH.md must be read at the start of every new session** — before making any changes, read `ARCH.md` to understand the full project architecture, module purposes, data flow, and API endpoints.
+
+2. **ARCH.md must be updated when developing new features or modifying existing ones** — any addition, change, or removal of modules, services, API endpoints, scripts, database tables, or frontend pages must be documented in `ARCH.md` within the same commit. Keep descriptions accurate and current.
+
 ---
 
 ## Build, Test & Lint Commands
