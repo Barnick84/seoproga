@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="stylesheet" href="style.css?v=4.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         .firstlogin-overlay {
@@ -460,7 +460,7 @@
                     document.getElementById('flLoader').classList.remove('active');
                     document.getElementById('flSuccess').classList.add('active');
                     document.getElementById('flSuccessText').textContent =
-                        `Загружено ключей: ${data.added || 0}. Запросы из Яндекс.Вебмастера успешно импортированы!`;
+                        `Запросы из Яндекс.Вебмастера успешно импортированы!`;
                     document.getElementById('flCloseBtn').classList.add('active');
                     // Set and remember the selected site in the main dropdown
                     document.getElementById('siteSelect').value = domain;

@@ -409,20 +409,37 @@ app.post('/api/create-payment', authenticate, async (req, res) => {
             [req.user.user_id, amount, currency, order_id, 'pending']
         );
 
-        // 2. Prepare signature
-        const data = {
+        // 2. Prepare signature (ONLY mandatory fields participate!)
+        const signData = {
             shop_id: shop_id,
             amount: amount,
             currency: currency,
             order_id: order_id
         };
         
-        const sortedKeys = Object.keys(data).sort();
-        const str = sortedKeys.map(k => `${k}=${data[k]}`).join('&');
-        const sign = crypto.createHash('md5').update(str + secret).digest('hex');
+        const sortedSignKeys = Object.keys(signData).sort();
+        const signStr = sortedSignKeys.map(k => `${k}=${signData[k]}`).join('&');
+        const sign = crypto.createHash('md5').update(signStr + secret).digest('hex');
 
-        // 3. Construct Tegro URL
-        const tegroUrl = `https://tegro.money/pay/?shop_id=${shop_id}&amount=${amount}&currency=${currency}&order_id=${order_id}&sign=${sign}`;
+        // Fetch user email to pre-fill the payment form
+        const [userRows] = await db.query('SELECT email FROM users WHERE id = ?', [req.user.user_id]);
+        const userEmail = userRows.length > 0 ? userRows[0].email : null;
+
+        // 3. Construct Tegro URL with all fields
+        const urlData = {
+            ...signData,
+            success_url: 'https://seoproga.ru/suceful/',
+            fail_url: 'https://seoproga.ru/errore/',
+            notify_url: 'https://seoproga.ru/payment-suceful/'
+        };
+        
+        if (userEmail) {
+            urlData['email'] = userEmail;
+        }
+
+        const str = Object.keys(urlData).map(k => `${k}=${encodeURIComponent(urlData[k])}`).join('&');
+
+        const tegroUrl = `https://tegro.money/pay/?${str}&sign=${sign}`;
         
         res.json({ success: true, payment_url: tegroUrl });
     } catch (error) {
@@ -432,7 +449,7 @@ app.post('/api/create-payment', authenticate, async (req, res) => {
 });
 
 // API: Payment Callback (Webhook from Tegro)
-app.post('/api/payment-callback', express.urlencoded({ extended: true }), async (req, res) => {
+app.post(['/payment-suceful', '/payment-suceful/'], express.urlencoded({ extended: true }), express.json(), async (req, res) => {
     try {
         const { shop_id, amount, order_id, sign } = req.body;
         const secret = process.env.TEGRO_SECRET_KEY || '';
@@ -444,7 +461,7 @@ app.post('/api/payment-callback', express.urlencoded({ extended: true }), async 
         const data = { ...req.body };
         delete data.sign;
         const sortedKeys = Object.keys(data).sort();
-        const str = sortedKeys.map(k => `${k}=${data[k]}`).join('&');
+        const str = sortedKeys.map(k => `${k}=${encodeURIComponent(data[k])}`).join('&');
         const expectedSign = crypto.createHash('md5').update(str + secret).digest('hex');
 
         if (sign !== expectedSign) {
@@ -480,6 +497,15 @@ app.post('/api/payment-callback', express.urlencoded({ extended: true }), async 
         console.error('Tegro Callback error:', error);
         res.status(500).send('Internal Server Error');
     }
+});
+
+// Serve success and error payment pages
+app.get(['/suceful', '/suceful/'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'suceful.html'));
+});
+
+app.get(['/errore', '/errore/'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'errore.html'));
 });
 
 // API: Get Billing History
@@ -974,6 +1000,146 @@ app.post('/api/cluster/check-positions', authenticate, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// ─── POSITIONS MONITORING ────────────────────────────────────────────────────
+
+// GET /api/positions/history — position history for all keywords of a site
+app.get('/api/positions/history', authenticate, async (req, res) => {
+    try {
+        const { domain, startDate, endDate, engine, device, clusterId } = req.query;
+        if (!domain) return res.status(400).json({ error: 'Domain required' });
+        const nd = normalizeUrl(domain);
+        const eng = engine || 'yandex';
+        const dev = device || 'desktop';
+
+        let kwSql = `SELECT yq.id, yq.query, yq.clustered AS cluster_id, yq.frequency,
+                            CASE 
+                                WHEN yq.clustered = 0 THEN 'Без кластера'
+                                ELSE COALESCE(
+                                    NULLIF(cn.cluster_name, ''),
+                                    (SELECT query FROM yandex_queries 
+                                     WHERE user_id = yq.user_id AND site_url = yq.site_url AND clustered = yq.clustered 
+                                     ORDER BY frequency DESC, query ASC LIMIT 1),
+                                    CONCAT('Кластер ', yq.clustered)
+                                )
+                            END AS cluster_name
+                     FROM yandex_queries yq
+                     LEFT JOIN cluster_names cn
+                            ON cn.user_id = yq.user_id AND cn.site_url = yq.site_url AND cn.cluster_id = yq.clustered
+                     WHERE yq.user_id = ? AND yq.site_url = ? AND yq.minus_word = 0`;
+        const kwParams = [req.user.user_id, nd];
+        if (clusterId && clusterId !== 'all') { kwSql += ' AND yq.clustered = ?'; kwParams.push(clusterId); }
+        kwSql += ' ORDER BY yq.clustered, yq.query';
+        const [keywords] = await db.query(kwSql, kwParams);
+
+        if (!keywords.length) return res.json({ success: true, keywords: [], dates: [] });
+
+        let histSql = `SELECT query, position, found_url, DATE_FORMAT(checked_at, '%Y-%m-%d') AS check_date
+                       FROM query_history
+                       WHERE user_id = ? AND site_url = ? AND engine = ? AND device = ?`;
+        const histParams = [req.user.user_id, nd, eng, dev];
+        if (startDate) { histSql += ' AND DATE(checked_at) >= ?'; histParams.push(startDate); }
+        if (endDate)   { histSql += ' AND DATE(checked_at) <= ?'; histParams.push(endDate); }
+        histSql += ' ORDER BY checked_at DESC';
+        const [history] = await db.query(histSql, histParams);
+
+        const histMap = {};
+        const dateSet = new Set();
+        for (const row of history) {
+            if (!histMap[row.query]) histMap[row.query] = {};
+            if (!histMap[row.query][row.check_date]) {
+                histMap[row.query][row.check_date] = { position: row.position, found_url: row.found_url };
+                dateSet.add(row.check_date);
+            }
+        }
+        const dates = Array.from(dateSet).sort((a, b) => b.localeCompare(a));
+
+        const result = keywords.map(kw => ({
+            query:        kw.query,
+            cluster_id:   kw.cluster_id,
+            cluster_name: kw.cluster_name,
+            frequency:    kw.frequency || 0,
+            positions:    dates.map(d => histMap[kw.query]?.[d] || null),
+        }));
+
+        res.json({ success: true, keywords: result, dates });
+    } catch (err) {
+        console.error('positions/history:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/positions/clusters — cluster list for filter dropdown
+app.get('/api/positions/clusters', authenticate, async (req, res) => {
+    try {
+        const { domain } = req.query;
+        if (!domain) return res.status(400).json({ error: 'Domain required' });
+        const nd = normalizeUrl(domain);
+        const [rows] = await db.query(
+            `SELECT yq.clustered AS cluster_id,
+                    COALESCE(
+                        NULLIF(cn.cluster_name, ''),
+                        (SELECT query FROM yandex_queries 
+                         WHERE user_id = yq.user_id AND site_url = yq.site_url AND clustered = yq.clustered 
+                         ORDER BY frequency DESC, query ASC LIMIT 1),
+                        CONCAT('Кластер ', yq.clustered)
+                    ) AS cluster_name
+             FROM yandex_queries yq
+             LEFT JOIN cluster_names cn
+                    ON cn.user_id = yq.user_id AND cn.site_url = yq.site_url AND cn.cluster_id = yq.clustered
+             WHERE yq.user_id = ? AND yq.site_url = ? AND yq.minus_word = 0 AND yq.clustered > 0
+             GROUP BY yq.clustered
+             ORDER BY yq.clustered`,
+            [req.user.user_id, nd]
+        );
+        res.json({ success: true, clusters: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/positions/run-stream — SSE: check all positions for a site
+app.get('/api/positions/run-stream', authenticate, (req, res) => {
+    const { domain, engine, device } = req.query;
+    if (!domain) return res.status(400).json({ error: 'Domain required' });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const nd = normalizeUrl(domain);
+    const child = spawn(PYTHON_PATH, [
+        path.join(__dirname, 'scripts', 'check_all_positions.py'),
+        nd, req.user.user_id, engine || 'yandex', device || 'desktop',
+    ], {
+        cwd: path.resolve(__dirname, '..'),
+        env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUNBUFFERED: '1' },
+    });
+
+    let output = '';
+    child.stdout.on('data', data => {
+        data.toString().split('\n').forEach(line => {
+            if (line.startsWith('PROGRESS:')) {
+                const p = line.split(':');
+                res.write(`data: ${JSON.stringify({ type: 'progress', pct: +p[1]||0, done: +p[2]||0, total: +p[3]||0, message: p.slice(4).join(':').trim() })}\n\n`);
+            } else if (line.trim()) {
+                output += line;
+            }
+        });
+    });
+    child.stderr.on('data', d => console.error('check_all_positions:', d.toString()));
+    child.on('close', () => {
+        try {
+            res.write(`data: ${JSON.stringify({ type: 'done', result: JSON.parse(output) })}\n\n`);
+        } catch {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: output || 'Process failed' })}\n\n`);
+        }
+        res.end();
+    });
+    req.on('close', () => child.kill());
+});
+
+// ─── END POSITIONS MONITORING ─────────────────────────────────────────────────
 
 // API: Remove LSI keyword and move to minus words
 app.post('/api/cluster/remove-lsi', authenticate, async (req, res) => {

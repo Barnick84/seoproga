@@ -131,6 +131,7 @@ seo-auto-cluster/
 │       ├── collect_cluster_keywords.py # Сбор ключей для кластера
 │       ├── create_cluster_from_url.py # Создание кластера по URL
 │       ├── check_positions.py         # Проверка позиций
+│       ├── check_all_positions.py     # Массовая проверка позиций всех ключей сайта (SSE потоково)
 │       ├── scheduler.py               # Ежедневный плановый сбор
 │       └── get_wordstat_settings.py   # Настройки Wordstat
 │
@@ -475,6 +476,11 @@ seo-auto-cluster/
 - `POST /api/save-mapping-manual` — ручное указание URL
 - `GET /api/mappings` — все маппинги
 - `POST /api/cluster/target-url` — обновление целевого URL
+
+**Мониторинг позиций:**
+- `GET /api/positions/history` — история позиций по сайту/кластеру
+- `GET /api/positions/run-stream` — SSE-стрим массовой проверки позиций (`check_all_positions.py`)
+- `GET /api/positions/check` — разовая проверка одного кластера (`check_positions.py`)
 
 **SEO-анализ и контент:**
 - `POST /api/cluster/run-seo-analysis` — SEO-анализ кластера

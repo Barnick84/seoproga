@@ -11,67 +11,79 @@
     <script src="https://cdn.jsdelivr.net/npm/highcharts@10.3.3/modules/exporting.js" onerror="this.onerror=null; this.src='https://cdnjs.cloudflare.com/ajax/libs/highcharts/10.3.3/modules/exporting.min.js';"></script>
     <script src="https://cdn.jsdelivr.net/npm/highcharts@10.3.3/modules/accessibility.js" onerror="this.onerror=null; this.src='https://cdnjs.cloudflare.com/ajax/libs/highcharts/10.3.3/modules/accessibility.min.js';"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=4.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        :root {
-            --primary: #ff4d4f;
-            --primary-hover: #ff7875;
-            --text: #333;
-            --text-secondary: #999;
-            --bg: #f5f5f5;
-            --card-bg: #ffffff;
-            --border: #f0f0f0;
-            --error: #ff4d4f;
-            --warning: #faad14;
-            --success: #52c41a;
+        /* Specific styles for analysis.html */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        .metric-box {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.5;
-            min-height: 100vh;
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            display: block;
+            margin-bottom: 4px;
         }
 
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
         }
 
-        .spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #ccc;
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
-            vertical-align: middle;
+        .metric-comparison {
+            font-size: 12px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--border);
+            color: var(--text-secondary);
+        }
+
+        .diff-plus {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .diff-minus {
+            color: var(--error);
+            font-weight: 600;
+        }
+
+        .recommendation {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--border);
+            background: var(--card-bg);
+            box-shadow: var(--shadow-sm);
         }
 
         #progressNotify {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            background: #1a1a2e;
+            background: var(--header-bg);
             color: #fff;
             padding: 14px 20px;
             border-radius: 10px;
             display: none;
             z-index: 2000;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+            box-shadow: var(--shadow-lg);
             font-size: 14px;
             min-width: 260px;
             max-width: 360px;
@@ -108,499 +120,12 @@
             }
         }
 
-        .loader-mini {
-            display: inline-block;
-            width: 13px;
-            height: 13px;
-            border: 2px solid rgba(255, 77, 79, 0.25);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.75s linear infinite;
-            vertical-align: middle;
-            margin-right: 5px;
-            flex-shrink: 0;
-        }
-
-        /* Top Menu */
-        .top-menu {
-            background: #333;
-            padding: 0 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 50px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .top-menu .user-info {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-        }
-
-        .top-menu .logo {
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .top-menu .menu-tabs {
-            display: flex;
-            gap: 20px;
-        }
-
-        .top-menu a.menu-tab {
-            color: #ccc;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-
-        .top-menu a.menu-tab:hover {
-            color: white;
-        }
-
-        .top-menu a.menu-tab.active {
-            color: white;
-            font-weight: 600;
-        }
-
-        .balance-display {
-            display: flex;
-            align-items: center;
-            background: #444;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            color: #fff;
-            gap: 8px;
-            margin-right: 15px;
-        }
-
-        .balance-value {
-            font-weight: 600;
-            color: #4CAF50;
-        }
-
-        .btn-topup-icon {
-            background: #4CAF50;
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            line-height: 1;
-        }
-
-        .site-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .site-selector select {
-            padding: 6px 12px;
-            border-radius: 4px;
-            border: none;
-            font-size: 13px;
-            min-width: 180px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 4px;
-        }
-
-        .sub-header {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 0;
-        }
-
-        .tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-            background: transparent;
-            border-top: none;
-            border-left: none;
-            border-right: none;
-        }
-
-        .tab:hover {
-            color: var(--primary);
-        }
-
-        .tab.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-            background: transparent;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Metrics Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .metric-box {
-            background: #fafafa;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            text-align: center;
-        }
-
-        .metric-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--primary);
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .metric-comparison {
-            font-size: 12px;
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px dashed #ddd;
-            color: var(--text-secondary);
-        }
-
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th {
-            background: #fafafa;
-            text-align: left;
-            padding: 12px 16px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border);
-        }
-
-        td {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
-        }
-
-        tr:hover td {
-            background: #fafafa;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .diff-plus {
-            color: var(--success);
-            font-weight: 600;
-        }
-
-        .diff-minus {
-            color: var(--error);
-            font-weight: 600;
-        }
-
-        /* Recommendations */
-        .recommendation {
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            border-left: 4px solid #ddd;
-            background: #fff;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-hover);
-        }
-
-        .btn-primary:disabled {
-            background: #bfbfbf;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: white;
-            color: var(--text);
-            border: 1px solid #d9d9d9;
-        }
-
-        .btn-secondary:hover {
-            color: var(--primary);
-            border-color: var(--primary);
-        }
-
-        .btn-add {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .btn-add:hover {
-            background: var(--primary-hover);
-        }
-
-        /* Modals */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.visible {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            width: 400px;
-            max-width: 90%;
-        }
-
-        .modal-content h3 {
-            margin-bottom: 20px;
-        }
-
-        .modal-content input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            margin-bottom: 15px;
-        }
-
-        /* Loading */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Topup Modal Specific */
-        .topup-modal-content {
-            max-width: 400px;
-        }
-
-        .topup-input-group {
-            margin: 20px 0;
-            text-align: left;
-        }
-
-        .topup-input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .topup-input-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .topup-hints {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .btn-hint {
-            flex: 1;
-            padding: 6px;
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .btn-hint:hover {
-            background: #e0e0e0;
-        }
-
-        /* Tabs Styling */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 0;
-        }
-
-        .tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .tab:hover {
-            color: var(--primary);
-        }
-
-        .tab.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Structure Editor */
         .h2-block {
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .h2-block:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: var(--shadow-md);
         }
 
         .h3-block {
