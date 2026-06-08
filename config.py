@@ -25,10 +25,15 @@ class Config:
     SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", 0.4))
     SERP_TOP_N = 10
     CACHE_TTL_DAYS = 7
+    XMLRIVER_REQUEST_DELAY = float(os.getenv("XMLRIVER_REQUEST_DELAY", 1.5))
 
     CACHE_DB_PATH = "data/serp_cache.db"
     USE_SQLITE = not (PG_PASS or MYSQL_PASS or os.getenv("MYSQL_HOST"))
-    DB_TYPE = "mysql" if MYSQL_HOST and MYSQL_USER else ("postgresql" if PG_PASS else "sqlite")
+    DB_TYPE = (
+        "mysql"
+        if MYSQL_HOST and MYSQL_USER
+        else ("postgresql" if PG_PASS else "sqlite")
+    )
 
     MIRATEXT_API_KEY = os.getenv("MIRATEXT_API_KEY", "")
     MIRATEXT_REGION = int(os.getenv("MIRATEXT_REGION", 213))
@@ -42,21 +47,81 @@ class Config:
     LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", 8192))
 
     EXCLUDED_DOMAINS = [
-        "yandex.ru", "avito.ru", "ya.ru", "cian.ru", "2gis.ru", "vk.com",
-        "superjob.ru", "hh.ru", "youtube.com", "tutu.ru", "wikipedia.org",
-        "travelata.ru", "dzen.ru", "ok.ru", "academic.ru", "otzovik.com",
-        "irecommend.ru", "ozon.ru", "t.me", "citilink.ru", "mvideo.ru",
-        "dns-shop.ru", "wildberries.ru", "mail.ru", "sravni.ru", "aliexpress.ru",
-        "auto.ru", "drom.ru", "drive2.ru", "youla.ru", "google.com", "zoon.ru",
-        "gosuslugi.ru", "rambler.ru", "gismeteo.ru", "google.ru", "pikabu.ru",
-        "prodoctorov.ru", "domclick.ru", "profi.ru", "yell.ru", "rutube.ru",
-        "tripadvisor.ru", "flamp.ru", "spr.ru", "yelp.com", "tulp.ru", "apoi.ru",
-        "vseotzyvy.ru", "kupilskazal.ru", "imho24.ru", "otzyv.com",
-        "spasibovsem.ru", "sites.reviews", "price.ru", "pulscen.ru", "tiu.ru",
-        "aport.ru", "4geo.ru", "rosfirm.ru", "maxi-karta.ru", "spravka.me",
-        "allinform.ru", "spravker.ru", "orgpage.ru", "ypag.ru", "foursquare.com",
-        "all.biz", "altergeo.ru", "gmstar.ru", "toster.ru", "ask.fm", "twoo.com",
-        "thequestion.ru", "genon.ru"
+        "yandex.ru",
+        "avito.ru",
+        "ya.ru",
+        "cian.ru",
+        "2gis.ru",
+        "vk.com",
+        "superjob.ru",
+        "hh.ru",
+        "youtube.com",
+        "tutu.ru",
+        "wikipedia.org",
+        "travelata.ru",
+        "dzen.ru",
+        "ok.ru",
+        "academic.ru",
+        "otzovik.com",
+        "irecommend.ru",
+        "ozon.ru",
+        "t.me",
+        "citilink.ru",
+        "mvideo.ru",
+        "dns-shop.ru",
+        "wildberries.ru",
+        "mail.ru",
+        "sravni.ru",
+        "aliexpress.ru",
+        "auto.ru",
+        "drom.ru",
+        "drive2.ru",
+        "youla.ru",
+        "google.com",
+        "zoon.ru",
+        "gosuslugi.ru",
+        "rambler.ru",
+        "gismeteo.ru",
+        "google.ru",
+        "pikabu.ru",
+        "prodoctorov.ru",
+        "domclick.ru",
+        "profi.ru",
+        "yell.ru",
+        "rutube.ru",
+        "tripadvisor.ru",
+        "flamp.ru",
+        "spr.ru",
+        "yelp.com",
+        "tulp.ru",
+        "apoi.ru",
+        "vseotzyvy.ru",
+        "kupilskazal.ru",
+        "imho24.ru",
+        "otzyv.com",
+        "spasibovsem.ru",
+        "sites.reviews",
+        "price.ru",
+        "pulscen.ru",
+        "tiu.ru",
+        "aport.ru",
+        "4geo.ru",
+        "rosfirm.ru",
+        "maxi-karta.ru",
+        "spravka.me",
+        "allinform.ru",
+        "spravker.ru",
+        "orgpage.ru",
+        "ypag.ru",
+        "foursquare.com",
+        "all.biz",
+        "altergeo.ru",
+        "gmstar.ru",
+        "toster.ru",
+        "ask.fm",
+        "twoo.com",
+        "thequestion.ru",
+        "genon.ru",
     ]
 
     @classmethod
@@ -69,15 +134,16 @@ class Config:
     @classmethod
     def get_mysql_conn(cls):
         import pymysql
+
         return pymysql.connect(
             host=cls.MYSQL_HOST,
             port=cls.MYSQL_PORT,
             user=cls.MYSQL_USER,
             password=cls.MYSQL_PASS,
             database=cls.MYSQL_DB,
-            charset='utf8mb4',
+            charset="utf8mb4",
             cursorclass=pymysql.cursors.DictCursor,
-            autocommit=True
+            autocommit=True,
         )
 
     @classmethod

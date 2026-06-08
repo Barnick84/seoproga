@@ -85,7 +85,8 @@ seo-auto-cluster/
 │   ├── seo_workflow.py         # Оркестратор полного SEO-цикла
 │   ├── task_manager.py         # Менеджер прогресса задач (MySQL)
 │   ├── worker.py               # Фоновый воркер задач
-│   ├── xmlriver_client.py      # Клиент XMLRiver API
+│   ├── serp_collector.py       # Prefetch SERP с прогрессом (отдельный сбор до кластеризации)
+│   ├── xmlriver_client.py      # Клиент XMLRiver API (rate limiting 1.5с)
 │   └── yandex_webmaster.py     # Клиент Яндекс.Вебмастер API v4
 │
 ├── utils/
@@ -205,8 +206,11 @@ seo-auto-cluster/
 
 **Классы:**
 - `XmlriverClient`
+  - `min_delay: float` — минимальная пауза между запросами (`Config.XMLRIVER_REQUEST_DELAY`, по умолч. 1.5с)
+  - `_last_request: float` — таймстамп последнего запроса (для rate limiting)
   - `fetch_serp(keyword, engine, region, device, top_n, page, use_cache, retries) → list[str]`
     - Проверяет кэш (если `use_cache=True`)
+    - **Rate limiting**: если с прошлого запроса прошло < `min_delay` — ждёт остаток
     - Строит params: `user`, `key`, `query` (с `&` → `%26`), `groupby`, `lr`/`loc`, `page`, `device`
     - XML-ответ парсится: извлекаются `doc` с `contenttype=organic`
     - Retry: ошибка 500 («перезапрос») — пауза 5с; **ошибка 111** («нет каналов») — exponential backoff 10с/20с/30с
@@ -215,12 +219,30 @@ seo-auto-cluster/
   - `_get_error_info(data)` — извлекает `@code` и `#text` ошибки
   - `_is_retry_needed(data)` — проверяет коды 500 и 111
 
+**Rate limiting:** все вызовы `fetch_serp()` (кроме кэш-хитов) проходят через `time.sleep(min_delay - elapsed)`. Это предотвращает перегрузку каналов XMLRiver при массовом сборе SERP (800+ запросов).
+
 **Обработка ошибок:**
 - **111**: Нет свободных каналов — retry с ожиданием до 30с, до 5 попыток
 - **500**: Перезапрос — retry с ожиданием 5с
 - При исчерпании попыток → пустой список + сообщение в stdout
 
-**Используется:** `clustering.py`, `custom_analyzer.py`, `seo_workflow.py`
+**Используется:** `clustering.py`, `custom_analyzer.py`, `seo_workflow.py`, `serp_collector.py`
+
+---
+
+### 4.15 `serp_collector.py` — Prefetch SERP
+**Назначение:** Пакетный сбор SERP для кластеризации с прогрессом. Отделяет фазу сбора данных от фазы вычислений.
+
+**Функции:**
+- `prefetch_for_clustering(keywords, client, on_progress) → int`
+  - Для каждого ключа: `fetch_serp(use_cache=True)` — проверяет кэш
+  - Если не в кэше — API-запрос с rate limiting (через `XmlriverClient`)
+  - `on_progress(done, total)` — колбэк для обновления прогресса (TaskManager)
+  - Возвращает количество ключей, найденных в кэше
+
+**Логика:** prefetch прогоняет все ключи через `client.fetch_serp()`. Каждый успешный запрос попадает в кэш. После prefetch `cluster_keywords()` работает только из кэша (`skip_cache_miss=True`), без единого вызова API.
+
+**Используется:** `run_clustering.py`
 
 ---
 
@@ -591,6 +613,7 @@ seo-auto-cluster/
 | `YANDEX_SITE_URL` | — | Дефолтный сайт для CLI |
 | `SIMILARITY_THRESHOLD` | 0.4 | Порог похожести SERP |
 | `CACHE_TTL_DAYS` | 7 | TTL кэша SERP |
+| `XMLRIVER_REQUEST_DELAY` | 1.5 | Мин. пауза между запросами XMLRiver (сек) |
 | `MIRATEXT_API_KEY` | — | API-ключ Miratext |
 | `OPENAI_API_KEY` | — | Ключ OpenAI/Hydra |
 | `LLM_MODEL` | gpt-4o-mini | Модель LLM |

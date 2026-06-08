@@ -20,6 +20,8 @@ class XmlriverClient:
         self.base_url_google = "https://xmlriver.com/search_google/xml"
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self._last_request: float = 0.0
+        self.min_delay: float = Config.XMLRIVER_REQUEST_DELAY
 
     def _get_base_url(self, engine: str) -> str:
         return self.base_url_yandex if engine == "yandex" else self.base_url_google
@@ -67,13 +69,17 @@ class XmlriverClient:
         retries = retries or self.max_retries
 
         if use_cache:
-            # Cache key includes engine, region, device, and page
             cache_key = f"{keyword}|{engine}|{region}|{device}|{page}"
-            cached = self.cache.get(
-                cache_key, engine, region
-            )  # Wait, cache.get also needs updated key logic
+            cached = self.cache.get(cache_key, engine, region)
             if cached:
                 return cached
+
+        # Rate limiting between API calls
+        elapsed = time.time() - self._last_request
+        if elapsed < self.min_delay:
+            wait = self.min_delay - elapsed
+            time.sleep(wait)
+        self._last_request = time.time()
 
         base_url = self._get_base_url(engine)
         params = {

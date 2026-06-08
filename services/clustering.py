@@ -40,6 +40,7 @@ def cluster_keywords(
     client: XmlriverClient,
     threshold: float | None = None,
     initial_clusters: List[Dict] = None,
+    skip_cache_miss: bool = False,
 ) -> List[Dict]:
     threshold = threshold or Config.SIMILARITY_THRESHOLD
     clusters = initial_clusters or []
@@ -50,16 +51,21 @@ def cluster_keywords(
     if clusters:
         next_id = max(c.get("id", 0) for c in clusters) + 1
 
-    for i, keyword in enumerate(keywords, 1):
+    for keyword in keywords:
+        serp = client.fetch_serp(keyword, use_cache=True)
+        if not serp:
+            if skip_cache_miss:
+                skipped += 1
+                continue
+            # Fallback: fetch without cache (will hit rate limit)
+            serp = client.fetch_serp(keyword, use_cache=False)
+        if not serp:
+            skipped += 1
+            continue
         serp = client.fetch_serp(keyword)
         if not serp:
             skipped += 1
             continue
-
-    if skipped:
-        print(
-            f"⚠️ Кластеризация: {skipped}/{len(keywords)} ключей пропущено (пустой SERP)"
-        )
 
         assigned = False
         for cluster in clusters:
@@ -86,6 +92,11 @@ def cluster_keywords(
                 }
             )
             next_id += 1
+
+    if skipped:
+        print(
+            f"⚠️ Кластеризация: {skipped}/{len(keywords)} ключей пропущено (пустой SERP)"
+        )
 
     clusters.sort(key=lambda x: len(x["keywords"]), reverse=True)
     return clusters
