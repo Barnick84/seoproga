@@ -12,11 +12,11 @@ let addedSites = [];
 
 async function checkSession() {
     const session = localStorage.getItem('session');
-    const isIndexPage = window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname === '';
+    const isIndexPage = window.location.pathname.endsWith('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '';
     
     if (!session) {
         if (!isIndexPage) {
-            window.location.href = 'index.html';
+            window.location.href = 'dashboard.html';
             return;
         }
         showAuthSection(true);
@@ -48,7 +48,7 @@ async function checkSession() {
             }
         } else {
             if (!isIndexPage) {
-                window.location.href = 'index.html';
+                window.location.href = 'dashboard.html';
                 return;
             }
             showAuthSection(true);
@@ -56,7 +56,7 @@ async function checkSession() {
     } catch (e) {
         console.log('Session check failed');
         if (!isIndexPage) {
-            window.location.href = 'index.html';
+            window.location.href = 'dashboard.html';
             return;
         }
         showAuthSection(true);
@@ -149,11 +149,11 @@ function showMainApp() {
     loadSites();
     
     // Adjust "Add Site" button based on page
-    const isIndexPage = window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname === '';
+    const isIndexPage = window.location.pathname.endsWith('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '';
     if (!isIndexPage) {
         const btnAdd = document.querySelector('.btn-add[onclick="showAddSiteModal()"]');
         if (btnAdd) {
-            btnAdd.outerHTML = `<a href="index.html?action=add-site" class="btn-add" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">+ Добавить сайт</a>`;
+            btnAdd.outerHTML = `<a href="dashboard.html?action=add-site" class="btn-add" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">+ Добавить сайт</a>`;
         }
     }
 }
@@ -275,7 +275,7 @@ async function logout() {
         });
     }
     localStorage.removeItem('session');
-    location.href = 'index.html';
+    location.href = 'dashboard.html';
 }
 
 function showAuthForm(type) {

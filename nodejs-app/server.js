@@ -11,10 +11,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Root route — must be before static middleware to take precedence over index.html
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'landing-page.html'));
-});
 
 app.use(express.static(path.join(__dirname, 'public')));
 

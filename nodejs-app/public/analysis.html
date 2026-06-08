@@ -634,7 +634,7 @@
                 <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
             </div>
             <div class="menu-tabs">
-                <a href="index.html" class="menu-tab">Dashboard</a>
+                <a href="dashboard.html" class="menu-tab">Dashboard</a>
                 <a href="sort.html" class="menu-tab">Сортировка</a>
                 <a href="cluster.html" class="menu-tab">Кластер</a>
                 <a href="positions.html" class="menu-tab">Позиции</a>
@@ -1670,7 +1670,7 @@
             const currentAnalysisDomain = params.get('domain');
             // Only redirect if the user selects a DIFFERENT site from the dropdown
             if (selectedDomain && selectedDomain !== currentAnalysisDomain) {
-                window.location.href = `index.html?site=${encodeURIComponent(selectedDomain)}&tab=cluster`;
+                window.location.href = `dashboard.html?site=${encodeURIComponent(selectedDomain)}&tab=cluster`;
             }
         }
 
