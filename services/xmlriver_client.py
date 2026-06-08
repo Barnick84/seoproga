@@ -12,7 +12,7 @@ class XmlriverClient:
     def __init__(
         self,
         cache: Optional[SERPCache] = None,
-        max_retries: int = 3,
+        max_retries: int = 5,
         retry_delay: float = 2.0,
     ):
         self.cache = cache or SERPCache()
@@ -24,18 +24,24 @@ class XmlriverClient:
     def _get_base_url(self, engine: str) -> str:
         return self.base_url_yandex if engine == "yandex" else self.base_url_google
 
-    def _is_retry_needed(self, data: dict) -> bool:
-        if "yandexsearch" not in data:
-            return False
-        yandexsearch = data.get("yandexsearch", {})
-        response = yandexsearch.get("response", {})
+    def _get_error_info(self, data: dict) -> tuple[str | None, str | None]:
+        root = data.get("yandexsearch") or data.get("googlesearch")
+        if not root:
+            return None, None
+        response = root.get("response", {})
         error = response.get("error", {})
         if error:
-            error_code = error.get("@code")
-            error_text = error.get("#text", "")
+            return error.get("@code"), error.get("#text", "")
+        return None, None
 
-            if error_code == "500" and "перезапрос" in error_text.lower():
-                return True
+    def _is_retry_needed(self, data: dict) -> bool:
+        error_code, error_text = self._get_error_info(data)
+        if not error_code:
+            return False
+        if error_code == "500" and error_text and "перезапрос" in error_text.lower():
+            return True
+        if error_code == "111":
+            return True
         return False
 
     def fetch_serp(
@@ -50,20 +56,22 @@ class XmlriverClient:
         retries: int = None,
     ) -> list[str]:
         engine = engine or Config.XMLRIVER_ENGINE
-        
+
         # Default region for Google is Russia (225) if not specified
         if engine == "google" and region is None:
             region = 225
         else:
             region = region or Config.XMLRIVER_REGION
-            
+
         top_n = top_n or Config.SERP_TOP_N
         retries = retries or self.max_retries
 
         if use_cache:
             # Cache key includes engine, region, device, and page
             cache_key = f"{keyword}|{engine}|{region}|{device}|{page}"
-            cached = self.cache.get(cache_key, engine, region) # Wait, cache.get also needs updated key logic
+            cached = self.cache.get(
+                cache_key, engine, region
+            )  # Wait, cache.get also needs updated key logic
             if cached:
                 return cached
 
@@ -76,7 +84,7 @@ class XmlriverClient:
             "page": page,
             "device": device,
         }
-        
+
         if engine == "yandex":
             params["lr"] = region
             params["domain"] = "ru"
@@ -85,7 +93,7 @@ class XmlriverClient:
             # And domain should be 'ru' if we are in Russia.
             params["loc"] = region
             params["domain"] = "ru" if region in [225, 213, 2, 1] else "com"
-        
+
         # Google specific adjustments if needed
         params["lang"] = "ru"
 
@@ -97,19 +105,28 @@ class XmlriverClient:
 
                 data = xmltodict.parse(response.content)
 
-
-                # Check for 500 error requiring retry
+                # Check for error requiring retry
                 if self._is_retry_needed(data):
+                    error_code, error_text = self._get_error_info(data)
                     if attempt < retries - 1:
-
-                        time.sleep(5)
+                        if error_code == "111":
+                            # No free channels — wait longer for channels to free up
+                            wait = min(30, 10 * (attempt + 1))
+                            print(
+                                f"⚠️ XMLRiver: нет свободных каналов (111), попытка {attempt + 1}/{retries}, жду {wait}с..."
+                            )
+                            time.sleep(wait)
+                        else:
+                            time.sleep(5)
                         continue
+                    print(
+                        f"❌ XMLRiver: исчерпаны попытки, ошибка {error_code}: {error_text}"
+                    )
                     return []
 
                 if "yandexsearch" in data:
                     pass
                 urls = self._parse_xmlriver_response(data)
-
 
                 if use_cache and urls:
                     cache_key = f"{keyword}|{engine}|{region}|{device}|{page}"
@@ -122,7 +139,7 @@ class XmlriverClient:
                 if attempt < retries - 1:
                     time.sleep(self.retry_delay)
                     continue
-                pass
+                print(f"❌ XMLRiver: исключение при запросе: {e}")
                 return []
 
         return []
@@ -134,13 +151,11 @@ class XmlriverClient:
         root = data.get("yandexsearch") or data.get("googlesearch")
         if not root:
             return []
-            
+
         response = root.get("response", {})
         results = response.get("results", {})
         grouping = results.get("grouping", {})
         groups = grouping.get("group", [])
-
-
 
         if isinstance(groups, dict):
             groups = [groups]

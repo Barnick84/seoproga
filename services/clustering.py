@@ -43,6 +43,7 @@ def cluster_keywords(
 ) -> List[Dict]:
     threshold = threshold or Config.SIMILARITY_THRESHOLD
     clusters = initial_clusters or []
+    skipped = 0
 
     # Find the starting ID for new clusters
     next_id = 1
@@ -52,7 +53,13 @@ def cluster_keywords(
     for i, keyword in enumerate(keywords, 1):
         serp = client.fetch_serp(keyword)
         if not serp:
+            skipped += 1
             continue
+
+    if skipped:
+        print(
+            f"⚠️ Кластеризация: {skipped}/{len(keywords)} ключей пропущено (пустой SERP)"
+        )
 
         assigned = False
         for cluster in clusters:
