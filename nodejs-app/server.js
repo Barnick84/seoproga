@@ -1648,16 +1648,17 @@ app.post('/api/update-keyword-text', authenticate, async (req, res) => {
 // API: Collect keywords for cluster by head query
 app.post('/api/collect-keywords-for-cluster', authenticate, async (req, res) => {
     try {
-        const { domain, clusterId, headQuery } = req.body;
+        const { domain, clusterId, headQuery, type } = req.body;
         if (!domain || !clusterId || !headQuery) {
             return res.status(400).json({ success: false, error: 'Domain, clusterId and headQuery required' });
         }
         
         const normalizedDomain = normalizeUrl(domain);
+        const sourceType = type || 'popular';
         
         const result = await callPython(
             path.join(__dirname, 'scripts', 'collect_cluster_keywords.py'),
-            [normalizedDomain, req.user.user_id, clusterId, headQuery]
+            [normalizedDomain, req.user.user_id, clusterId, headQuery, sourceType]
         );
         
         res.json(JSON.parse(result));
@@ -1889,7 +1890,7 @@ app.get('/api/run-frequency-stream', authenticate, async (req, res) => {
 
         // Calculate cost: frequency_rate RUB per keyword
         let queryCount = 0;
-        let queryStr = "SELECT COUNT(*) as count FROM yandex_queries WHERE user_id = ? AND site_url = ? AND minus_word = 0";
+        let queryStr = "SELECT COUNT(*) as count FROM yandex_queries WHERE user_id = ? AND site_url = ? AND minus_word = 0 AND is_right_column = 0";
         let queryParams = [req.user.user_id, normalizedDomain];
 
         if (mode === 'missing') {

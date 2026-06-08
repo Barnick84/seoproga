@@ -79,7 +79,7 @@ def main():
 
     try:
         # Load keywords
-        query = "SELECT id, query, clustered, frequency FROM yandex_queries WHERE user_id = %s AND site_url = %s AND minus_word = 0"
+        query = "SELECT id, query, clustered, frequency FROM yandex_queries WHERE user_id = %s AND site_url = %s AND minus_word = 0 AND is_right_column = 0"
         params = [user_id, domain]
 
         if mode == "missing":

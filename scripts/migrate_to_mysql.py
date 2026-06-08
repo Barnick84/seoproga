@@ -113,12 +113,18 @@ def migrate():
                 minus_word TINYINT DEFAULT 0,
                 clustered INT DEFAULT 0,
                 frequency INT DEFAULT 0,
+                is_right_column TINYINT DEFAULT 0,
                 INDEX idx_user_site (user_id, site_url),
                 INDEX idx_query (query),
                 UNIQUE KEY user_site_query (user_id, site_url, query(255)),
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             ) ENGINE=InnoDB
         """)
+        
+        # Ensure is_right_column exists
+        try:
+            cur.execute("ALTER TABLE yandex_queries ADD COLUMN is_right_column TINYINT DEFAULT 0")
+        except: pass
         
         # 4. Cluster Mappings
         cur.execute("""

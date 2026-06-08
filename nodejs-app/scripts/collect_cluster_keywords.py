@@ -29,7 +29,7 @@ from config import Config
 from services.xmlriver_client import XmlriverClient
 from services.clustering import serp_similarity
 
-def fetch_wordstat_keywords(query: str) -> list[dict]:
+def fetch_wordstat_keywords(query: str, type_name: str = "popular") -> list[dict]:
     url = "https://xmlriver.com/wordstat/new/json"
     params = {
         "query": query,
@@ -43,8 +43,8 @@ def fetch_wordstat_keywords(query: str) -> list[dict]:
         
         candidates = []
         try:
-            popular = data.get("table", {}).get("tableData", {}).get("popular", [])
-            for item in popular:
+            items = data.get("table", {}).get("tableData", {}).get(type_name, [])
+            for item in items:
                 text = item.get("text", "").strip()
                 val = int(item.get("value", 0))
                 if text:
@@ -59,19 +59,22 @@ def fetch_wordstat_keywords(query: str) -> list[dict]:
 
 def main():
     if len(sys.argv) < 5:
-        safe_print(json.dumps({"success": False, "error": "Usage: script.py <domain> <user_id> <cluster_id> <head_query>"}))
+        safe_print(json.dumps({"success": False, "error": "Usage: script.py <domain> <user_id> <cluster_id> <head_query> [type]"}))
         sys.exit(1)
 
     domain = sys.argv[1].lower().strip()
     user_id = int(sys.argv[2])
     cluster_id = int(sys.argv[3])
     head_query = sys.argv[4].strip()
+    source_type = sys.argv[5].strip().lower() if len(sys.argv) > 5 else "popular"
+    if source_type not in ["popular", "similar"]:
+        source_type = "popular"
 
     try:
         # Get candidates from Wordstat
-        candidates = fetch_wordstat_keywords(head_query)
+        candidates = fetch_wordstat_keywords(head_query, source_type)
         if not candidates:
-            safe_print(json.dumps({"success": False, "error": "Не удалось собрать ключевые запросы из Yandex Wordstat"}))
+            safe_print(json.dumps({"success": True, "added": 0, "message": f"В Яндекс Wordstat нет запросов в колонке '{source_type}' по этому ключу"}))
             return
         
         # Limit to top 30 to save requests/time
@@ -101,6 +104,7 @@ def main():
         conn = Config.get_mysql_conn()
         cur = conn.cursor()
         
+        is_rc = 1 if source_type == "similar" else 0
         try:
             added_count = 0
             for cand in matched_keywords:
@@ -110,14 +114,14 @@ def main():
                 )
                 existing = cur.fetchone()
                 if existing:
-                    # Update cluster mapping and frequency if already exists
-                    cur.execute("UPDATE yandex_queries SET clustered=%s, frequency=%s WHERE id=%s", (cluster_id, cand["freq"], existing[0]))
+                    # Update cluster mapping and frequency if already exists, and preserve/update right column flag
+                    cur.execute("UPDATE yandex_queries SET clustered=%s, frequency=%s, is_right_column=%s WHERE id=%s", (cluster_id, cand["freq"], is_rc, existing[0]))
                 else:
                     # Insert new keyword
                     cur.execute(
-                        "INSERT INTO yandex_queries (user_id, site_url, query, clustered, frequency, minus_word) "
-                        "VALUES (%s, %s, %s, %s, %s, 0)",
-                        (user_id, domain, cand["query"], cluster_id, cand["freq"])
+                        "INSERT INTO yandex_queries (user_id, site_url, query, clustered, frequency, minus_word, is_right_column) "
+                        "VALUES (%s, %s, %s, %s, %s, 0, %s)",
+                        (user_id, domain, cand["query"], cluster_id, cand["freq"], is_rc)
                     )
                 added_count += 1
                 
