@@ -677,6 +677,28 @@ app.post('/api/minus-words', authenticate, async (req, res) => {
     }
 });
 
+// API: Restore minus words
+app.post('/api/restore-minus', authenticate, async (req, res) => {
+    try {
+        const { domain, keywords } = req.body;
+        
+        const result = await callPython(
+            path.join(__dirname, 'scripts', 'restore_minus.py'),
+            [],
+            JSON.stringify({ user_id: req.user.user_id, domain: normalizeUrl(domain), keywords })
+        );
+        
+        try {
+            const data = JSON.parse(result);
+            res.json(data);
+        } catch {
+            res.json({ success: false });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // API: Clear minus words
 app.post('/api/clear-minus', authenticate, async (req, res) => {
     try {
@@ -749,8 +771,9 @@ app.get('/api/run-mapping-stream', authenticate, async (req, res) => {
         
         const normalizedDomain = normalizeUrl(domain);
         
-        res.setHeader('Content-Type', 'text/plain');
-        res.setHeader('Transfer-Encoding', 'chunked');
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
         
         const py = require('child_process').spawn(PYTHON_PATH, [
             path.join(__dirname, 'scripts', 'run_mapping.py'),
@@ -760,8 +783,17 @@ app.get('/api/run-mapping-stream', authenticate, async (req, res) => {
             cwd: path.resolve(__dirname, '..')
         });
         
+        let output = '';
+
         py.stdout.on('data', (data) => {
-            res.write(data);
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.startsWith('PROGRESS:')) {
+                    res.write(`data: ${JSON.stringify({ type: 'progress', message: line.trim() })}\n\n`);
+                } else if (line.trim()) {
+                    output += line;
+                }
+            });
         });
         
         py.stderr.on('data', (data) => {
@@ -769,10 +801,16 @@ app.get('/api/run-mapping-stream', authenticate, async (req, res) => {
         });
         
         py.on('close', (code) => {
+            try {
+                const finalResult = JSON.parse(output);
+                res.write(`data: ${JSON.stringify({ type: 'done', result: finalResult })}\n\n`);
+            } catch (e) {
+                res.write(`data: ${JSON.stringify({ type: 'error', message: output || 'Process failed' })}\n\n`);
+            }
             res.end();
         });
     } catch (error) {
-        res.status(500).write(JSON.stringify({ error: error.message }));
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
         res.end();
     }
 });
@@ -1377,6 +1415,90 @@ app.post('/api/disband-cluster', authenticate, async (req, res) => {
     }
 });
 
+// API: Create cluster by URL
+app.post('/api/create-cluster-by-url', authenticate, async (req, res) => {
+    try {
+        const { domain, url } = req.body;
+        if (!domain || !url) {
+            return res.status(400).json({ success: false, error: 'Domain and url required' });
+        }
+
+        const normalizedDomain = normalizeUrl(domain);
+        
+        // Quick check if URL is already mapped to any cluster on this domain
+        const [existing] = await db.query(
+            "SELECT cluster_id FROM cluster_mappings WHERE user_id = ? AND site_url = ? AND target_url = ?",
+            [req.user.user_id, normalizedDomain, url]
+        );
+        
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, error: 'Этот URL уже прикреплен к кластеру #' + existing[0].cluster_id });
+        }
+
+        const result = await callPython(
+            path.join(__dirname, 'scripts', 'create_cluster_from_url.py'),
+            [normalizedDomain, req.user.user_id, url]
+        );
+        
+        res.json(JSON.parse(result));
+    } catch (error) {
+        console.error('Error creating cluster by URL:', error);
+        res.status(500).json({ success: false, error: error.message || 'Server error' });
+    }
+});
+
+// API: Update keyword text
+app.post('/api/update-keyword-text', authenticate, async (req, res) => {
+    try {
+        const { domain, keywordId, newText } = req.body;
+        if (!domain || !keywordId || !newText) {
+            return res.status(400).json({ success: false, error: 'Domain, keywordId and newText required' });
+        }
+        
+        const normalizedDomain = normalizeUrl(domain);
+        
+        // Update database record
+        const [result] = await db.query(
+            "UPDATE yandex_queries SET query = ? WHERE id = ? AND user_id = ? AND site_url = ?",
+            [newText, keywordId, req.user.user_id, normalizedDomain]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Ключевое слово не найдено' });
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating keyword text:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ success: false, error: 'Такое ключевое слово уже существует в вашей базе данных для этого сайта.' });
+        }
+        res.status(500).json({ success: false, error: error.message || 'Server error' });
+    }
+});
+
+// API: Collect keywords for cluster by head query
+app.post('/api/collect-keywords-for-cluster', authenticate, async (req, res) => {
+    try {
+        const { domain, clusterId, headQuery } = req.body;
+        if (!domain || !clusterId || !headQuery) {
+            return res.status(400).json({ success: false, error: 'Domain, clusterId and headQuery required' });
+        }
+        
+        const normalizedDomain = normalizeUrl(domain);
+        
+        const result = await callPython(
+            path.join(__dirname, 'scripts', 'collect_cluster_keywords.py'),
+            [normalizedDomain, req.user.user_id, clusterId, headQuery]
+        );
+        
+        res.json(JSON.parse(result));
+    } catch (error) {
+        console.error('Error collecting keywords for cluster:', error);
+        res.status(500).json({ success: false, error: error.message || 'Server error' });
+    }
+});
+
 // API: Update cluster name
 app.post('/api/update-cluster-name', authenticate, async (req, res) => {
     try {
@@ -1770,10 +1892,16 @@ app.post('/api/cluster/save-structure', authenticate, async (req, res) => {
         }
         
         const analysis = JSON.parse(rows[0].analysis_data);
-        analysis.saved_structure = {
+        const newSaved = {
             data: structure,
             saved_at: new Date().toISOString()
         };
+        analysis.saved_structure = newSaved;
+        
+        if (!analysis.saved_structures_history) {
+            analysis.saved_structures_history = [];
+        }
+        analysis.saved_structures_history.push(newSaved);
         
         await db.query(
             "UPDATE cluster_analysis SET analysis_data = ? WHERE user_id = ? AND site_url = ? AND cluster_id = ?",

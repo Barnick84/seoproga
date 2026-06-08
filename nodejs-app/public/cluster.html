@@ -51,14 +51,16 @@
             </div>
 
             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h2>Кластеры</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:20px;">
+                    <div style="display:flex; align-items:center; gap: 15px; flex: 1;">
+                        <h2>Кластеры</h2>
+                        <input type="text" id="clusterSearchInput" placeholder="Поиск по ключам..." oninput="filterClustersByKeywords()" style="padding:6px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; max-width:300px; width:100%;">
+                    </div>
                     <div class="header-actions" style="display:flex; gap:10px;">
                         <button id="btnRunCluster" class="btn btn-primary" onclick="runClustering()">🚀 Запустить кластеризацию</button>
-                        <button id="btnFetchWM" class="btn btn-blue" onclick="fetchWMQueries()">📥 Получить ключи из Y WM</button>
                         <button class="btn btn-green" onclick="runMapping()">🔗 Маппинг</button>
                         <button class="btn btn-purple" onclick="runSEOAnalysis()" style="display:none;">📊 СЕО анализ</button>
-                        <button id="btnFrequency" class="btn btn-orange" onclick="showFrequencyModal()">📈 Частота</button>
+                        <button id="btnCreateClusterByUrl" class="btn btn-orange" onclick="showCreateClusterByUrlModal()">🌐 Создать кластер по URL</button>
                     </div>
                 </div>
 
@@ -94,6 +96,19 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeManualUrlModal()">Отмена</button>
                 <button class="btn btn-primary" id="btnSaveManualUrl">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Cluster by URL Modal -->
+    <div id="createClusterByUrlModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Создать кластер по URL</div>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Введите URL страницы. Система получит её Title, соберет ключевые слова из Wordstat и создаст новый кластер с подходящими словами.</p>
+            <input type="text" id="createClusterUrlInput" placeholder="https://example.com/page">
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateClusterByUrlModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnSaveClusterByUrl" onclick="createClusterByUrl()">Сохранить</button>
             </div>
         </div>
     </div>
@@ -380,9 +395,9 @@
                 if (kw.clustered) {
                     const id = kw.clustered;
                     if (!clusterGroups[id]) clusterGroups[id] = [];
-                    clusterGroups[id].push({ query: kw.query, freq: kw.frequency || 0, hits: kw.hits || 0 });
+                    clusterGroups[id].push({ id: kw.id, query: kw.query, freq: kw.frequency || 0, hits: kw.hits || 0 });
                 } else {
-                    unclustered.push({ query: kw.query, freq: kw.frequency || 0, hits: kw.hits || 0 });
+                    unclustered.push({ id: kw.id, query: kw.query, freq: kw.frequency || 0, hits: kw.hits || 0 });
                 }
             });
 
@@ -475,7 +490,13 @@
                         ${kws.map(k => `
                             <div class="kw-row">
                                 <input type="checkbox" class="kw-checkbox" data-cluster="${clusterId}" data-kw="${escapeHtml(k.query)}" onchange="updateSidebarVisibility()">
-                                <span class="kw-query-container">• ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}${escapeHtml(k.query)}</span>
+                                <span class="kw-query-container">
+                                    • ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
+                                    <span class="kw-text-wrapper" style="position: relative; display: inline-flex; align-items: center; gap: 5px;">
+                                        <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Двойной клик для редактирования" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
+                                        <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 2px;">✏️</span>
+                                    </span>
+                                </span>
                             </div>
                         `).join('')}
                     </div>
@@ -492,11 +513,18 @@
             unclusteredList.innerHTML = unclustered.map(k => `
                 <div class="keyword-item kw-row unclustered">
                     <input type="checkbox" class="kw-checkbox" data-cluster="0" data-kw="${escapeHtml(k.query)}" onchange="updateSidebarVisibility()">
-                    <span class="kw-query-container">• ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}${escapeHtml(k.query)}</span>
+                    <span class="kw-query-container">
+                        • ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
+                        <span class="kw-text-wrapper" style="position: relative; display: inline-flex; align-items: center; gap: 5px;">
+                            <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Двойной клик для редактирования" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
+                            <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 2px;">✏️</span>
+                        </span>
+                    </span>
                 </div>
             `).join('') || '<div class="empty-state">Все слова кластеризованы</div>';
 
             updateSidebarClusterList();
+            filterClustersByKeywords();
         }
 
         function initSortable() {
@@ -632,21 +660,64 @@
 
         async function runMapping() {
             if (!currentDomain) return showStatus('Выберите сайт', 'error');
-            showStatus('Маппинг запущен...', 'success');
+            
+            const btn = document.querySelector('button[onclick="runMapping()"]');
+            if (btn) btn.classList.add('btn-loading');
+            showStatus('Маппинг запущен. Пожалуйста, подождите...', 'success');
+
             try {
-                const res = await authFetch('/api/run-mapping', {
-                    method: 'POST',
-                    body: JSON.stringify({ domain: currentDomain })
+                const session = localStorage.getItem('session');
+                const url = `/api/run-mapping-stream?domain=${encodeURIComponent(currentDomain)}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': session || '' }
                 });
-                const data = await res.json();
-                if (data.success) {
-                    showStatus('Маппинг успешно завершен', 'success');
-                    loadMappings(currentDomain);
-                } else {
-                    showStatus(`Ошибка маппинга: ${data.error}`, 'error');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const events = buffer.split('\n\n');
+                    buffer = events.pop(); // Keep the incomplete event in the buffer
+                    
+                    for (const event of events) {
+                        if (event.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(event.substring(6));
+                                if (data.type === 'progress') {
+                                    const match = data.message.match(/PROGRESS:\s*(\d+)/);
+                                    if (match) {
+                                        showStatus(`Маппинг выполняется... ${match[1]}%`, 'success');
+                                    }
+                                } else if (data.type === 'done') {
+                                    if (data.result && data.result.success) {
+                                        showStatus('Маппинг успешно завершен', 'success');
+                                        loadMappings(currentDomain);
+                                    } else {
+                                        showStatus(`Ошибка маппинга: ${data.result ? data.result.error : 'Неизвестная ошибка'}`, 'error');
+                                    }
+                                } else if (data.type === 'error') {
+                                    showStatus(`Ошибка маппинга: ${data.message}`, 'error');
+                                }
+                            } catch (e) {
+                                console.error('Error parsing SSE chunk:', e);
+                            }
+                        }
+                    }
                 }
             } catch (e) {
+                console.error(e);
                 showStatus('Ошибка соединения с сервером', 'error');
+            } finally {
+                if (btn) btn.classList.remove('btn-loading');
             }
         }
 
@@ -811,6 +882,117 @@
             };
         }
         function closeManualUrlModal() { document.getElementById('manualUrlModal').classList.remove('visible'); }
+
+        function filterClustersByKeywords() {
+            const queryInput = document.getElementById('clusterSearchInput');
+            if (!queryInput) return;
+            const query = queryInput.value.toLowerCase().trim();
+            const clusterItems = document.querySelectorAll('#clusterList .cluster-item');
+            
+            clusterItems.forEach(item => {
+                const nameEl = item.querySelector('.cluster-name');
+                const clusterName = nameEl ? nameEl.textContent.toLowerCase() : '';
+                
+                const kwRows = item.querySelectorAll('.kw-row');
+                let matchesKeyword = false;
+                
+                kwRows.forEach(row => {
+                    const queryContainer = row.querySelector('.kw-query-container');
+                    const kwText = queryContainer ? queryContainer.textContent.toLowerCase() : '';
+                    if (kwText.includes(query)) {
+                        matchesKeyword = true;
+                        row.style.display = '';
+                    } else {
+                        if (query !== '') {
+                            row.style.display = 'none';
+                        } else {
+                            row.style.display = '';
+                        }
+                    }
+                });
+                
+                if (clusterName.includes(query) || matchesKeyword) {
+                    item.style.display = '';
+                    const content = item.querySelector('.cluster-content');
+                    if (query !== '') {
+                        content.classList.remove('collapsed');
+                    } else {
+                        const clusterId = item.getAttribute('data-id');
+                        if (collapsedClusters.has(clusterId)) {
+                            content.classList.add('collapsed');
+                        } else {
+                            content.classList.remove('collapsed');
+                        }
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function makeKeywordEditable(spanEl, keywordId) {
+            if (spanEl.querySelector('input')) return; // Already editing
+            
+            const rawText = spanEl.getAttribute('data-raw-query');
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = rawText;
+            input.style.cssText = 'font-size: 13px; padding: 2px 5px; border: 1px solid #2196F3; border-radius: 4px; outline: none; width: auto; min-width: 150px;';
+            
+            spanEl.innerHTML = '';
+            spanEl.appendChild(input);
+            input.focus();
+            input.select();
+            
+            let isSaving = false;
+            
+            const saveChanges = async () => {
+                if (isSaving) return;
+                isSaving = true;
+                
+                const newText = input.value.trim();
+                if (!newText) {
+                    showStatus('Ключевое слово не может быть пустым', 'error');
+                    spanEl.innerText = rawText;
+                    return;
+                }
+                
+                if (newText === rawText) {
+                    spanEl.innerText = rawText;
+                    return;
+                }
+                
+                try {
+                    const res = await authFetch('/api/update-keyword-text', {
+                        method: 'POST',
+                        body: JSON.stringify({ domain: currentDomain, keywordId, newText })
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.success) {
+                        showStatus('Ключевое слово успешно обновлено', 'success');
+                        loadClusterData(currentDomain);
+                    } else {
+                        showStatus('Ошибка при обновлении: ' + (data.error || 'неизвестная ошибка'), 'error');
+                        spanEl.innerText = rawText;
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showStatus('Ошибка сети при обновлении ключевого слова', 'error');
+                    spanEl.innerText = rawText;
+                }
+            };
+            
+            input.onblur = saveChanges;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    saveChanges();
+                } else if (e.key === 'Escape') {
+                    input.onblur = null; // Prevent blur from firing
+                    spanEl.innerText = rawText;
+                }
+            };
+        }
     </script>
 
     <!-- Frequency Feature Scripts -->
@@ -1135,9 +1317,61 @@
                 if (btn) { btn.disabled = false; btn.textContent = '📈 Получить частотность'; }
             }
         }
+        // --- Create Cluster by URL ---
+        function showCreateClusterByUrlModal() {
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
+            document.getElementById('createClusterUrlInput').value = '';
+            document.getElementById('createClusterByUrlModal').style.display = 'flex';
+        }
+
+        function closeCreateClusterByUrlModal() {
+            document.getElementById('createClusterByUrlModal').style.display = 'none';
+        }
+
+        async function createClusterByUrl() {
+            const urlInput = document.getElementById('createClusterUrlInput').value.trim();
+            if (!urlInput) {
+                return showStatus('Введите URL', 'error');
+            }
+
+            // Hide the modal immediately
+            closeCreateClusterByUrlModal();
+
+            const btn = document.getElementById('btnSaveClusterByUrl');
+            btn.disabled = true;
+            btn.innerText = 'Создание...';
+            showStatus('Запущен сбор ключей из Wordstat и кластеризация... Пожалуйста, подождите.', 'success');
+
+            try {
+                const res = await authFetch('/api/create-cluster-by-url', {
+                    method: 'POST',
+                    body: JSON.stringify({ domain: currentDomain, url: urlInput })
+                });
+                
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showStatus(`Кластер успешно создан! Добавлено ключей: ${data.added || 0}`, 'success');
+                    loadClusterData(currentDomain);
+                } else {
+                    showStatus(`Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showStatus('Ошибка сети при создании кластера', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Сохранить';
+            }
+        }
     </script>
 
     <style>
+        .kw-row:hover .kw-edit-icon {
+            opacity: 0.7 !important;
+        }
+        .kw-edit-icon:hover {
+            opacity: 1 !important;
+        }
         .loader-mini {
             width: 16px; height: 16px;
             border: 2px solid #ddd;

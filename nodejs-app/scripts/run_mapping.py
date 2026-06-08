@@ -81,7 +81,9 @@ def run_mapping():
 
         for cid in cluster_ids:
             processed += 1
-            tm.update_progress(10 + int((processed / total) * 80))
+            progress_val = 10 + int((processed / total) * 80)
+            tm.update_progress(progress_val)
+            print(f"PROGRESS: {progress_val}", flush=True)
             
             cur.execute(
                 "SELECT query FROM yandex_queries WHERE user_id = %s AND site_url = %s AND clustered = %s",

@@ -678,14 +678,13 @@
                 </div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn btn-secondary" id="btnCollectKeywords" onclick="collectKeywordsForCluster()">Собрать ключи</button>
                 <button class="btn btn-secondary" id="btnCheckPositions" onclick="checkPositions()">Позиции</button>
                 <button class="btn btn-secondary" id="btnFrequency" onclick="showFrequencyModal()">Частота</button>
                 <button class="btn btn-secondary" title="Настройки съема" onclick="showSettingsModal()">⚙️</button>
                 <button class="btn btn-secondary" id="btnSetTargetUrl" onclick="showTargetUrlModal()">URL
                     страницы</button>
                 <button class="btn btn-primary" id="btnSeoAnalysis" onclick="startSeoAnalysis()">SEO анализ</button>
-                <button class="btn btn-secondary" id="btnSeoOptimize" onclick="startSeoOptimize()" disabled>SEO
-                    оптимизировать</button>
                 <button class="btn btn-secondary" id="btnPublish" style="display: none;">Опубликовать</button>
             </div>
         </div>
@@ -1458,7 +1457,10 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
                         <h2 style="margin:0;">Рекомендуемая структура (H2-H3)</h2>
-                        <div id="structureSavedDate" style="font-size:12px; color:var(--text-secondary); margin-top:4px;"></div>
+                        <div style="display:flex; align-items:center; gap: 10px; margin-top:4px;">
+                            <select id="structureHistorySelect" onchange="loadStructureByDate(this.value)" class="form-control" style="width:auto; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); display:none; font-size: 12px;"></select>
+                            <div id="structureSavedDate" style="font-size:12px; color:var(--text-secondary);"></div>
+                        </div>
                     </div>
                     <button id="btnGenerateStructure" class="btn btn-primary" onclick="generateIdealStructure()">✨ Сгенерировать ИИ-структуру</button>
                 </div>
@@ -1646,6 +1648,7 @@
         const domain = params.get('domain');
         const clusterId = params.get('clusterId');
         const clusterName = params.get('name') || `Кластер #${clusterId}`;
+        let headQueryText = clusterName;
 
         document.getElementById('clusterName').textContent = clusterName;
         if (domain && clusterId) {
@@ -1694,6 +1697,12 @@
                 const clusterKeywords = (dataKeywords.keywords || [])
                     .filter(k => k.clustered == clusterId)
                     .sort((a, b) => (b.frequency || 0) - (a.frequency || 0));
+
+                if (clusterKeywords.length > 0) {
+                    headQueryText = clusterKeywords[0].query;
+                } else {
+                    headQueryText = clusterName;
+                }
 
                 // Target URL
                 let targetUrl = dataMappings.mappings ? dataMappings.mappings[clusterId] : null;
@@ -1910,18 +1919,43 @@
             `).join('');
 
             // 11. Load Saved Structure if exists
-            if (data.saved_structure) {
+            const structureHistorySelect = document.getElementById('structureHistorySelect');
+            if (data.saved_structures_history && data.saved_structures_history.length > 0) {
+                structureHistorySelect.style.display = 'inline-block';
+                structureHistorySelect.innerHTML = data.saved_structures_history.map((s, idx) => 
+                    `<option value="${idx}">Версия от ${new Date(s.saved_at).toLocaleString()}</option>`
+                ).join('');
+                const lastIdx = data.saved_structures_history.length - 1;
+                structureHistorySelect.value = lastIdx; // select latest
+                
+                const latest = data.saved_structures_history[lastIdx];
+                renderStructureEditor(latest.data);
+                document.getElementById('btnGenerateStructure').style.display = 'none';
+                document.getElementById('structureSavedDate').textContent = `Текущая: ${new Date(latest.saved_at).toLocaleString()}`;
+            } else if (data.saved_structure) {
                 renderStructureEditor(data.saved_structure.data);
                 document.getElementById('btnGenerateStructure').style.display = 'none';
                 const date = new Date(data.saved_structure.saved_at).toLocaleString();
                 document.getElementById('structureSavedDate').textContent = `Сохранено: ${date}`;
+                structureHistorySelect.style.display = 'none';
             } else {
                 document.getElementById('btnGenerateStructure').style.display = 'block';
                 document.getElementById('structureSavedDate').textContent = '';
+                structureHistorySelect.style.display = 'none';
             }
             
             // Save global data for AI generation
             window.lastAnalysisData = data;
+        }
+
+        function loadStructureByDate(idx) {
+            if (!window.lastAnalysisData || !window.lastAnalysisData.saved_structures_history) return;
+            const s = window.lastAnalysisData.saved_structures_history[idx];
+            if (s) {
+                renderStructureEditor(s.data);
+                document.getElementById('btnGenerateStructure').style.display = 'none';
+                document.getElementById('structureSavedDate').textContent = `Отображается: ${new Date(s.saved_at).toLocaleString()}`;
+            }
         }
 
         function renderDensityChart(stats) {
@@ -2239,6 +2273,41 @@
             }
         }
 
+        async function collectKeywordsForCluster() {
+            if (!domain || !clusterId || !headQueryText) return;
+            
+            const btn = document.getElementById('btnCollectKeywords');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳ Сбор...';
+            }
+            
+            try {
+                const res = await authFetch('/api/collect-keywords-for-cluster', {
+                    method: 'POST',
+                    body: JSON.stringify({ domain, clusterId, headQuery: headQueryText })
+                });
+                
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert(`Успешно собрано ключевых слов: ${data.added}`);
+                    loadAnalysis();
+                } else {
+                    alert(`Ошибка сбора: ${data.error || 'неизвестная ошибка'}`);
+                }
+            } catch (e) {
+                console.error('Wordstat fetch error:', e);
+                alert('Ошибка соединения с сервером при сборе ключевых слов.');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Собрать ключи';
+                }
+            }
+        }
+
         async function checkPositions() {
             if (!domain || !clusterId) return;
             const btn = document.getElementById('btnCheckPositions');
@@ -2501,7 +2570,22 @@
                     const plan = data.data.seo_plan_content;
                     resultDiv.innerHTML = typeof marked !== 'undefined' ? marked.parse(plan) : plan;
                 } else {
-                    resultDiv.innerHTML = `<p style="color:red">Ошибка загрузки плана: ${data.error || 'Не найдено'}</p>`;
+                    const errorMsg = data.error || 'Не найдено';
+                    if (errorMsg.includes('семантическая разметка')) {
+                        resultDiv.innerHTML = `
+                            <div style="background: #fff5f5; border: 1px solid #feb2b2; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                <div style="color: #2d3748; line-height: 1.6; font-size: 14px;">
+                                    ${typeof marked !== 'undefined' ? marked.parse(errorMsg) : errorMsg.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                                </div>
+                                <div style="margin-top: 25px; text-align: center; border-top: 1px solid #fed7d7; padding-top: 20px;">
+                                    <h4 style="color: #4a5568; margin-bottom: 15px; font-weight: 600;">Схема правильной семантической разметки страницы:</h4>
+                                    <img src="semantic_layout_schema.png" alt="Схема семантической разметки" style="max-width: 100%; max-height: 450px; height: auto; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);" />
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `<p style="color:red">Ошибка загрузки плана: ${errorMsg.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
+                    }
                 }
             } catch (e) {
                 resultDiv.innerHTML = `<p style="color:red">Ошибка: ${e.message}</p>`;
@@ -2533,7 +2617,22 @@
                         loadSeoPlanByDate(data.date);
                     }
                 } else {
-                    resultDiv.innerHTML = `<p style="color:red">Ошибка: ${data.error || 'Неизвестная ошибка'}</p>`;
+                    const errorMsg = data.error || 'Неизвестная ошибка';
+                    if (errorMsg.includes('семантическая разметка')) {
+                        resultDiv.innerHTML = `
+                            <div style="background: #fff5f5; border: 1px solid #feb2b2; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                <div style="color: #2d3748; line-height: 1.6; font-size: 14px;">
+                                    ${typeof marked !== 'undefined' ? marked.parse(errorMsg) : errorMsg.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                                </div>
+                                <div style="margin-top: 25px; text-align: center; border-top: 1px solid #fed7d7; padding-top: 20px;">
+                                    <h4 style="color: #4a5568; margin-bottom: 15px; font-weight: 600;">Схема правильной семантической разметки страницы:</h4>
+                                    <img src="semantic_layout_schema.png" alt="Схема семантической разметки" style="max-width: 100%; max-height: 450px; height: auto; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);" />
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `<p style="color:red">Ошибка: ${errorMsg.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
+                    }
                 }
             } catch (e) {
                 resultDiv.innerHTML = `<p style="color:red">Ошибка: ${e.message}</p>`;

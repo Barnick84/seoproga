@@ -86,7 +86,10 @@
                     <div class="minus-list-wrapper">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <h3>Минус слова</h3>
-                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size:12px;" onclick="clearAllMinus()">Очистить всё</button>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn btn-primary" style="padding: 4px 10px; font-size:12px; background:#4CAF50;" onclick="restoreFromMinus()">Вернуть ключи</button>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size:12px;" onclick="clearAllMinus()">Очистить всё</button>
+                            </div>
                         </div>
                         <div id="minusList" class="keyword-list minus-list" style="margin-top:40px;">
                             <div class="empty-state">Нет минус слов</div>
@@ -200,7 +203,8 @@
             `).join('') || '<div class="empty-state">Нет ключей</div>';
             
             minusList.innerHTML = minusKeywords.map(k => `
-                <div class="keyword-item in-minus">
+                <div class="keyword-item in-minus" data-index="${keywords.indexOf(k)}">
+                    <input type="checkbox" class="checkbox" data-index="${keywords.indexOf(k)}">
                     <span class="query">${escapeHtml(k.query)}</span>
                 </div>
             `).join('') || '<div class="empty-state">Нет минус слов</div>';
@@ -274,6 +278,32 @@
                     loadKeywords(currentDomain);
                 } else {
                     showStatus('Ошибка: ' + (data.error || 'Не удалось обновить'), 'error');
+                }
+            } catch (e) {
+                showStatus('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function restoreFromMinus() {
+            const selected = [...document.querySelectorAll('#minusList .keyword-item input:checked')]
+                .map(cb => keywords[cb.dataset.index].query);
+            
+            if (selected.length === 0) {
+                showStatus('Выберите слова для возврата', 'error');
+                return;
+            }
+            
+            try {
+                const res = await authFetch('/api/restore-minus', {
+                    method: 'POST',
+                    body: JSON.stringify({domain: currentDomain, keywords: selected})
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showStatus(`Восстановлено ключей: ${data.updated || selected.length}`, 'success');
+                    loadKeywords(currentDomain);
+                } else {
+                    showStatus('Ошибка: ' + (data.error || 'Не удалось восстановить'), 'error');
                 }
             } catch (e) {
                 showStatus('Ошибка: ' + e.message, 'error');
