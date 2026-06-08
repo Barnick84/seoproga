@@ -1094,25 +1094,9 @@ body {
 }
 
 .btn-loading {
-    position: relative;
-    color: transparent !important;
+    opacity: 0.6;
     pointer-events: none;
 }
-
-.btn-loading::after {
-    content: "";
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    margin: auto;
-    border: 2px solid transparent;
-    border-top-color: currentColor;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
 }
 
 .analysis-status-banner {

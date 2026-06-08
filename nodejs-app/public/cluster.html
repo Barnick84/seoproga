@@ -8,6 +8,7 @@
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
     <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
 <body>
@@ -57,10 +58,10 @@
                         <input type="text" id="clusterSearchInput" placeholder="Поиск по ключам..." oninput="filterClustersByKeywords()" style="padding:6px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; max-width:300px; width:100%;">
                     </div>
                     <div class="header-actions" style="display:flex; gap:10px;">
-                        <button id="btnRunCluster" class="btn btn-primary" onclick="runClustering()">🚀 Запустить кластеризацию</button>
-                        <button class="btn btn-green" onclick="runMapping()">🔗 Маппинг</button>
-                        <button class="btn btn-purple" onclick="runSEOAnalysis()" style="display:none;">📊 СЕО анализ</button>
-                        <button id="btnCreateClusterByUrl" class="btn btn-orange" onclick="showCreateClusterByUrlModal()">🌐 Создать кластер по URL</button>
+                        <button id="btnRunCluster" class="btn btn-primary" onclick="runClustering()"><i class="fas fa-rocket"></i> Запустить кластеризацию</button>
+                        <button class="btn btn-green" onclick="runMapping()"><i class="fas fa-link"></i> Маппинг</button>
+                        <button class="btn btn-purple" onclick="runSEOAnalysis()" style="display:none;"><i class="fas fa-chart-bar"></i> СЕО анализ</button>
+                        <button id="btnCreateClusterByUrl" class="btn btn-orange" onclick="showCreateClusterByUrlModal()"><i class="fas fa-globe"></i> Создать кластер по URL</button>
                     </div>
                 </div>
 
@@ -117,7 +118,7 @@
     <div id="frequencyModal" class="modal" style="z-index:1100;">
         <div class="modal-content" style="max-width:560px; width:100%;">
             <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <span>📈 Получить частотность</span>
+                <span><i class="fas fa-chart-line"></i> Получить частотность</span>
                 <button onclick="closeFrequencyModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
             </div>
 
@@ -129,7 +130,7 @@
                         <input type="radio" name="freqMode" value="all" id="modeAll" checked>
                         <span class="freq-mode-radio"></span>
                         <div>
-                            <div class="freq-mode-title">🔄 Пересобрать всю частоту</div>
+                            <div class="freq-mode-title"><i class="fas fa-sync-alt"></i> Пересобрать всю частоту</div>
                             <div class="freq-mode-desc">Запрашивает частоту для всех ключевых слов, включая уже собранные</div>
                         </div>
                     </label>
@@ -137,7 +138,7 @@
                         <input type="radio" name="freqMode" value="missing" id="modeMissing">
                         <span class="freq-mode-radio"></span>
                         <div>
-                            <div class="freq-mode-title">➕ Дособрать частоту</div>
+                            <div class="freq-mode-title"><i class="fas fa-plus"></i> Дособрать частоту</div>
                             <div class="freq-mode-desc">Собирает только для слов, у которых частота ещё не определена</div>
                         </div>
                     </label>
@@ -193,7 +194,7 @@
                             style="flex:1;cursor:pointer;" onclick="openGeoModal()">
                         <input type="hidden" id="newFilterRegionId" value="">
                         <button class="btn btn-secondary" onclick="openGeoModal()" style="white-space:nowrap;">Выбрать</button>
-                        <button class="btn btn-secondary" onclick="clearRegion()" style="white-space:nowrap;">✕</button>
+                        <button class="btn btn-secondary" onclick="clearRegion()" style="white-space:nowrap;"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
 
@@ -276,7 +277,7 @@
             <input type="text" id="authUsername" placeholder="Логин">
             <div class="password-wrapper">
                 <input type="password" id="authPassword" placeholder="Пароль">
-                <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')">👁️</span>
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')"><i class="fas fa-eye"></i></span>
             </div>
             <button class="btn btn-primary" onclick="submitAuth()">Войти</button>
         </div>
@@ -457,12 +458,12 @@
                         <input type="checkbox" class="cluster-select-all" data-cluster="${clusterId}" onclick="event.stopPropagation(); toggleClusterSelectAll(this)">
                         
                         <div class="cluster-meta-actions" onclick="event.stopPropagation()" style="display:flex; gap:5px;">
-                            <span class="btn-pin ${cluster.is_pinned ? 'active' : ''}" onclick="toggleClusterPinned('${clusterId}', ${!cluster.is_pinned})" title="${cluster.is_pinned ? 'Открепить' : 'Закрепить сверху'}">📌</span>
-                            <span class="btn-star ${cluster.is_favorite ? 'active' : ''}" onclick="toggleClusterFavorite('${clusterId}', ${!cluster.is_favorite})" title="${cluster.is_favorite ? 'Убрать из избранного' : 'В избранное'}">⭐</span>
+                            <span class="btn-pin ${cluster.is_pinned ? 'active' : ''}" onclick="toggleClusterPinned('${clusterId}', ${!cluster.is_pinned})" title="${cluster.is_pinned ? 'Открепить' : 'Закрепить сверху'}"><i class="fas fa-thumbtack"></i></span>
+                            <span class="btn-star ${cluster.is_favorite ? 'active' : ''}" onclick="toggleClusterFavorite('${clusterId}', ${!cluster.is_favorite})" title="${cluster.is_favorite ? 'Убрать из избранного' : 'В избранное'}"><i class="fas fa-star"></i></span>
                         </div>
 
                         <span class="cluster-name" style="flex:1;">
-                            📁 ${cluster.totalFreq > 0 ? `<span class="kw-freq">[${cluster.totalFreq}]</span>` : ''} 
+                            <i class="fas fa-folder"></i> ${cluster.totalFreq > 0 ? `<span class="kw-freq">[${cluster.totalFreq}]</span>` : ''} 
                             ${escapeHtml(cluster.name)} (${kws.length})
                         </span>
 
@@ -477,13 +478,13 @@
                                     if (!path.startsWith('/')) path = '/' + path;
                                     fullUrl = base + path;
                                 }
-                                return `<a href="${fullUrl}" target="_blank" class="mapping-icon" title="${fullUrl}">🌐</a>`;
+                                return `<a href="${fullUrl}" target="_blank" class="mapping-icon" title="${fullUrl}"><i class="fas fa-globe"></i></a>`;
                             })() : ''}
-                            <span class="mapping-icon" onclick="openManualUrlModal(${clusterId})" title="Указать URL">📝</span>
-                            <a href="analysis.html?domain=${encodeURIComponent(currentDomain)}&clusterId=${clusterId}&name=${encodeURIComponent(cluster.name)}" class="mapping-icon" title="СЕО анализ">📊</a>
+                            <span class="mapping-icon" onclick="openManualUrlModal(${clusterId})" title="Указать URL"><i class="fas fa-pen"></i></span>
+                            <a href="analysis.html?domain=${encodeURIComponent(currentDomain)}&clusterId=${clusterId}&name=${encodeURIComponent(cluster.name)}" class="mapping-icon" title="СЕО анализ"><i class="fas fa-chart-bar"></i></a>
                         </div>
                         <div class="cluster-actions" onclick="event.stopPropagation()">
-                            <button class="btn-disband" onclick="disbandCluster(${clusterId})" title="Расформировать">🗑️</button>
+                            <button class="btn-disband" onclick="disbandCluster(${clusterId})" title="Расформировать"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     </div>
                     <div class="cluster-content ${isCollapsed ? 'collapsed' : ''}">
@@ -494,7 +495,7 @@
                                     • ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
                                     <span class="kw-text-wrapper" style="position: relative; display: inline-flex; align-items: center; gap: 5px;">
                                         <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Двойной клик для редактирования" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
-                                        <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 2px;">✏️</span>
+                                        <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 2px;"><i class="fas fa-pencil-alt"></i></span>
                                     </span>
                                 </span>
                             </div>
@@ -517,7 +518,7 @@
                         • ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
                         <span class="kw-text-wrapper" style="position: relative; display: inline-flex; align-items: center; gap: 5px;">
                             <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Двойной клик для редактирования" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
-                            <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 2px;">✏️</span>
+                            <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 2px;"><i class="fas fa-pencil-alt"></i></span>
                         </span>
                     </span>
                 </div>
@@ -780,7 +781,7 @@
                     const selected = selectedSidebarClusterId === id;
                     html += `<div class="sidebar-cluster-item ${selected ? 'selected' : ''}" onclick="selectSidebarCluster('${id}')">
                         <input type="checkbox" ${selected ? 'checked' : ''} onclick="event.stopPropagation(); selectSidebarCluster('${id}')">
-                        <span class="cluster-name" title="${escapeHtml(headKw.query)}">📁 ${headKw.freq > 0 ? `<span class="kw-freq">[${headKw.freq}]</span> ` : ''}${escapeHtml(headKw.query)}</span>
+                        <span class="cluster-name" title="${escapeHtml(headKw.query)}"><i class="fas fa-folder"></i> ${headKw.freq > 0 ? `<span class="kw-freq">[${headKw.freq}]</span> ` : ''}${escapeHtml(headKw.query)}</span>
                         <span class="cluster-count">${clusters[id].length}</span>
                     </div>`;
                 }
@@ -1061,11 +1062,11 @@
                 const isSelected = selectedPresetId === preset.id;
 
                 const deviceParts = (preset.device || '').split(',').filter(Boolean);
-                const deviceMap = { desktop: '🖥 Десктоп', phone: '📱 Смартфоны', tablet: '📋 Планшеты' };
+                const deviceMap = { desktop: '<i class="fas fa-desktop"></i> Десктоп', phone: '<i class="fas fa-mobile-alt"></i> Смартфоны', tablet: '<i class="fas fa-clipboard"></i> Планшеты' };
                 const deviceLabel = deviceParts.length > 0
                     ? deviceParts.map(d => deviceMap[d.trim()] || d).join(' + ')
-                    : '📱 Все устройства';
-                const regionLabel = '📍 ' + (preset.region_name || 'Все регионы');
+                    : '<i class="fas fa-mobile-alt"></i> Все устройства';
+                const regionLabel = '<i class="fas fa-map-marker-alt"></i> ' + (preset.region_name || 'Все регионы');
 
                 const div = document.createElement('label');
                 div.style.cssText = [
@@ -1092,7 +1093,7 @@
                         ${!preset.is_default ? `
                         <button onclick="deletePreset(${preset.id},event)"
                             style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;color:#ccc;cursor:pointer;font-size:16px;padding:4px;line-height:1;"
-                            title="Удалить">✕</button>` : ''}
+                            title="Удалить"><i class="fas fa-times"></i></button>` : ''}
                     </div>
                 `;
                 container.appendChild(div);
@@ -1247,7 +1248,7 @@
             document.getElementById('frequencyProgressCount').textContent = '';
 
             const btn = document.getElementById('btnFrequency');
-            if (btn) { btn.disabled = true; btn.textContent = '⏳ Сбор...'; }
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-hourglass-half"></i> Сбор...'; }
 
             const minFreq = document.getElementById('minFreqInput').value || '10';
             
@@ -1276,7 +1277,7 @@
                     const task = await statusResp.json();
                     
                     if (task.status === 'completed') {
-                        document.getElementById('frequencyProgressText').textContent = '✅ Сбор завершен!';
+                        document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-check-circle"></i> Сбор завершен!';
                         document.getElementById('frequencyProgressBar').style.width = '100%';
                         setTimeout(() => {
                             banner.style.display = 'none';
@@ -1284,7 +1285,7 @@
                         }, 3000);
                         break;
                     } else if (task.status === 'failed') {
-                        document.getElementById('frequencyProgressText').textContent = '❌ Ошибка: ' + task.error;
+                        document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-times-circle"></i> Ошибка: ' + task.error;
                         break;
                     } else {
                         // Update progress bar
@@ -1312,9 +1313,9 @@
                     await new Promise(r => setTimeout(r, 2000));
                 }
             } catch (e) {
-                document.getElementById('frequencyProgressText').textContent = '❌ Ошибка: ' + e.message;
+                document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-times-circle"></i> Ошибка: ' + e.message;
             } finally {
-                if (btn) { btn.disabled = false; btn.textContent = '📈 Получить частотность'; }
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-chart-line"></i> Получить частотность'; }
             }
         }
         // --- Create Cluster by URL ---

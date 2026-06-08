@@ -6,6 +6,7 @@
     <title>Кабинет - SEO Keyword Manager</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
     <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
     <div class="top-menu" id="topMenu" style="display:none;">
@@ -135,7 +136,7 @@
                             <li>Получите ID приложения и перейдите по ссылке для получения токена.</li>
                         </ol>
                         <p style="margin-top: 10px; font-weight: 500;">
-                            💡 Альтернатива: Вы можете добавить доступ к вебмастеру для системного логина 
+                            <i class="fas fa-lightbulb"></i> Альтернатива: Вы можете добавить доступ к вебмастеру для системного логина 
                             <span style="color: #d32f2f;">st.kd@yandex.ru</span>
                         </p>
                     </div>
@@ -154,7 +155,7 @@
             <input type="text" id="authUsername" placeholder="Логин">
             <div class="password-wrapper">
                 <input type="password" id="authPassword" placeholder="Пароль">
-                <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')">👁️</span>
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')"><i class="fas fa-eye"></i></span>
             </div>
             <button class="btn btn-primary" onclick="submitAuth()">Войти</button>
         </div>
@@ -164,11 +165,11 @@
             <input type="email" id="authEmailReg" placeholder="Email">
             <div class="password-wrapper">
                 <input type="password" id="authPasswordReg" placeholder="Пароль">
-                <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordReg')">👁️</span>
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordReg')"><i class="fas fa-eye"></i></span>
             </div>
             <div class="password-wrapper">
                 <input type="password" id="authPasswordConfirmReg" placeholder="Подтвердите пароль">
-                <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordConfirmReg')">👁️</span>
+                <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordConfirmReg')"><i class="fas fa-eye"></i></span>
             </div>
             <button class="btn btn-primary" onclick="submitRegister()">Зарегистрироваться</button>
         </div>

@@ -681,7 +681,7 @@
                 <button class="btn btn-secondary" id="btnCollectKeywords" onclick="collectKeywordsForCluster()">Собрать ключи</button>
                 <button class="btn btn-secondary" id="btnCheckPositions" onclick="checkPositions()">Позиции</button>
                 <button class="btn btn-secondary" id="btnFrequency" onclick="showFrequencyModal()">Частота</button>
-                <button class="btn btn-secondary" title="Настройки съема" onclick="showSettingsModal()">⚙️</button>
+                <button class="btn btn-secondary" title="Настройки съема" onclick="showSettingsModal()"><i class="fas fa-cog"></i></button>
                 <button class="btn btn-secondary" id="btnSetTargetUrl" onclick="showTargetUrlModal()">URL
                     страницы</button>
                 <button class="btn btn-primary" id="btnSeoAnalysis" onclick="startSeoAnalysis()">SEO анализ</button>
@@ -1462,7 +1462,7 @@
                             <div id="structureSavedDate" style="font-size:12px; color:var(--text-secondary);"></div>
                         </div>
                     </div>
-                    <button id="btnGenerateStructure" class="btn btn-primary" onclick="generateIdealStructure()">✨ Сгенерировать ИИ-структуру</button>
+                    <button id="btnGenerateStructure" class="btn btn-primary" onclick="generateIdealStructure()"><i class="fas fa-wand-magic-sparkles"></i> Сгенерировать ИИ-структуру</button>
                 </div>
                 <div id="idealStructureContainer" style="padding: 20px; background: #fafafa; border: 1px dashed var(--border); border-radius: 8px;">
                     <p style="color: var(--text-secondary); text-align: center;">Нажмите кнопку выше, чтобы ИИ составил идеальный план на основе конкурентов</p>
@@ -1470,7 +1470,7 @@
                 <div id="structureEditor" style="margin-top: 20px; display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3 style="margin:0;">Интерактивный редактор</h3>
-                        <button class="btn btn-primary" onclick="saveStructure()" style="padding: 6px 16px;">💾 Сохранить структуру</button>
+                        <button class="btn btn-primary" onclick="saveStructure()" style="padding: 6px 16px;"><i class="fas fa-save"></i> Сохранить структуру</button>
                     </div>
                     <div id="structureBlocks" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
@@ -1721,14 +1721,14 @@
                     const diffKeywords = clusterKeywords.filter(k => k.found_url && k.found_url.replace(/\/$/, "").toLowerCase() !== target);
                     if (diffKeywords.length > 0) {
                         const diffUrls = [...new Set(diffKeywords.map(k => k.found_url))];
-                        headerIcon = `<span title="Внимание! Обнаружены нерелевантные страницы: ${diffUrls.join(', ')}" style="color:orange; cursor:help; margin-right:8px; font-size:16px;">⚠️</span>`;
+                        headerIcon = `<span title="Внимание! Обнаружены нерелевантные страницы: ${diffUrls.join(', ')}" style="color:orange; cursor:help; margin-right:8px; font-size:16px;"><i class="fas fa-exclamation-triangle"></i></span>`;
                     } else {
-                        headerIcon = `<span title="В поиске релевантная страница" style="color:green; cursor:help; margin-right:8px; font-size:16px;">✅</span>`;
+                        headerIcon = `<span title="В поиске релевантная страница" style="color:green; cursor:help; margin-right:8px; font-size:16px;"><i class="fas fa-check-circle"></i></span>`;
                     }
                 }
 
                 const targetUrlDisplay = fullTargetUrl
-                    ? `${headerIcon}<a href="${fullTargetUrl}" target="_blank" style="text-decoration:none;">🌐 ${fullTargetUrl}</a>`
+                    ? `${headerIcon}<a href="${fullTargetUrl}" target="_blank" style="text-decoration:none;"><i class="fas fa-globe"></i> ${fullTargetUrl}</a>`
                     : '<span style="color:var(--text-secondary)">не задана</span>';
 
                 document.getElementById('subHeader').innerHTML = `Релевантная страница: ${targetUrlDisplay}`;
@@ -1745,9 +1745,9 @@
                             const found = k.found_url.replace(/\/$/, "").toLowerCase();
                             const target = (fullTargetUrl || "").replace(/\/$/, "").toLowerCase();
                             if (found === target) {
-                                rowStatus = `<span title="В поиске релевантная страница" style="color:green; cursor:help; margin-right:4px;">✅</span>`;
+                                rowStatus = `<span title="В поиске релевантная страница" style="color:green; cursor:help; margin-right:4px;"><i class="fas fa-check-circle"></i></span>`;
                             } else {
-                                rowStatus = `<span title="Обнаружена другая страница: ${k.found_url}" style="color:orange; cursor:help; margin-right:4px;">⚠️</span>`;
+                                rowStatus = `<span title="Обнаружена другая страница: ${k.found_url}" style="color:orange; cursor:help; margin-right:4px;"><i class="fas fa-exclamation-triangle"></i></span>`;
                             }
                         }
                         kwHtml += `<tr id="row-kw-${idx}" data-query="${k.query.replace(/"/g, '&quot;')}">
@@ -1898,7 +1898,7 @@
                     <td class="text-center">${c.metrics.characters_with_spaces}</td>
                     <td class="text-center">${c.metrics.words_total}</td>
                     <td class="text-center">${c.intent}</td>
-                    <td class="text-center">${c.tech_audit.https ? '✅' : '❌'} HTTPS | ${c.tech_audit.schema ? '✅' : '❌'} Schema</td>
+                    <td class="text-center">${c.tech_audit.https ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>'} HTTPS | ${c.tech_audit.schema ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>'} Schema</td>
                 </tr>
             `).join('');
 
@@ -1965,7 +1965,7 @@
             if (typeof Highcharts === 'undefined') {
                 container.innerHTML = `
                     <div style="padding: 24px; text-align: center; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: 8px; background: #fafafa; margin: 20px 0;">
-                        <div style="font-size: 32px; margin-bottom: 10px;">📊</div>
+                        <div style="font-size: 32px; margin-bottom: 10px;"><i class="fas fa-chart-bar"></i></div>
                         <h3>График плотности ключевых слов недоступен</h3>
                         <p style="font-size: 13px; margin-top: 6px;">Не удалось загрузить библиотеку Highcharts с CDN. Пожалуйста, проверьте интернет-соединение или настройки блокировщика рекламы.</p>
                     </div>
@@ -2044,7 +2044,7 @@
 
             content.innerHTML = items.map(item => `
                 <div class="metric-box" style="text-align: center;">
-                    <div style="font-size: 32px; margin-bottom: 10px;">${item.status ? '✅' : '❌'}</div>
+                    <div style="font-size: 32px; margin-bottom: 10px;">${item.status ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>'}</div>
                     <span class="metric-label">${item.label}</span>
                     ${item.info ? `<div style="font-size:12px; color:var(--text-secondary);">${item.info}</div>` : ''}
                 </div>
@@ -2189,7 +2189,7 @@
                         </div>
                         <div style="display:flex; gap:5px;">
                             <button onclick="addH3(this)" style="background:#f0f0f0; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">+H3</button>
-                            <button onclick="this.closest('.h2-block').remove()" style="background:none; border:none; color:var(--error); cursor:pointer;">🗑️</button>
+                            <button onclick="this.closest('.h2-block').remove()" style="background:none; border:none; color:var(--error); cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     </div>
                     <div class="h3-container" style="margin-top:10px; padding-left:25px; display:flex; flex-direction:column; gap:8px;">
@@ -2224,7 +2224,7 @@
                             </div>
                             <div style="display:flex; gap:5px;">
                                 <button onclick="addH3(this)" style="background:#f0f0f0; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">+H3</button>
-                                <button onclick="this.closest('.h2-block').remove()" style="background:none; border:none; color:var(--error); cursor:pointer;">🗑️</button>
+                                <button onclick="this.closest('.h2-block').remove()" style="background:none; border:none; color:var(--error); cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
                             </div>
                         </div>
                         <div class="h3-container" style="margin-top:10px; padding-left:25px; display:flex; flex-direction:column; gap:8px;"></div>
@@ -2279,7 +2279,7 @@
             const btn = document.getElementById('btnCollectKeywords');
             if (btn) {
                 btn.disabled = true;
-                btn.textContent = '⏳ Сбор...';
+                btn.innerHTML = '<i class="fas fa-hourglass-half"></i> Сбор...';
             }
             
             try {
@@ -2320,7 +2320,7 @@
             if (details) details.open = true;
 
             // Показать стартовое уведомление
-            showToast('🔍', 'Запуск проверки позиций...');
+            showToast('<i class="fas fa-search"></i>', 'Запуск проверки позиций...');
 
             try {
                 // Сбросить все статусы
@@ -2351,7 +2351,7 @@
                                     const query = data.message.replace('PROGRESS: ', '');
 
                                     // Обновить toast
-                                    showToast('⏳', `Проверяем: <b>${query}</b>`);
+                                    showToast('<i class="fas fa-hourglass-half"></i>', `Проверяем: <b>${query}</b>`);
 
                                     // Убрать спиннеры со всех строк, добавить к текущей
                                     document.querySelectorAll('.kw-status').forEach(el => el.innerHTML = '');
@@ -2371,7 +2371,7 @@
                                     document.querySelectorAll('.kw-status').forEach(el => el.innerHTML = '');
                                     document.querySelectorAll('#clusterKeywordsTable tr[data-query]').forEach(r => r.style.background = '');
 
-                                    showToast('✅', 'Проверка позиций завершена!');
+                                    showToast('<i class="fas fa-check-circle"></i>', 'Проверка позиций завершена!');
                                     hideToast(3000);
                                     btn.disabled = false;
                                     btn.textContent = 'Позиции';
@@ -2382,7 +2382,7 @@
                                     }
                                     return;
                                 } else if (data.type === 'error') {
-                                    showToast('❌', 'Ошибка: ' + data.message);
+                                    showToast('<i class="fas fa-times-circle"></i>', 'Ошибка: ' + data.message);
                                     hideToast(4000);
                                     btn.disabled = false;
                                     btn.textContent = 'Позиции';
@@ -2396,7 +2396,7 @@
                     }
                 }
             } catch (e) {
-                showToast('❌', 'Ошибка: ' + e.message);
+                showToast('<i class="fas fa-times-circle"></i>', 'Ошибка: ' + e.message);
                 hideToast(4000);
                 btn.disabled = false;
                 btn.textContent = 'Позиции';
@@ -2645,7 +2645,7 @@
     <div id="frequencyModal" class="modal" style="z-index:1100;">
         <div class="modal-content" style="max-width:560px; width:100%;">
             <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <span>📈 Получить частотность</span>
+                <span><i class="fas fa-chart-line"></i> Получить частотность</span>
                 <button onclick="closeFrequencyModal()"
                     style="border:none;background:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
             </div>
@@ -2657,7 +2657,7 @@
                         <input type="radio" name="freqMode" value="all" id="modeAll" checked>
                         <span class="freq-mode-radio"></span>
                         <div>
-                            <div class="freq-mode-title">🔄 Пересобрать всю частоту</div>
+                            <div class="freq-mode-title"><i class="fas fa-sync-alt"></i> Пересобрать всю частоту</div>
                             <div class="freq-mode-desc">Запрашивает частоту для всех ключевых слов в кластере</div>
                         </div>
                     </label>
@@ -2665,7 +2665,7 @@
                         <input type="radio" name="freqMode" value="missing" id="modeMissing">
                         <span class="freq-mode-radio"></span>
                         <div>
-                            <div class="freq-mode-title">➕ Дособрать частоту</div>
+                            <div class="freq-mode-title"><i class="fas fa-plus"></i> Дособрать частоту</div>
                             <div class="freq-mode-desc">Собирает только для слов кластера, у которых частота ещё не
                                 определена</div>
                         </div>
@@ -2718,7 +2718,7 @@
                         <input type="hidden" id="newFilterRegionId" value="">
                         <button class="btn btn-secondary" onclick="openGeoModal()"
                             style="white-space:nowrap;">Выбрать</button>
-                        <button class="btn btn-secondary" onclick="clearRegion()" style="white-space:nowrap;">✕</button>
+                        <button class="btn btn-secondary" onclick="clearRegion()" style="white-space:nowrap;"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;">
@@ -2902,7 +2902,7 @@
             banner.style.display = 'block';
 
             const btn = document.getElementById('btnFrequency');
-            if (btn) { btn.disabled = true; btn.textContent = '⏳ Сбор...'; }
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-hourglass-half"></i> Сбор...'; }
 
             const params = new URLSearchParams({
                 domain,
@@ -2924,7 +2924,7 @@
                     const task = await statusResp.json();
                     if (task.status === 'completed') {
                         document.getElementById('frequencyProgressBar').style.width = '100%';
-                        document.getElementById('frequencyProgressText').textContent = '✅ Готово';
+                        document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-check-circle"></i> Готово';
                         setTimeout(() => { banner.style.display = 'none'; loadAnalysis(); }, 2000);
                         break;
                     } else if (task.status === 'failed') {
