@@ -493,9 +493,9 @@
                                 <input type="checkbox" class="kw-checkbox" data-cluster="${clusterId}" data-kw="${escapeHtml(k.query)}" onchange="updateSidebarVisibility()">
                                 <span class="kw-query-container">
                                     • ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
-                                    <span class="kw-text-wrapper" style="position: relative; display: inline-flex; align-items: center; gap: 5px;">
+                                    <span class="kw-text-wrapper" style="position: relative; display: inline;">
                                         <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Двойной клик для редактирования" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
-                                        <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 2px;"><i class="fas fa-pencil-alt"></i></span>
+                                        <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 5px; display: inline-block; vertical-align: middle;"><i class="fas fa-pencil-alt"></i></span>
                                     </span>
                                 </span>
                             </div>
@@ -516,9 +516,9 @@
                     <input type="checkbox" class="kw-checkbox" data-cluster="0" data-kw="${escapeHtml(k.query)}" onchange="updateSidebarVisibility()">
                     <span class="kw-query-container">
                         • ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
-                        <span class="kw-text-wrapper" style="position: relative; display: inline-flex; align-items: center; gap: 5px;">
+                        <span class="kw-text-wrapper" style="position: relative; display: inline;">
                             <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Двойной клик для редактирования" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
-                            <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 2px;"><i class="fas fa-pencil-alt"></i></span>
+                            <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 5px; display: inline-block; vertical-align: middle;"><i class="fas fa-pencil-alt"></i></span>
                         </span>
                     </span>
                 </div>
