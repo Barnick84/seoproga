@@ -202,19 +202,28 @@
                     <div id="subHeader" class="sub-header"></div>
                 </div>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div class="toolbar-panel" style="display: flex; gap: 10px; align-items: center; background: #eef2ff; padding: 12px 20px; border-radius: 8px; border: 1px solid #c7d2fe; box-shadow: 0 4px 6px rgba(0,0,0,0.05); flex-wrap: wrap;">
                 <button class="btn btn-secondary" id="btnCollectKeywords" onclick="collectKeywordsForCluster()">Собрать ключи</button>
                 <button class="btn btn-secondary" id="btnCheckPositions" onclick="checkPositions()">Позиции</button>
                 <button class="btn btn-secondary" id="btnFrequency" onclick="showFrequencyModal()">Частота</button>
                 <button class="btn btn-secondary" title="Настройки съема" onclick="showSettingsModal()"><i class="fas fa-cog"></i></button>
-                <button class="btn btn-secondary" id="btnSetTargetUrl" onclick="showTargetUrlModal()">URL
-                    страницы</button>
+                <button class="btn btn-secondary" id="btnSetTargetUrl" onclick="showTargetUrlModal()">URL страницы</button>
                 <button class="btn btn-primary" id="btnSeoAnalysis" onclick="startSeoAnalysis()">SEO анализ</button>
                 <button class="btn btn-secondary" id="btnPublish" style="display: none;">Опубликовать</button>
             </div>
         </div>
 
         <div class="container" style="margin-bottom: 24px;">
+            <div class="card" id="summaryStatsCard" style="margin-bottom: 24px;">
+                <h2>Основные показатели текста</h2>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div id="intentDisplay" style="padding: 10px 20px; border-radius: 8px; font-weight: bold; background: #eef2ff; color: #4338ca;">Интент: ...</div>
+                </div>
+                <div class="metrics-grid" id="summaryGrid">
+                    <!-- Dynamic Summary Metrics -->
+                </div>
+            </div>
+
             <details id="detailsKeywords"
                 style="padding: 12px; background: #fafafa; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 12px;">
                 <summary style="cursor: pointer; font-weight: bold; color: var(--text);">Ключевые запросы кластера
@@ -230,6 +239,13 @@
                     Загрузка...
                 </div>
             </details>
+
+            <div class="card" id="recommendationsCard">
+                <h2>Рекомендации</h2>
+                <div id="recommendationsList" class="metrics-grid" style="grid-template-columns: 1fr;">
+                    <!-- Recommendations -->
+                </div>
+            </div>
         </div>
 
         <!-- Progress Overlay for LLM -->
@@ -877,8 +893,7 @@
         </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="switchTab(this, 'summary')">Сводка</div>
-            <div class="tab" onclick="switchTab(this, 'tech')">Тех. аудит</div>
+            <div class="tab active" onclick="switchTab(this, 'tech')">Тех. аудит</div>
             <div class="tab" onclick="switchTab(this, 'keywords')">Слова</div>
             <div class="tab" onclick="switchTab(this, 'ngrams')">N-граммы</div>
             <div class="tab" onclick="switchTab(this, 'structure')">Структура</div>
@@ -887,33 +902,11 @@
             <div class="tab" onclick="switchTab(this, 'seo')">SEO анализ</div>
         </div>
 
-        <!-- Summary Tab -->
-        <div id="tab-summary" class="tab-content active">
-            <div class="card">
-                <h2>Основные показатели текста</h2>
-                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <div id="intentDisplay" style="padding: 10px 20px; border-radius: 8px; font-weight: bold; background: #eef2ff; color: #4338ca;">Интент: ...</div>
-                </div>
-                <div class="metrics-grid" id="summaryGrid">
-                    <!-- Dynamic Summary Metrics -->
-                </div>
-            </div>
-
-            <div class="card" id="top20ChartCard">
-                <h2>Топ-20 слов по плотности (%)</h2>
-                <div id="top20DensityContainer" style="height: 400px; width: 100%;"></div>
-            </div>
-
-            <div class="card">
-                <h2>Рекомендации</h2>
-                <div id="recommendationsList" class="metrics-grid" style="grid-template-columns: 1fr;">
-                    <!-- Recommendations -->
-                </div>
-            </div>
-        </div>
+        <!-- Summary Tab removed, contents moved -->
+        <div id="tab-summary" class="tab-content" style="display: none;"></div>
 
         <!-- Technical Audit Tab -->
-        <div id="tab-tech" class="tab-content">
+        <div id="tab-tech" class="tab-content active">
             <div class="card">
                 <h2>Технический аудит</h2>
                 <div id="techAuditContent" class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
@@ -1115,6 +1108,10 @@
         </div>
 
 
+        <div class="card" id="top20ChartCard">
+            <h2>Топ-20 слов по плотности (%)</h2>
+            <div id="top20DensityContainer" style="height: 400px; width: 100%;"></div>
+        </div>
     </div>
 
     <div id="addSiteModal" class="modal">
