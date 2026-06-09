@@ -234,7 +234,7 @@ a.menu-tab[href^="/dashboard.html"] {
 /* Keyword Rows & Items */
 .kw-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     padding: 4px 0;
 }
 
@@ -242,8 +242,17 @@ a.menu-tab[href^="/dashboard.html"] {
     padding: 6px 0;
 }
 
+.kw-row input[type="checkbox"] {
+    margin-top: 3px;
+}
+
 .kw-query-container {
     margin-left: 8px;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.4;
+    word-break: break-word;
+    margin-top: -1px;
 }
 
 .kw-freq {
@@ -1643,7 +1652,7 @@ a.menu-tab[href^="/dashboard.html"] {
 .pd.delta-same { color: #bbb; }
 
 /* Keyword text in query cell */
-.kw-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #222; }
+.kw-text { flex: 1; word-break: break-word; white-space: normal; color: #222; }
 .kw-freq-badge { font-size: 11px; color: #888; }
 
 /* Empty state */
