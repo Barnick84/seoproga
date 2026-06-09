@@ -1167,6 +1167,49 @@
         </div>
     </div>
 
+    <!-- First Run Analysis Modal -->
+    <div id="firstRunModal" style="display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); z-index: 1500; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 500px; padding: 30px; position: relative;">
+            <h2 style="margin-bottom: 15px; color: var(--primary);">Первый SEO анализ</h2>
+            <div style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px; line-height: 1.5;">
+                Для этого кластера ещё не проводился анализ. Запустите автоматический процесс сбора данных и генерации структуры:
+                <ul style="color: var(--text-secondary); font-size: 13px; margin-bottom: 20px; padding-left: 20px; line-height: 1.6; margin-top: 10px;">
+                    <li>Сбор ключей (Wordstat + правая колонка)</li>
+                    <li>Сбор частотности (без правой колонки)</li>
+                    <li>Сбор позиций</li>
+                    <li>Анализ конкурентов в ТОП-10</li>
+                    <li>SEO Анализ</li>
+                    <li>Генерация структуры статьи</li>
+                </ul>
+            </div>
+            <div id="firstRunForm">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">URL релевантной страницы (обязательно):</label>
+                    <input type="text" id="firstRunTargetUrl" class="form-control" placeholder="https://example.com/page" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                </div>
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Регион частотности:</label>
+                    <select id="firstRunRegion" class="form-control" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                        <option value="225" selected>Россия (225)</option>
+                        <option value="213">Москва (213)</option>
+                        <option value="2">Санкт-Петербург (2)</option>
+                        <option value="1">Москва и область (1)</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 16px; font-weight: bold;" onclick="runFullPipeline()">Запустить анализ</button>
+            </div>
+            
+            <div id="pipelineStatusContainer" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; text-align: center;">
+                <div class="spinner" style="margin: 0 auto 15px;"></div>
+                <div id="pipelineStepTitle" style="font-weight: 600; margin-bottom: 10px; color: var(--primary);">Этап 1 из 8: Инициализация</div>
+                <div style="background: #e2e8f0; border-radius: 4px; height: 8px; width: 100%; margin-bottom: 10px; overflow: hidden;">
+                    <div id="pipelineProgressBar" style="background: var(--primary); width: 0%; height: 100%; transition: width 0.3s ease;"></div>
+                </div>
+                <div id="pipelineProgressText" style="font-size: 13px; color: var(--text-secondary);">Подождите...</div>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
@@ -1311,12 +1354,16 @@
 
                 const analysis = dataAnalysis && dataAnalysis.analysis ? dataAnalysis.analysis[clusterId] : null;
                 if (!analysis) {
-                    const recList = document.getElementById('recommendationsList');
-                    if (recList) {
-                        recList.innerHTML = '<div class="recommendation" style="border-left-color: var(--error)">Анализ для данного кластера не найден. Нажмите кнопку "SEO анализ", чтобы запустить его.</div>';
+                    loadingEl.style.display = 'none';
+                    document.getElementById('firstRunModal').style.display = 'flex';
+                    document.getElementById('clusterName').textContent = clusterName + ' (Ожидание анализа)';
+                    
+                    if (fullTargetUrl) {
+                        document.getElementById('firstRunTargetUrl').value = fullTargetUrl;
                     }
-                    document.getElementById('clusterName').textContent = clusterName + ' (Анализ не найден)';
                     return;
+                } else {
+                    document.getElementById('firstRunModal').style.display = 'none';
                 }
 
                 renderReport(analysis);
@@ -1817,7 +1864,11 @@
                 
                 const data = await res.json();
                 if (data.success) {
-                    alert(`Успешно собрано ключевых слов: ${data.added}`);
+                    if (data.message) {
+                        alert(data.message);
+                    } else {
+                        alert(`Успешно собрано ключевых слов: ${data.added}`);
+                    }
                     loadAnalysis();
                 } else {
                     alert(`Ошибка сбора: ${data.error || 'неизвестная ошибка'}`);
@@ -2484,6 +2535,146 @@
                 alert('Ошибка: ' + e.message);
                 banner.style.display = 'none';
             }
+        }
+
+        async function runFullPipeline() {
+            const targetUrl = document.getElementById('firstRunTargetUrl').value.trim();
+            const region = document.getElementById('firstRunRegion').value || 225;
+            
+            if (!targetUrl) {
+                alert('Пожалуйста, укажите URL релевантной страницы.');
+                return;
+            }
+
+            // UI transitions
+            document.getElementById('firstRunForm').style.display = 'none';
+            document.getElementById('pipelineStatusContainer').style.display = 'block';
+
+            const setProgress = (step, total, title, text) => {
+                document.getElementById('pipelineStepTitle').textContent = `Этап ${step} из ${total}: ${title}`;
+                const pct = Math.round((step / total) * 100);
+                document.getElementById('pipelineProgressBar').style.width = pct + '%';
+                document.getElementById('pipelineProgressText').textContent = text;
+            };
+
+            try {
+                // Step 1: Save target URL
+                setProgress(1, 8, 'Сохранение URL', 'Привязка страницы к кластеру...');
+                await authFetch('/api/cluster/target-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, url: targetUrl })
+                });
+
+                // Step 2: Collect keywords (Wordstat)
+                setProgress(2, 8, 'Сбор ключей', 'Идет поиск запросов в Яндекс Wordstat...');
+                await authFetch('/api/collect-keywords-for-cluster', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, headQuery: headQueryText })
+                });
+
+                // Step 3: Collect right column keywords
+                setProgress(3, 8, 'Сбор LSI', 'Сбор похожих запросов (правая колонка)...');
+                await authFetch('/api/collect-keywords-for-cluster', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, headQuery: headQueryText, type: 'similar' })
+                });
+
+                // Step 4: Collect Frequency
+                setProgress(4, 8, 'Сбор частотности', 'Сбор частотности ключей кластера...');
+                const freqRes = await authFetch(`/api/run-frequency-stream?domain=${encodeURIComponent(domain)}&region=${region}&clusterId=${clusterId}&mode=missing`);
+                const freqData = await freqRes.json();
+                if (freqData.task_id) {
+                    await new Promise((resolve) => {
+                        const checkInt = setInterval(async () => {
+                            try {
+                                const stRes = await authFetch(`/api/frequency-task-status?taskId=${freqData.task_id}`);
+                                const stData = await stRes.json();
+                                if (stData.status && stData.status.status === 'completed') {
+                                    clearInterval(checkInt);
+                                    resolve();
+                                } else if (stData.status && stData.status.status === 'failed') {
+                                    clearInterval(checkInt);
+                                    resolve(); // ignore and continue
+                                } else if (stData.status && stData.status.status === 'running') {
+                                    const p = Math.round((stData.status.progress / stData.status.total) * 100);
+                                    document.getElementById('pipelineProgressText').textContent = `Собрано ${stData.status.progress} из ${stData.status.total} (${p}%)`;
+                                }
+                            } catch(e) {}
+                        }, 2000);
+                    });
+                }
+
+                // Step 5: Check Positions
+                setProgress(5, 8, 'Сбор позиций', 'Определение позиций в выдаче...');
+                await new Promise((resolve) => {
+                    const evtSource = new EventSource(`/api/cluster/check-positions-stream?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}&token=${localStorage.getItem('token')}`);
+                    evtSource.onmessage = function(e) {
+                        try {
+                            const dat = JSON.parse(e.data);
+                            if (dat.status === 'progress') {
+                                document.getElementById('pipelineProgressText').textContent = `Проверено ${dat.current} из ${dat.total}`;
+                            } else if (dat.status === 'done' || dat.status === 'error') {
+                                evtSource.close();
+                                resolve();
+                            }
+                        } catch (err) {}
+                    };
+                    evtSource.onerror = function() { evtSource.close(); resolve(); };
+                });
+
+                // Step 6: Competitor Analysis
+                setProgress(6, 8, 'Анализ ТОП-10', 'Анализ конкурентов и вашей страницы...');
+                await authFetch(`/api/run-competitor-analysis-single?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}`);
+
+                // Step 7: SEO Analysis
+                setProgress(7, 8, 'SEO анализ', 'Генерация SEO-отчета...');
+                await authFetch('/api/cluster/run-seo-analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, url: targetUrl, isMain: false })
+                });
+
+                // Step 8: Generate Structure
+                setProgress(8, 8, 'Генерация структуры', 'Формирование структуры статьи...');
+                await authFetch('/api/cluster/generate-structure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain, clusterId, headQuery: headQueryText })
+                });
+
+                // Done
+                setProgress(8, 8, 'Завершено', 'Перезагрузка данных...');
+                await new Promise(r => setTimeout(r, 1000));
+                
+                // Hide modal and reload
+                document.getElementById('firstRunModal').style.display = 'none';
+                document.getElementById('loading').style.display = 'flex';
+                
+                await loadAnalysis();
+                
+                checkMicrodataNotification();
+
+            } catch (err) {
+                alert('Ошибка при выполнении пайплайна: ' + err.message);
+                document.getElementById('firstRunForm').style.display = 'block';
+                document.getElementById('pipelineStatusContainer').style.display = 'none';
+            }
+        }
+        
+        function checkMicrodataNotification() {
+            authFetch(`/api/analysis?domain=${encodeURIComponent(domain)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.analysis && data.analysis[clusterId] && data.analysis[clusterId].tech_audit && data.analysis[clusterId].tech_audit.target) {
+                        const target = data.analysis[clusterId].tech_audit.target;
+                        if (target.schema === false || target.semantic_markup === false) {
+                            showToast('⚠️', 'Обнаружено: на странице отсутствует микроразметка Schema.org и/или семантические теги (main/article). Рекомендуется внедрить микроразметку для улучшения ранжирования.');
+                        }
+                    }
+                }).catch(e => console.error(e));
         }
     </script>
 
