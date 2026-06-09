@@ -1991,13 +1991,21 @@ const RUN_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 function startBackgroundTasks() {
     console.log('📦 Background tasks scheduler started');
     
-    // Start Worker
-    const workerPath = path.join(__dirname, '..', 'services', 'worker.py');
-    const worker = spawn(PYTHON_PATH, [workerPath]);
-    
-    worker.stdout.on('data', (data) => console.log(`[Worker] ${data}`));
-    worker.stderr.on('data', (data) => console.error(`[Worker Error] ${data}`));
-    worker.on('close', (code) => console.log(`[Worker] Exited with code ${code}`));
+    // Kill existing workers to prevent duplicates
+    const { exec } = require('child_process');
+    exec('pkill -f "python.*services/worker.py"', (err) => {
+        // Start Worker
+        const workerPath = path.join(__dirname, '..', 'services', 'worker.py');
+        const worker = spawn(PYTHON_PATH, [workerPath]);
+        
+        worker.stdout.on('data', (data) => console.log(`[Worker] ${data}`));
+        worker.stderr.on('data', (data) => console.error(`[Worker Error] ${data}`));
+        worker.on('close', (code) => {
+            console.log(`[Worker] Exited with code ${code}`);
+            // Auto restart
+            setTimeout(() => startBackgroundTasks(), 5000);
+        });
+    });
 
     // Run once on start
     setTimeout(() => {

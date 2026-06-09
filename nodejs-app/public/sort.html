@@ -338,6 +338,36 @@
         </div>
     </div>
 
+    <!-- Site Selection Modal (After Login) -->
+    <div class="firstlogin-overlay" id="siteSelectModal">
+        <div class="firstlogin-modal">
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; margin-bottom: 8px; color: #fff;">
+                <i class="fas fa-globe" style="color: #0ea5e9; margin-right: 8px;"></i> Выбор сайта
+            </h2>
+            <p style="color: #94A3B8; font-size: 15px; margin-bottom: 24px; line-height: 1.5;">
+                Выберите сайт для перехода в панель управления или добавьте новый домен.
+            </p>
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label style="font-size: 13px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Ваш сайт</label>
+                <select id="modalSiteSelect" class="modal-select" onchange="onModalSiteSelected()" style="width: 100%; padding: 14px 18px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); color: #fff; font-size: 15px; margin-bottom: 24px;">
+                    <option value="">— Выберите сайт —</option>
+                </select>
+            </div>
+
+            <button class="btn btn-glow" id="btnGoToDashboard" onclick="goToDashboardWithSite()" style="width: 100%; margin-bottom: 12px; padding: 14px 28px; border-radius: 100px; font-weight: 600; background: linear-gradient(135deg, #0ea5e9, #8b5cf6); color: #fff; border: none; cursor: pointer;" disabled>
+                Перейти в панель управления
+            </button>
+
+            <button class="btn btn-secondary" onclick="addNewSiteFromLanding()" style="width: 100%; padding: 14px 28px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #fff; cursor: pointer;">
+                + Добавить новый сайт
+            </button>
+
+            <button class="btn btn-secondary" onclick="logoutFromLanding()" style="width: 100%; border: none; background: transparent; color: #94A3B8; margin-top: 15px; font-size: 14px; text-decoration: underline; cursor: pointer;">
+                Выйти из аккаунта
+            </button>
+        </div>
+    </div>
+
     <!-- First Login: Site Selection Modal -->
     <div class="firstlogin-overlay" id="firstLoginModal">
         <div class="firstlogin-modal">
@@ -405,8 +435,80 @@
                 window.history.replaceState({}, '', url);
                 // Show site selection modal
                 await showFirstLoginModal();
+            } else if (sessionStorage.getItem('justLoggedIn') === 'true') {
+                sessionStorage.removeItem('justLoggedIn');
+                showSiteSelectModal();
             }
         });
+
+        async function showSiteSelectModal() {
+            const modal = document.getElementById('siteSelectModal');
+            if (modal) modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            const select = document.getElementById('modalSiteSelect');
+            select.innerHTML = '<option value="">— Загрузка сайтов... —</option>';
+            select.disabled = true;
+
+            try {
+                const res = await authFetch('/api/sites');
+                const data = await res.json();
+                if (data.sites) {
+                    if (data.sites.length === 0) {
+                        select.innerHTML = '<option value="">Сайты не добавлены</option>';
+                        document.getElementById('btnGoToDashboard').disabled = true;
+                    } else {
+                        select.disabled = false;
+                        let html = '<option value="">— Выберите сайт —</option>';
+                        data.sites.forEach(site => {
+                            html += `<option value="${site.domain}">${site.domain}</option>`;
+                        });
+                        select.innerHTML = html;
+
+                        if (data.sites.length === 1) {
+                            select.value = data.sites[0].domain;
+                            document.getElementById('btnGoToDashboard').disabled = false;
+                        }
+                    }
+                } else {
+                    select.innerHTML = '<option value="">— Ошибка загрузки сайтов —</option>';
+                }
+            } catch (err) {
+                console.error(err);
+                select.innerHTML = '<option value="">— Ошибка загрузки сайтов —</option>';
+            }
+        }
+
+        function onModalSiteSelected() {
+            const select = document.getElementById('modalSiteSelect');
+            const btn = document.getElementById('btnGoToDashboard');
+            btn.disabled = !select.value;
+        }
+
+        function goToDashboardWithSite() {
+            const select = document.getElementById('modalSiteSelect');
+            if (select.value) {
+                const mainSelect = document.getElementById('siteSelect');
+                mainSelect.value = select.value;
+                selectSite();
+                closeSiteSelectModal();
+            }
+        }
+
+        function addNewSiteFromLanding() {
+            closeSiteSelectModal();
+            showAddSiteModal();
+        }
+
+        function logoutFromLanding() {
+            localStorage.removeItem('session');
+            window.location.href = '/';
+        }
+
+        function closeSiteSelectModal() {
+            document.getElementById('siteSelectModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
 
         async function showFirstLoginModal() {
             const modal = document.getElementById('firstLoginModal');

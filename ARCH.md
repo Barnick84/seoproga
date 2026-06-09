@@ -546,7 +546,7 @@ seo-auto-cluster/
 - `GET /api/test-seo-2026` — тест экспериментального пайплайна
 
 **Фоновые задачи:**
-- `startBackgroundTasks()` — запускает `worker.py` и `scheduler.py` (каждые 24ч)
+- `startBackgroundTasks()` — запускает `worker.py` (с предварительным завершением старых процессов через `pkill` во избежание дублирования) и `scheduler.py` (каждые 24ч)
 - `runScheduler()` — ежедневный сбор данных для всех пользователей
 
 ---
@@ -563,7 +563,7 @@ seo-auto-cluster/
 | `cabinet.html` | Личный кабинет: баланс, биллинг, API-ключи |
 | `admin.html` | Админ-панель: пользователи, тарифы, логи, платежи |
 
-**Авторизация:** session_id в `localStorage`, передаётся в заголовке `Authorization`.
+**Авторизация:** session_id в `localStorage`, передаётся в заголовке `Authorization`. При успешном входе или регистрации пользователь перенаправляется на `sort.html` (с флагом `justLoggedIn` в `sessionStorage`), где открывается модальное окно выбора сайта.
 
 **Коммуникация:**
 - `authFetch()` — обёртка над `fetch()` с автоматическим добавлением session_id

@@ -1415,7 +1415,8 @@
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem('session', data.session);
-                    window.location.href = '/sort.html?firstLogin=true';
+                    sessionStorage.setItem('justLoggedIn', 'true');
+                    window.location.href = '/sort.html';
                 } else {
                     showAuthError(data.error || 'Ошибка входа');
                 }
@@ -1454,7 +1455,8 @@
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem('session', data.session);
-                    window.location.href = '/sort.html?firstLogin=true';
+                    sessionStorage.setItem('justLoggedIn', 'true');
+                    window.location.href = '/sort.html';
                 } else {
                     showAuthError(data.error || 'Ошибка регистрации');
                 }
@@ -1469,7 +1471,7 @@
             closeModal();
         }
 
-        // Check if user is already authorized — redirect to cluster.html
+        // Check if user is already authorized — redirect to sort.html
         document.addEventListener('DOMContentLoaded', async function() {
             const session = localStorage.getItem('session');
             if (session) {
@@ -1479,7 +1481,7 @@
                     });
                     const data = await res.json();
                     if (data.authenticated) {
-                        window.location.href = '/cluster.html';
+                        window.location.href = '/sort.html';
                         return;
                     }
                 } catch (e) {}

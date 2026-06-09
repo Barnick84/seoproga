@@ -12,11 +12,11 @@ let addedSites = [];
 
 async function checkSession() {
     const session = localStorage.getItem('session');
-    const isIndexPage = window.location.pathname.endsWith('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '';
+    const isIndexPage = window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/index.html';
     
     if (!session) {
         if (!isIndexPage) {
-            window.location.href = 'dashboard.html';
+            window.location.href = '/';
             return;
         }
         showAuthSection(true);
@@ -48,7 +48,7 @@ async function checkSession() {
             }
         } else {
             if (!isIndexPage) {
-                window.location.href = 'dashboard.html';
+                window.location.href = '/';
                 return;
             }
             showAuthSection(true);
@@ -56,7 +56,7 @@ async function checkSession() {
     } catch (e) {
         console.log('Session check failed');
         if (!isIndexPage) {
-            window.location.href = 'dashboard.html';
+            window.location.href = '/';
             return;
         }
         showAuthSection(true);
@@ -149,7 +149,7 @@ function showMainApp() {
     loadSites();
     
     // Adjust "Add Site" button based on page
-    const isIndexPage = window.location.pathname.endsWith('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '';
+    const isIndexPage = window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/index.html';
     if (!isIndexPage) {
         const btnAdd = document.querySelector('.btn-add[onclick="showAddSiteModal()"]');
         if (btnAdd) {
@@ -275,7 +275,7 @@ async function logout() {
         });
     }
     localStorage.removeItem('session');
-    location.href = 'dashboard.html';
+    location.href = '/';
 }
 
 function showAuthForm(type) {
