@@ -466,7 +466,27 @@ async function authFetch(url, options = {}) {
         headers['Content-Type'] = 'application/json';
     }
     
-    return fetch(url, { ...options, headers });
+    const response = await fetch(url, { ...options, headers });
+    
+    if (response.status === 402) {
+        try {
+            const clone = response.clone();
+            const data = await clone.json();
+            if (data.error === 'INSUFFICIENT_FUNDS' && data.missing) {
+                const amountToTopup = Math.ceil(data.missing / 100) * 100;
+                if (typeof setTopupAmount === 'function') {
+                    setTopupAmount(amountToTopup);
+                }
+                if (typeof showTopupModal === 'function') {
+                    showTopupModal();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to parse 402 response:', e);
+        }
+    }
+    
+    return response;
 }
 
 // Initialization on load

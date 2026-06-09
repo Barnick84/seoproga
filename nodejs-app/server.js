@@ -64,6 +64,17 @@ async function getSystemSettings() {
     }
 }
 
+class InsufficientFundsError extends Error {
+    constructor(required, available) {
+        super(`Недостаточно средств. Требуется: ${required.toFixed(2)} ₽, доступно: ${available.toFixed(2)} ₽`);
+        this.name = 'InsufficientFundsError';
+        this.required = required;
+        this.available = available;
+        this.missing = required - available;
+        this.code = 'INSUFFICIENT_FUNDS';
+    }
+}
+
 // Helper: Check and deduct balance
 async function checkAndDeductBalance(userId, amount, description) {
     const [rows] = await db.query('SELECT balance FROM users WHERE id = ?', [userId]);
@@ -71,7 +82,7 @@ async function checkAndDeductBalance(userId, amount, description) {
     
     const balance = parseFloat(rows[0].balance);
     if (balance < amount) {
-        throw new Error(`Недостаточно средств. Требуется: ${amount.toFixed(2)} ₽, доступно: ${balance.toFixed(2)} ₽`);
+        throw new InsufficientFundsError(amount, balance);
     }
 
     const conn = await db.getConnection();
@@ -787,6 +798,16 @@ app.post('/api/run-clustering', authenticate, async (req, res) => {
             res.json({ success: false, error: result });
         }
     } catch (error) {
+        if (error.code === 'INSUFFICIENT_FUNDS') {
+            return res.status(402).json({
+                success: false,
+                error: 'INSUFFICIENT_FUNDS',
+                message: error.message,
+                required: error.required,
+                available: error.available,
+                missing: error.missing
+            });
+        }
         res.status(500).json({ error: error.message });
     }
 });
@@ -1927,6 +1948,16 @@ app.get('/api/run-frequency-stream', authenticate, async (req, res) => {
         
         res.json({ success: true, task_id: result.insertId });
     } catch (error) {
+        if (error.code === 'INSUFFICIENT_FUNDS') {
+            return res.status(402).json({
+                success: false,
+                error: 'INSUFFICIENT_FUNDS',
+                message: error.message,
+                required: error.required,
+                available: error.available,
+                missing: error.missing
+            });
+        }
         res.status(500).json({ error: error.message });
     }
 });
