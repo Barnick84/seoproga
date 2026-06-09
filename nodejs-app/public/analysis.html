@@ -436,6 +436,11 @@
                     </div>
                     <div id="structureBlocks" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
+
+                <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px;">
+                    <h3 style="margin-bottom: 15px;">Заголовки конкурентов</h3>
+                    <div id="competitorsHeadersList" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                </div>
             </div>
 
             <div class="card" style="margin-bottom: 24px;">
@@ -1122,7 +1127,6 @@
             <div class="tab active" onclick="switchTab(this, 'tech')">Тех. аудит</div>
             <div class="tab" onclick="switchTab(this, 'keywords')">Слова</div>
             <div class="tab" onclick="switchTab(this, 'ngrams')">N-граммы</div>
-            <div class="tab" onclick="switchTab(this, 'structure')">Структура</div>
             <div class="tab" onclick="switchTab(this, 'competitors')">Конкуренты</div>
             <div class="tab" onclick="switchTab(this, 'meta')">Мета-теги</div>
             <div class="tab" onclick="switchTab(this, 'seo')">SEO анализ</div>
@@ -1196,13 +1200,6 @@
         </div>
 
         <!-- Structure Tab -->
-        <div id="tab-structure" class="tab-content">
-            <div class="card">
-                <h2>Заголовки конкурентов</h2>
-                <div id="competitorsHeadersList" style="display: flex; flex-direction: column; gap: 15px;"></div>
-            </div>
-        </div>
-
         <!-- Competitors Tab -->
         <div id="tab-competitors" class="tab-content">
             <div class="card">
