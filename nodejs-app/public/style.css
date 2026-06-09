@@ -108,9 +108,19 @@ a.menu-tab[href^="/dashboard.html"] {
 
 .top-menu .menu-tab.active {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
+    font-weight: 600;
+    position: relative;
+}
+
+.top-menu .menu-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-1);
+    border-radius: 2px 2px 0 0;
 }
 
 .top-menu .btn-add {
