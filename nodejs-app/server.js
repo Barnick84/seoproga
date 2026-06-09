@@ -12,6 +12,10 @@ app.use(cors());
 app.use(express.json());
 
 
+app.get('/dashboard.html', (req, res) => {
+    res.redirect('/sort.html');
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Path to virtual environment python
