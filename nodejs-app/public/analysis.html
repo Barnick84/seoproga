@@ -409,11 +409,39 @@
                 </div>
             </details>
 
-            <div class="card" id="recommendationsCard">
+            <div class="card" id="recommendationsCard" style="margin-bottom: 24px;">
                 <h2>Рекомендации</h2>
                 <div id="recommendationsList" class="metrics-grid" style="grid-template-columns: 1fr;">
                     <!-- Recommendations -->
                 </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin:0;">Рекомендуемая структура (H2-H3)</h2>
+                        <div style="display:flex; align-items:center; gap: 10px; margin-top:4px;">
+                            <select id="structureHistorySelect" onchange="loadStructureByDate(this.value)" class="form-control" style="width:auto; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); display:none; font-size: 12px;"></select>
+                            <div id="structureSavedDate" style="font-size:12px; color:var(--text-secondary);"></div>
+                        </div>
+                    </div>
+                    <button id="btnGenerateStructure" class="btn btn-primary" onclick="generateIdealStructure()"><i class="fas fa-wand-magic-sparkles"></i> Сгенерировать ИИ-структуру</button>
+                </div>
+                <div id="idealStructureContainer" style="padding: 20px; background: #fafafa; border: 1px dashed var(--border); border-radius: 8px;">
+                    <p style="color: var(--text-secondary); text-align: center;">Нажмите кнопку выше, чтобы ИИ составил идеальный план на основе конкурентов</p>
+                </div>
+                <div id="structureEditor" style="margin-top: 20px; display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin:0;">Интерактивный редактор</h3>
+                        <button class="btn btn-primary" onclick="saveStructure()" style="padding: 6px 16px;"><i class="fas fa-save"></i> Сохранить структуру</button>
+                    </div>
+                    <div id="structureBlocks" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 24px;">
+                <h2>Анализ Title и Description</h2>
+                <div id="metaAnalysisContent"></div>
             </div>
         </div>
 
@@ -1171,29 +1199,6 @@
         <!-- Structure Tab -->
         <div id="tab-structure" class="tab-content">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h2 style="margin:0;">Рекомендуемая структура (H2-H3)</h2>
-                        <div style="display:flex; align-items:center; gap: 10px; margin-top:4px;">
-                            <select id="structureHistorySelect" onchange="loadStructureByDate(this.value)" class="form-control" style="width:auto; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); display:none; font-size: 12px;"></select>
-                            <div id="structureSavedDate" style="font-size:12px; color:var(--text-secondary);"></div>
-                        </div>
-                    </div>
-                    <button id="btnGenerateStructure" class="btn btn-primary" onclick="generateIdealStructure()"><i class="fas fa-wand-magic-sparkles"></i> Сгенерировать ИИ-структуру</button>
-                </div>
-                <div id="idealStructureContainer" style="padding: 20px; background: #fafafa; border: 1px dashed var(--border); border-radius: 8px;">
-                    <p style="color: var(--text-secondary); text-align: center;">Нажмите кнопку выше, чтобы ИИ составил идеальный план на основе конкурентов</p>
-                </div>
-                <div id="structureEditor" style="margin-top: 20px; display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="margin:0;">Интерактивный редактор</h3>
-                        <button class="btn btn-primary" onclick="saveStructure()" style="padding: 6px 16px;"><i class="fas fa-save"></i> Сохранить структуру</button>
-                    </div>
-                    <div id="structureBlocks" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                </div>
-            </div>
-            
-            <div class="card" style="margin-top: 24px;">
                 <h2>Заголовки конкурентов</h2>
                 <div id="competitorsHeadersList" style="display: flex; flex-direction: column; gap: 15px;"></div>
             </div>
@@ -1223,10 +1228,6 @@
         <!-- Meta Tab -->
         <div id="tab-meta" class="tab-content">
             <div class="card">
-                <h2>Анализ Title и Description</h2>
-                <div id="metaAnalysisContent"></div>
-            </div>
-            <div class="card" style="margin-top: 24px;">
                 <h2>Мета-теги всех конкурентов</h2>
                 <div id="metaList"></div>
             </div>
