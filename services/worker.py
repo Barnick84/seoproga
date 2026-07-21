@@ -6,13 +6,11 @@ import json
 import subprocess
 from datetime import datetime
 
-# Fix console encoding on Windows
 if sys.platform == "win32":
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
-# Get project root
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 os.chdir(project_root)
@@ -21,6 +19,9 @@ sys.path.insert(0, project_root)
 from config import Config
 
 PYTHON_PATH = sys.executable
+
+SCRIPTS_DIR = os.path.join(project_root, 'nodejs-app', 'scripts')
+
 
 def get_pending_tasks():
     conn = Config.get_mysql_conn()
@@ -31,7 +32,18 @@ def get_pending_tasks():
     finally:
         conn.close()
 
-def run_task(task):
+
+def _mark_scheduled(task_id: int) -> None:
+    conn = Config.get_mysql_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("UPDATE tasks SET status = 'scheduled' WHERE id = %s", (task_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def run_task(task: dict) -> None:
     task_id = task['id']
     user_id = task['user_id']
     task_type = task['task_type']
@@ -40,11 +52,11 @@ def run_task(task):
     print(f"[{datetime.now()}] Starting task {task_id} ({task_type}) for user {user_id}")
 
     script_map = {
-        'frequency': 'nodejs-app/scripts/fetch_frequency.py',
-        'clustering': 'nodejs-app/scripts/run_clustering.py',
-        'mapping': 'nodejs-app/scripts/run_mapping.py',
-        'competitor_analysis': 'nodejs-app/scripts/run_competitor_analysis.py',
-        'fetch_queries': 'nodejs-app/scripts/fetch_yandex_queries.py'
+        'frequency': os.path.join(SCRIPTS_DIR, 'fetch_frequency.py'),
+        'clustering': os.path.join(SCRIPTS_DIR, 'run_clustering.py'),
+        'mapping': os.path.join(SCRIPTS_DIR, 'run_mapping.py'),
+        'competitor_analysis': os.path.join(SCRIPTS_DIR, 'run_competitor_analysis.py'),
+        'fetch_queries': os.path.join(SCRIPTS_DIR, 'fetch_yandex_queries.py'),
     }
 
     script_path = script_map.get(task_type)
@@ -52,50 +64,49 @@ def run_task(task):
         print(f"Unknown task type: {task_type}")
         return
 
-    # Prepare arguments based on task type
+    domain = payload.get('domain', '')
     args = [PYTHON_PATH, script_path]
-    
+
     if task_type == 'frequency':
         args.extend([
-            payload.get('domain'),
+            domain,
             str(user_id),
             payload.get('device', ''),
             payload.get('region', ''),
             payload.get('mode', 'all'),
             str(payload.get('minFrequency', 10)),
             str(task_id),
-            str(payload.get('clusterId', 0))
+            str(payload.get('clusterId', 0)),
         ])
+    elif task_type == 'clustering':
+        args.extend([domain, str(user_id), str(task_id)])
+    elif task_type == 'mapping':
+        args.extend([domain, str(user_id), str(task_id)])
+    elif task_type == 'competitor_analysis':
+        cluster_id = payload.get('cluster_id', payload.get('clusterId', ''))
+        args.extend([domain, str(cluster_id), str(user_id), str(task_id)])
     elif task_type == 'fetch_queries':
-        args.extend([payload.get('domain'), str(user_id)])
-    # Add other task types as they are refactored...
+        args.extend([domain, str(user_id)])
 
     try:
-        # Run as a separate process
-        process = subprocess.Popen(args, cwd=project_root)
-        # We don't wait here if we want parallel execution, but for now let's just let it run.
-        # The script itself will update the status in DB.
+        subprocess.Popen(args, cwd=project_root)
     except Exception as e:
         print(f"Failed to spawn task {task_id}: {e}")
 
-def main():
+
+def main() -> None:
     print(f"SEO Worker started (PID: {os.getpid()})")
     while True:
         try:
             tasks = get_pending_tasks()
             for task in tasks:
-                # Mark as 'scheduled' to avoid multiple workers picking it up
-                conn = Config.get_mysql_conn()
-                cur = conn.cursor()
-                cur.execute("UPDATE tasks SET status = 'scheduled' WHERE id = %s", (task['id'],))
-                conn.close()
-                
+                _mark_scheduled(task['id'])
                 run_task(task)
-            
-            time.sleep(2) # Poll every 2 seconds
+            time.sleep(2)
         except Exception as e:
             print(f"Worker loop error: {e}")
             time.sleep(5)
+
 
 if __name__ == "__main__":
     main()

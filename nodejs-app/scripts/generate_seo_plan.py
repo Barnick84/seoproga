@@ -79,7 +79,7 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("BASE_URL")
         )
-        model = "gemini-3.1-pro"
+        model = os.getenv("LLM_MODEL", "gemini-3.1-pro")
 
         prompt_text = ""
         

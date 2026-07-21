@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import re
 import pymorphy3
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 from typing import List, Dict, Any
 import json
@@ -315,21 +316,27 @@ class CustomAnalyzer:
             comp_urls = self.fetch_competitors(keywords)
         print(f"[INFO] Found {len(comp_urls)} competitors", file=sys.stderr)
         
-        comp_results = []
-        for url in comp_urls:
+        def _fetch_and_analyze(url: str) -> Dict | None:
             try:
                 if not url.startswith('http'):
                     url = 'https://' + url
                 print(f"   Analyzing {url}...", file=sys.stderr)
                 r = requests.get(url, timeout=15, headers={'User-Agent': 'Mozilla/5.0'})
                 r.raise_for_status()
-                # Fix encoding for Cyrillic
                 if r.encoding.lower() == 'iso-8859-1':
                     r.encoding = r.apparent_encoding
-                c_data = self.analyze_content(r.text, url)
-                comp_results.append(c_data)
+                return self.analyze_content(r.text, url)
             except Exception as e:
                 print(f"   [WARN] Error analyzing {url}: {e}", file=sys.stderr)
+                return None
+
+        comp_results = []
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {executor.submit(_fetch_and_analyze, url): url for url in comp_urls}
+            for future in as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    comp_results.append(result)
 
         # 3. Keyword Analysis
         target_keyword_lemmas = []
@@ -462,8 +469,6 @@ class CustomAnalyzer:
             ],
             "target_meta": target_data["meta"]
         }
-        
-        return report
         
         return report
 

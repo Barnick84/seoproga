@@ -10,19 +10,12 @@ def main():
     try:
         ssh.connect('95.181.213.46', username='barnick', password='337733!@Az', timeout=10)
         
-        # Get Nginx configuration
-        cmd = "ls -la /etc/nginx/sites-enabled/"
+        # SQL query to get tasks for user 4
+        cmd = """mysql -u seoapp -pseoapp123 seo_app -e "SELECT id, task_type, status, progress, error, created_at, started_at, finished_at FROM tasks WHERE user_id = 4 ORDER BY created_at DESC LIMIT 20;" """
+        print("--- TASKS ---")
         stdin, stdout, stderr = ssh.exec_command(cmd)
-        stdin.write("337733!@Az\n")
-        stdin.flush()
-        
-        out = stdout.read().decode('utf-8', errors='replace').strip()
-        err = stderr.read().decode('utf-8', errors='replace').strip()
-        print("--- STDOUT ---")
-        print(out)
-        print("--- STDERR ---")
-        print(err)
-        
+        print(stdout.read().decode('utf-8', errors='replace').strip())
+
     except Exception as e:
         print("Error:", e)
     finally:

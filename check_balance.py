@@ -1,10 +1,22 @@
-import paramiko
+import os
 import sys
+
+import paramiko
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SSH_HOST = os.getenv("SSH_HOST")
+SSH_USER = os.getenv("SSH_USER")
+SSH_PASSWORD = os.getenv("SSH_PASSWORD")
+
+if not all([SSH_HOST, SSH_USER, SSH_PASSWORD]):
+    sys.exit("Error: SSH_HOST, SSH_USER and SSH_PASSWORD must be set in .env")
 
 try:
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect('95.181.213.46', username='barnick', password='337733!@Az')
+    client.connect(SSH_HOST, username=SSH_USER, password=SSH_PASSWORD)
     
     node_script = """
 const db = require('./nodejs-app/db');

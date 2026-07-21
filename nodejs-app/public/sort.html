@@ -549,33 +549,15 @@
             }
 
             document.getElementById('firstLoginStartBtn').style.display = 'none';
-            document.getElementById('flLoader').classList.add('active');
-            document.getElementById('flSuccess').classList.remove('active');
-            document.getElementById('flError').classList.remove('active');
-            document.getElementById('flCloseBtn').classList.remove('active');
+            document.getElementById('flSuccess').classList.add('active');
+            document.getElementById('flCloseBtn').classList.add('active');
             document.getElementById('flSiteName').textContent = domain;
-
-            try {
-                const res = await authFetch(`/api/fetch-wm-queries?domain=${encodeURIComponent(domain)}`);
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('flLoader').classList.remove('active');
-                    document.getElementById('flSuccess').classList.add('active');
-                    document.getElementById('flSuccessText').textContent =
-                        `Запросы из Яндекс.Вебмастера успешно импортированы!`;
-                    document.getElementById('flCloseBtn').classList.add('active');
-                    // Set and remember the selected site in the main dropdown
-                    document.getElementById('siteSelect').value = domain;
-                    selectSite();
-                } else {
-                    throw new Error(data.error || 'Ошибка загрузки');
-                }
-            } catch (e) {
-                document.getElementById('flLoader').classList.remove('active');
-                document.getElementById('flError').classList.add('active');
-                document.getElementById('flErrorText').textContent = e.message || 'Не удалось загрузить ключи';
-                document.getElementById('flCloseBtn').classList.add('active');
-            }
+            document.getElementById('flSuccessText').textContent =
+                'Сайт успешно выбран! Теперь можно перейти к работе с ключевыми словами.';
+            
+            // Set and remember the selected site in the main dropdown
+            document.getElementById('siteSelect').value = domain;
+            selectSite();
         }
 
         function hideWmBanner() {

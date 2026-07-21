@@ -46,7 +46,6 @@ def cluster_keywords(
     clusters = initial_clusters or []
     skipped = 0
 
-    # Find the starting ID for new clusters
     next_id = 1
     if clusters:
         next_id = max(c.get("id", 0) for c in clusters) + 1
@@ -57,12 +56,7 @@ def cluster_keywords(
             if skip_cache_miss:
                 skipped += 1
                 continue
-            # Fallback: fetch without cache (will hit rate limit)
             serp = client.fetch_serp(keyword, use_cache=False)
-        if not serp:
-            skipped += 1
-            continue
-        serp = client.fetch_serp(keyword)
         if not serp:
             skipped += 1
             continue

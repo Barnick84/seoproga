@@ -2804,7 +2804,7 @@
                 // Step 5: Check Positions
                 setProgress(5, 8, 'Сбор позиций', 'Определение позиций в выдаче...');
                 await new Promise((resolve) => {
-                    const evtSource = new EventSource(`/api/cluster/check-positions-stream?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}&token=${localStorage.getItem('token')}`);
+                    const evtSource = new EventSource(`/api/cluster/check-positions-stream?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}&token=${localStorage.getItem('session')}`);
                     evtSource.onmessage = function(e) {
                         try {
                             const dat = JSON.parse(e.data);
@@ -3072,7 +3072,7 @@
                 if (!skipPositions) {
                     setProgress('Позиции', 'Определение позиций в выдаче...');
                     await new Promise((resolve) => {
-                        const evtSource = new EventSource(`/api/cluster/check-positions-stream?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}&token=${localStorage.getItem('token')}`);
+const evtSource = new EventSource(`/api/cluster/check-positions-stream?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}&token=${localStorage.getItem('session')}`);
                         evtSource.onmessage = function(e) {
                             try {
                                 const dat = JSON.parse(e.data);

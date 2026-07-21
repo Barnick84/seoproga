@@ -1,3 +1,4 @@
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const express = require('express');
 const cors = require('cors');
 const { spawn } = require('child_process');
@@ -5,8 +6,13 @@ const path = require('path');
 const crypto = require('crypto');
 const db = require('./db');
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Rate-limit cache for fetch-wm-queries
+const lastFetchTime = {};  // key: "userId:domain", value: timestamp
+const FETCH_COOLDOWN_MS = 10 * 60 * 1000;  // 10 minutes
 
 app.use(cors());
 app.use(express.json());
@@ -26,8 +32,12 @@ const PYTHON_PATH = process.platform === 'win32'
 // Session storage: session_id -> { user_id, username }
 const sessions = {};
 
-// Admin Password from user request
-const ADMIN_PASSWORD = '12131415!@Az';
+// Admin password from environment (never hardcode secrets)
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD) {
+    console.error('FATAL: ADMIN_PASSWORD env variable is not set');
+    process.exit(1);
+}
 const adminErrors = [];
 
 // Catch console.error to admin log
@@ -83,7 +93,7 @@ class InsufficientFundsError extends Error {
 async function checkAndDeductBalance(userId, amount, description) {
     const [rows] = await db.query('SELECT balance FROM users WHERE id = ?', [userId]);
     if (rows.length === 0) throw new Error('User not found');
-    
+
     const balance = parseFloat(rows[0].balance);
     if (balance < amount) {
         throw new InsufficientFundsError(amount, balance);
@@ -214,7 +224,7 @@ app.post('/api/admin/users/update', authenticateAdmin, async (req, res) => {
         const conn = await db.getConnection();
         try {
             await conn.beginTransaction();
-            
+
             // If balance changed, log it
             if (balance !== undefined) {
                 const diff = parseFloat(balance) - parseFloat(oldUser[0].balance);
@@ -230,8 +240,8 @@ app.post('/api/admin/users/update', authenticateAdmin, async (req, res) => {
             const params = [];
             if (balance !== undefined) { updates.push('balance = ?'); params.push(balance); }
             if (yandex_token !== undefined) { updates.push('yandex_token = ?'); params.push(yandex_token); }
-            if (is_blocked !== undefined) { 
-                updates.push('is_blocked = ?'); 
+            if (is_blocked !== undefined) {
+                updates.push('is_blocked = ?');
                 params.push(is_blocked ? 1 : 0);
                 // Clear session if blocked
                 if (is_blocked) {
@@ -261,7 +271,8 @@ app.post('/api/admin/users/update', authenticateAdmin, async (req, res) => {
 
 // Middleware: Authenticate user
 const authenticate = async (req, res, next) => {
-    const sessionId = req.headers['authorization'];
+    let sessionId = req.headers['authorization'] || req.query.token;
+    if (sessionId === 'null' || sessionId === 'undefined') sessionId = null;
     if (!sessionId || !sessions[sessionId]) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -289,39 +300,48 @@ function normalizeUrl(url) {
     return url.replace(/\/$/, '');
 }
 
-// Helper: call Python script
-function callPython(scriptPath, args = [], input = null) {
+// Helper: call Python script with an optional timeout (ms)
+function callPython(scriptPath, args = [], input = null, timeoutMs = 15 * 60 * 1000) {
     return new Promise((resolve, reject) => {
         const py = spawn(PYTHON_PATH, [scriptPath, ...args], {
             cwd: path.resolve(__dirname, '..'),
             stdio: ['pipe', 'pipe', 'pipe'],
-            env: { ...process.env, PYTHONIOENCODING: 'utf-8' }, // Force UTF-8 environment
+            env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
             shell: false
         });
-        
+
+        const killTimer = setTimeout(() => {
+            py.kill('SIGKILL');
+            reject(new Error(`Python script timed out after ${timeoutMs / 1000}s: ${scriptPath}`));
+        }, timeoutMs);
+
         if (input) {
             py.stdin.write(input);
             py.stdin.end();
         }
-        
+
         let stdoutChunks = [];
         let stderrChunks = [];
-        
+
         py.stdout.on('data', (chunk) => { stdoutChunks.push(chunk); });
         py.stderr.on('data', (chunk) => { stderrChunks.push(chunk); });
-        
+
         py.on('close', (code) => {
+            clearTimeout(killTimer);
             const stdout = Buffer.concat(stdoutChunks).toString('utf-8');
             const stderr = Buffer.concat(stderrChunks).toString('utf-8');
-            
+
             if (code !== 0) {
                 reject(new Error(stderr || `Process exited with code ${code}`));
             } else {
                 resolve(stdout);
             }
         });
-        
-        py.on('error', reject);
+
+        py.on('error', (err) => {
+            clearTimeout(killTimer);
+            reject(err);
+        });
     });
 }
 
@@ -332,12 +352,12 @@ app.post('/api/auth/register', async (req, res) => {
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password required' });
         }
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'user_auth.py'),
             ['register', username, password, email || '', yandex_token || '']
         );
-        
+
         const data = JSON.parse(result);
         if (data.success) {
             const sessionId = require('crypto').randomBytes(32).toString('hex');
@@ -358,12 +378,12 @@ app.post('/api/auth/login', async (req, res) => {
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password required' });
         }
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'user_auth.py'),
             ['login', username, password]
         );
-        
+
         const data = JSON.parse(result);
         if (data.success) {
             const sessionId = require('crypto').randomBytes(32).toString('hex');
@@ -404,7 +424,7 @@ app.get('/api/user-info', authenticate, async (req, res) => {
     }
 });
 
-// API: Create Payment (Tegro Money)
+// API: Create Payment (Cardlink)
 app.post('/api/create-payment', authenticate, async (req, res) => {
     try {
         const { amount } = req.body;
@@ -413,8 +433,12 @@ app.post('/api/create-payment', authenticate, async (req, res) => {
             return res.status(400).json({ error: `Минимальная сумма пополнения ${minAmount} руб.` });
         }
 
-        const shop_id = process.env.TEGRO_SHOP_ID || 'D0F98E7D7742609DC508D86BB7500914';
-        const secret = process.env.TEGRO_SECRET_KEY || '';
+        const shop_id = process.env.CARDLINK_SHOP_ID;
+        const token = process.env.CARDLINK_TOKEN;
+        if (!shop_id || !token) {
+            return res.status(500).json({ error: 'Платёжный шлюз не настроен (CARDLINK_SHOP_ID, CARDLINK_TOKEN)' });
+        }
+        
         const order_id = `ORDER_${Date.now()}_${req.user.user_id}`;
         const currency = 'RUB';
 
@@ -424,65 +448,67 @@ app.post('/api/create-payment', authenticate, async (req, res) => {
             [req.user.user_id, amount, currency, order_id, 'pending']
         );
 
-        // 2. Prepare signature (ONLY mandatory fields participate!)
-        const signData = {
-            shop_id: shop_id,
-            amount: amount,
-            currency: currency,
-            order_id: order_id
-        };
-        
-        const sortedSignKeys = Object.keys(signData).sort();
-        const signStr = sortedSignKeys.map(k => `${k}=${signData[k]}`).join('&');
-        const sign = crypto.createHash('md5').update(signStr + secret).digest('hex');
-
-        // Fetch user email to pre-fill the payment form
+        // 2. Fetch user email (optional, Cardlink doesn't strictly require it for the link creation, but good for records)
         const [userRows] = await db.query('SELECT email FROM users WHERE id = ?', [req.user.user_id]);
         const userEmail = userRows.length > 0 ? userRows[0].email : null;
 
-        // 3. Construct Tegro URL with all fields
-        const urlData = {
-            ...signData,
-            success_url: 'https://seoproga.ru/suceful/',
-            fail_url: 'https://seoproga.ru/errore/',
-            notify_url: 'https://seoproga.ru/payment-suceful/'
-        };
+        // 3. Construct Cardlink API Request
+        const params = new URLSearchParams();
+        params.append('amount', amount);
+        params.append('order_id', order_id);
+        params.append('description', 'Пополнение баланса в сервисе');
+        params.append('type', 'normal');
+        params.append('shop_id', shop_id);
+        params.append('currency_in', currency);
+        params.append('payer_pays_commission', '1');
         
-        if (userEmail) {
-            urlData['email'] = userEmail;
+        const response = await fetch('https://cardlink.link/api/v1/bill/create', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.success.toString() === 'true') {
+            res.json({ success: true, payment_url: data.link_page_url || data.link_url });
+        } else {
+            console.error('Cardlink API Error:', data);
+            res.status(500).json({ error: 'Ошибка создания платежа в Cardlink' });
         }
-
-        const str = Object.keys(urlData).map(k => `${k}=${encodeURIComponent(urlData[k])}`).join('&');
-
-        const tegroUrl = `https://tegro.money/pay/?${str}&sign=${sign}`;
-        
-        res.json({ success: true, payment_url: tegroUrl });
     } catch (error) {
         console.error('Payment creation error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// API: Payment Callback (Webhook from Tegro)
+// API: Payment Callback (Webhook from Cardlink)
 app.post(['/payment-suceful', '/payment-suceful/'], express.urlencoded({ extended: true }), express.json(), async (req, res) => {
     try {
-        const { shop_id, amount, order_id, sign } = req.body;
-        const secret = process.env.TEGRO_SECRET_KEY || '';
+        const { InvId, OutSum, Status, SignatureValue } = req.body;
+        const token = process.env.CARDLINK_TOKEN || '';
 
-        if (!shop_id || !amount || !order_id || !sign) {
+        if (!InvId || !OutSum || !SignatureValue) {
             return res.status(400).send('Missing params');
         }
 
-        const data = { ...req.body };
-        delete data.sign;
-        const sortedKeys = Object.keys(data).sort();
-        const str = sortedKeys.map(k => `${k}=${encodeURIComponent(data[k])}`).join('&');
-        const expectedSign = crypto.createHash('md5').update(str + secret).digest('hex');
+        // Cardlink sign: strtoupper(md5($OutSum . ":" . $InvId . ":" . $apiToken))
+        const expectedSign = crypto.createHash('md5').update(`${OutSum}:${InvId}:${token}`).digest('hex').toUpperCase();
 
-        if (sign !== expectedSign) {
-            console.error('Invalid Tegro sign');
+        if (SignatureValue.toUpperCase() !== expectedSign) {
+            console.error('Invalid Cardlink sign. Expected:', expectedSign, 'Got:', SignatureValue);
             return res.status(400).send('Invalid sign');
         }
+
+        if (Status && Status !== 'SUCCESS') {
+            return res.status(200).send('Ignored non-success status');
+        }
+
+        const order_id = InvId;
+        const amount = parseFloat(OutSum); // Parse correctly for DB
 
         const [payments] = await db.query('SELECT * FROM payment_history WHERE order_id = ? AND status = ?', [order_id, 'pending']);
         if (payments.length === 0) {
@@ -490,7 +516,7 @@ app.post(['/payment-suceful', '/payment-suceful/'], express.urlencoded({ extende
         }
 
         const payment = payments[0];
-        
+
         const conn = await db.getConnection();
         try {
             await conn.beginTransaction();
@@ -509,7 +535,7 @@ app.post(['/payment-suceful', '/payment-suceful/'], express.urlencoded({ extende
             conn.release();
         }
     } catch (error) {
-        console.error('Tegro Callback error:', error);
+        console.error('Cardlink Callback error:', error);
         res.status(500).send('Internal Server Error');
     }
 });
@@ -547,17 +573,17 @@ app.get('/api/user/settings', authenticate, async (req, res) => {
             path.join(__dirname, 'scripts', 'user_auth.py'),
             ['get_settings', req.user.user_id]
         );
-        
+
         const [sites] = await db.query(
             "SELECT domain FROM sites WHERE user_id = ?",
             [req.user.user_id]
         );
-        
+
         const jsonMatch = settingsResult.match(/\{.*\}/s);
         const settings = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(settingsResult);
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             yandex_token: settings.yandex_token || '',
             sites: sites.map(s => s.domain)
         });
@@ -589,7 +615,7 @@ app.post('/api/user/change-password', authenticate, async (req, res) => {
         if (!current_password || !new_password) {
             return res.status(400).json({ error: 'Current and new passwords required' });
         }
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'user_auth.py'),
             ['change_password', req.user.user_id, current_password, new_password]
@@ -607,42 +633,42 @@ app.post('/api/sites', authenticate, async (req, res) => {
     try {
         const { domain } = req.body;
         if (!domain) return res.status(400).json({ error: 'Domain required' });
-        
+
         const normalizedDomain = normalizeUrl(domain);
-        
+
         // 1. Check if domain already owned by another user
         const checkOwner = await callPython(
             path.join(__dirname, 'scripts', 'user_auth.py'),
             ['check_owner', normalizedDomain]
         );
-        
+
         try {
             const ownerData = JSON.parse(checkOwner);
             if (ownerData.owner && ownerData.owner !== req.user.user_id) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
-                    message: 'Этот сайт уже привязан к другому пользователю' 
+                    message: 'Этот сайт уже привязан к другому пользователю'
                 });
             }
-        } catch (e) {}
+        } catch (e) { }
 
         // 2. Check if domain is linked to WM
         const checkResult = await callPython(
             path.join(__dirname, 'scripts', 'check_domain.py'),
             [normalizedDomain, req.user.user_id]
         );
-        
+
         const checkData = JSON.parse(checkResult);
         if (!checkData.linked) {
             return res.status(400).json({ success: false, message: 'Домен не привязан к вашему аккаунту Яндекс.Вебмастера' });
         }
-        
+
         // 3. Add to sites DB
         const result = await callPython(
             path.join(__dirname, 'scripts', 'add_site.py'),
             [normalizedDomain, req.user.user_id]
         );
-        
+
         res.json(JSON.parse(result));
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -668,7 +694,7 @@ app.get('/api/keywords', authenticate, async (req, res) => {
         const { domain } = req.query;
         const args = [req.user.user_id];
         if (domain) args.push(normalizeUrl(domain));
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'get_keywords.py'),
             args
@@ -684,7 +710,7 @@ app.post('/api/check-domain', authenticate, async (req, res) => {
     try {
         const { domain } = req.body;
         if (!domain) return res.status(400).json({ error: 'Domain required' });
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const result = await callPython(
             path.join(__dirname, 'scripts', 'check_domain.py'),
@@ -702,13 +728,13 @@ app.post('/api/check-domain', authenticate, async (req, res) => {
 app.post('/api/minus-words', authenticate, async (req, res) => {
     try {
         const { domain, keywords } = req.body;
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'update_minus.py'),
             [],
             JSON.stringify({ user_id: req.user.user_id, domain: normalizeUrl(domain), keywords })
         );
-        
+
         try {
             const data = JSON.parse(result);
             res.json(data);
@@ -724,13 +750,13 @@ app.post('/api/minus-words', authenticate, async (req, res) => {
 app.post('/api/restore-minus', authenticate, async (req, res) => {
     try {
         const { domain, keywords } = req.body;
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'restore_minus.py'),
             [],
             JSON.stringify({ user_id: req.user.user_id, domain: normalizeUrl(domain), keywords })
         );
-        
+
         try {
             const data = JSON.parse(result);
             res.json(data);
@@ -749,12 +775,12 @@ app.post('/api/clear-minus', authenticate, async (req, res) => {
         if (!domain) {
             return res.status(400).json({ error: 'Domain required' });
         }
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'clear_minus.py'),
             [req.user.user_id, normalizeUrl(domain)]
         );
-        
+
         try {
             const data = JSON.parse(result);
             res.json(data);
@@ -766,14 +792,14 @@ app.post('/api/clear-minus', authenticate, async (req, res) => {
     }
 });
 
-// API: Run clustering
-app.post('/api/run-clustering', authenticate, async (req, res) => {
+// API: Run clustering (streaming progress)
+app.get('/api/run-clustering-stream', authenticate, async (req, res) => {
     try {
-        const { domain } = req.body;
+        const { domain } = req.query;
         if (!domain) {
-            return res.status(400).json({ error: 'Domain required' });
+            return res.write(`data: ${JSON.stringify({ type: 'error', message: 'Domain required' })}\n\n`);
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const settings = await getSystemSettings();
 
@@ -783,59 +809,33 @@ app.post('/api/run-clustering', authenticate, async (req, res) => {
             [req.user.user_id, normalizedDomain]
         );
         const kwCount = countRows[0].count;
+        
         if (kwCount > 0) {
             const cost = kwCount * settings.clustering_rate;
-            await checkAndDeductBalance(req.user.user_id, cost, `Кластеризация ${kwCount} запросов (${normalizedDomain})`);
+            try {
+                await checkAndDeductBalance(req.user.user_id, cost, `Кластеризация ${kwCount} запросов (${normalizedDomain})`);
+            } catch (error) {
+                if (error.code === 'INSUFFICIENT_FUNDS') {
+                    res.write(`data: ${JSON.stringify({ type: 'error', error: 'INSUFFICIENT_FUNDS', message: error.message, required: error.required, available: error.available, missing: error.missing })}\n\n`);
+                    return res.end();
+                }
+                res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+                return res.end();
+            }
         }
 
-        const result = await callPython(
-            path.join(__dirname, 'scripts', 'run_clustering.py'),
-            [normalizedDomain, req.user.user_id]
-        );
-        
-        try {
-            // Extract JSON from output (might contain PROGRESS: logs)
-            const jsonMatch = result.match(/\{.*\}/s);
-            const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(result);
-            res.json(data);
-        } catch (err) {
-            res.json({ success: false, error: result });
-        }
-    } catch (error) {
-        if (error.code === 'INSUFFICIENT_FUNDS') {
-            return res.status(402).json({
-                success: false,
-                error: 'INSUFFICIENT_FUNDS',
-                message: error.message,
-                required: error.required,
-                available: error.available,
-                missing: error.missing
-            });
-        }
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// API: Run mapping (streaming progress)
-app.get('/api/run-mapping-stream', authenticate, async (req, res) => {
-    try {
-        const { domain } = req.query;
-        if (!domain) return res.status(400).json({ error: 'Domain required' });
-        
-        const normalizedDomain = normalizeUrl(domain);
-        
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        
+
         const py = require('child_process').spawn(PYTHON_PATH, [
-            path.join(__dirname, 'scripts', 'run_mapping.py'),
+            path.join(__dirname, 'scripts', 'run_clustering.py'),
             normalizedDomain,
             req.user.user_id
         ], {
             cwd: path.resolve(__dirname, '..')
         });
-        
+
         let output = '';
 
         py.stdout.on('data', (data) => {
@@ -848,11 +848,65 @@ app.get('/api/run-mapping-stream', authenticate, async (req, res) => {
                 }
             });
         });
-        
+
+        py.stderr.on('data', (data) => {
+            console.error(`Clustering error: ${data}`);
+        });
+
+        py.on('close', (code) => {
+            try {
+                // Extract JSON from output (might contain earlier prints)
+                const jsonMatch = output.match(/\{.*\}/s);
+                const finalResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(output);
+                res.write(`data: ${JSON.stringify({ type: 'done', result: finalResult })}\n\n`);
+            } catch (e) {
+                res.write(`data: ${JSON.stringify({ type: 'error', message: output || 'Process failed' })}\n\n`);
+            }
+            res.end();
+        });
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
+// API: Run mapping (streaming progress)
+app.get('/api/run-mapping-stream', authenticate, async (req, res) => {
+    try {
+        const { domain } = req.query;
+        if (!domain) return res.status(400).json({ error: 'Domain required' });
+
+        const normalizedDomain = normalizeUrl(domain);
+
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const py = require('child_process').spawn(PYTHON_PATH, [
+            path.join(__dirname, 'scripts', 'run_mapping.py'),
+            normalizedDomain,
+            req.user.user_id
+        ], {
+            cwd: path.resolve(__dirname, '..')
+        });
+
+        let output = '';
+
+        py.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.startsWith('PROGRESS:')) {
+                    res.write(`data: ${JSON.stringify({ type: 'progress', message: line.trim() })}\n\n`);
+                } else if (line.trim()) {
+                    output += line;
+                }
+            });
+        });
+
         py.stderr.on('data', (data) => {
             console.error(`Mapping error: ${data}`);
         });
-        
+
         py.on('close', (code) => {
             try {
                 const finalResult = JSON.parse(output);
@@ -873,12 +927,12 @@ app.post('/api/run-mapping', authenticate, async (req, res) => {
     try {
         const { domain } = req.body;
         if (!domain) return res.status(400).json({ error: 'Domain required' });
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'run_mapping.py'),
             [normalizeUrl(domain), req.user.user_id]
         );
-        
+
         try {
             const jsonMatch = result.match(/\{.*\}/s);
             const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(result);
@@ -917,7 +971,7 @@ app.get('/api/run-competitor-analysis-stream', authenticate, (req, res) => {
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
-    res.flushHeaders(); 
+    res.flushHeaders();
 
     const scriptPath = path.join(__dirname, 'scripts', 'run_competitor_analysis.py');
     const py = spawn(PYTHON_PATH, [scriptPath, normalizedDomain, req.user.user_id], {
@@ -947,7 +1001,7 @@ app.post('/api/cluster/target-url', authenticate, async (req, res) => {
             return res.status(400).json({ error: 'Missing parameters' });
         }
         const normalizedDomain = normalizeUrl(domain);
-        
+
         // Update the cluster_mappings table
         await db.query(
             "UPDATE cluster_mappings SET target_url = ? WHERE user_id = ? AND site_url = ? AND cluster_id = ?",
@@ -1009,13 +1063,13 @@ app.post('/api/cluster/check-positions', authenticate, async (req, res) => {
             return res.status(400).json({ error: 'Missing parameters' });
         }
         const normalizedDomain = normalizeUrl(domain);
-        
+
         // Call Python script to check positions
         const result = await callPython(
             path.join(__dirname, 'scripts', 'check_positions.py'),
             [normalizedDomain, clusterId, req.user.user_id]
         );
-        
+
         try {
             res.json(JSON.parse(result));
         } catch {
@@ -1064,7 +1118,7 @@ app.get('/api/positions/history', authenticate, async (req, res) => {
                        WHERE user_id = ? AND site_url = ? AND engine = ? AND device = ?`;
         const histParams = [req.user.user_id, nd, eng, dev];
         if (startDate) { histSql += ' AND DATE(checked_at) >= ?'; histParams.push(startDate); }
-        if (endDate)   { histSql += ' AND DATE(checked_at) <= ?'; histParams.push(endDate); }
+        if (endDate) { histSql += ' AND DATE(checked_at) <= ?'; histParams.push(endDate); }
         histSql += ' ORDER BY checked_at DESC';
         const [history] = await db.query(histSql, histParams);
 
@@ -1080,11 +1134,11 @@ app.get('/api/positions/history', authenticate, async (req, res) => {
         const dates = Array.from(dateSet).sort((a, b) => b.localeCompare(a));
 
         const result = keywords.map(kw => ({
-            query:        kw.query,
-            cluster_id:   kw.cluster_id,
+            query: kw.query,
+            cluster_id: kw.cluster_id,
             cluster_name: kw.cluster_name,
-            frequency:    kw.frequency || 0,
-            positions:    dates.map(d => histMap[kw.query]?.[d] || null),
+            frequency: kw.frequency || 0,
+            positions: dates.map(d => histMap[kw.query]?.[d] || null),
         }));
 
         res.json({ success: true, keywords: result, dates });
@@ -1146,7 +1200,7 @@ app.get('/api/positions/run-stream', authenticate, (req, res) => {
         data.toString().split('\n').forEach(line => {
             if (line.startsWith('PROGRESS:')) {
                 const p = line.split(':');
-                res.write(`data: ${JSON.stringify({ type: 'progress', pct: +p[1]||0, done: +p[2]||0, total: +p[3]||0, message: p.slice(4).join(':').trim() })}\n\n`);
+                res.write(`data: ${JSON.stringify({ type: 'progress', pct: +p[1] || 0, done: +p[2] || 0, total: +p[3] || 0, message: p.slice(4).join(':').trim() })}\n\n`);
             } else if (line.trim()) {
                 output += line;
             }
@@ -1174,19 +1228,19 @@ app.post('/api/cluster/remove-lsi', authenticate, async (req, res) => {
             return res.status(400).json({ error: 'Missing parameters' });
         }
         const normalizedDomain = normalizeUrl(domain);
-        
+
         // 1. Delete from cluster_lsi
         await db.query(
             "DELETE FROM cluster_lsi WHERE user_id = ? AND site_url = ? AND cluster_id = ? AND keyword = ?",
             [req.user.user_id, normalizedDomain, clusterId, keyword]
         );
-        
+
         // 2. Add to yandex_queries as minus_word (upsert)
         const [rows] = await db.query(
             "SELECT id FROM yandex_queries WHERE user_id = ? AND site_url = ? AND query = ?",
             [req.user.user_id, normalizedDomain, keyword]
         );
-        
+
         if (rows.length > 0) {
             await db.query(
                 "UPDATE yandex_queries SET minus_word = 1 WHERE id = ?",
@@ -1198,7 +1252,7 @@ app.post('/api/cluster/remove-lsi', authenticate, async (req, res) => {
                 [req.user.user_id, normalizedDomain, keyword]
             );
         }
-        
+
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -1213,12 +1267,12 @@ app.post('/api/cluster/run-seo-analysis', authenticate, async (req, res) => {
             return res.status(400).json({ error: 'Missing parameters' });
         }
         const normalizedDomain = normalizeUrl(domain);
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'run_seo_analysis.py'),
             [normalizedDomain, clusterId, req.user.user_id]
         );
-        
+
         try {
             const jsonMatch = result.match(/\{.*\}/s);
             const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(result);
@@ -1237,7 +1291,7 @@ app.get('/api/seo-history/dates', authenticate, async (req, res) => {
         const { domain, clusterId } = req.query;
         if (!domain || !clusterId) return res.status(400).json({ error: 'Missing parameters' });
         const normalizedDomain = normalizeUrl(domain);
-        
+
         const [rows] = await db.query(
             "SELECT DATE_FORMAT(analysis_date, '%Y-%m-%d') as date FROM cluster_seo_history WHERE user_id = ? AND site_url = ? AND cluster_id = ? ORDER BY analysis_date DESC",
             [req.user.user_id, normalizedDomain, clusterId]
@@ -1254,7 +1308,7 @@ app.get('/api/seo-history/plan', authenticate, async (req, res) => {
         const { domain, clusterId, date } = req.query;
         if (!domain || !clusterId || !date) return res.status(400).json({ error: 'Missing parameters' });
         const normalizedDomain = normalizeUrl(domain);
-        
+
         const [rows] = await db.query(
             "SELECT intent_type, seo_plan_content, optimized_html FROM cluster_seo_history WHERE user_id = ? AND site_url = ? AND cluster_id = ? AND analysis_date = ?",
             [req.user.user_id, normalizedDomain, clusterId, date]
@@ -1272,12 +1326,12 @@ app.post('/api/seo-history/generate', authenticate, async (req, res) => {
         const { domain, clusterId, rewriteContent } = req.body;
         if (!domain || !clusterId) return res.status(400).json({ error: 'Missing parameters' });
         const normalizedDomain = normalizeUrl(domain);
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'generate_seo_plan.py'),
             [normalizedDomain, clusterId, req.user.user_id, rewriteContent ? '1' : '0']
         );
-        
+
         try {
             const jsonMatch = result.match(/\{.*\}/s);
             const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(result);
@@ -1295,12 +1349,12 @@ app.post('/api/run-competitor-analysis', authenticate, async (req, res) => {
     try {
         const { domain } = req.body;
         if (!domain) return res.status(400).json({ error: 'Domain required' });
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'run_competitor_analysis.py'),
             [normalizeUrl(domain), req.user.user_id]
         );
-        
+
         try {
             const jsonMatch = result.match(/\{.*\}/s);
             const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(result);
@@ -1318,13 +1372,13 @@ app.get('/api/analysis', authenticate, async (req, res) => {
     try {
         const { domain } = req.query;
         if (!domain) return res.status(400).json({ error: 'Domain required' });
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const [rows] = await db.query(
             "SELECT cluster_id, analysis_data FROM cluster_analysis WHERE user_id = ? AND site_url = ?",
             [req.user.user_id, normalizedDomain]
         );
-        
+
         const analysis = {};
         rows.forEach(row => {
             try {
@@ -1344,13 +1398,13 @@ app.get('/api/mappings', authenticate, async (req, res) => {
     try {
         const { domain } = req.query;
         if (!domain) return res.status(400).json({ error: 'Domain required' });
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const [rows] = await db.query(
             "SELECT cluster_id, target_url FROM cluster_mappings WHERE user_id = ? AND site_url = ?",
             [req.user.user_id, normalizedDomain]
         );
-        
+
         const mappings = {};
         rows.forEach(row => {
             mappings[row.cluster_id] = row.target_url;
@@ -1368,10 +1422,10 @@ app.post('/api/move-keywords', authenticate, async (req, res) => {
         if (!domain || !keywords || !target) {
             return res.status(400).json({ error: 'Domain, keywords and target required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const targetCluster = target === 'unclustered' ? 0 : parseInt(target);
-        
+
         if (targetCluster === 0) {
             await db.query(
                 "UPDATE yandex_queries SET clustered = 0 WHERE user_id = ? AND site_url = ? AND query IN (?)",
@@ -1396,14 +1450,14 @@ app.post('/api/delete-cluster', authenticate, async (req, res) => {
         if (!domain || !clusterId) {
             return res.status(400).json({ error: 'Domain and clusterId required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
-        
+
         const [result] = await db.query(
             "UPDATE yandex_queries SET clustered = 0 WHERE user_id = ? AND site_url = ? AND clustered = ?",
             [req.user.user_id, normalizedDomain, clusterId]
         );
-        
+
         res.json({ success: true, moved: result.affectedRows });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -1417,7 +1471,7 @@ app.get('/api/run-mapping-single', authenticate, async (req, res) => {
         if (!domain || !clusterId) {
             return res.status(400).json({ error: 'Domain and clusterId required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const result = await callPython(
             path.join(__dirname, 'scripts', 'run_mapping.py'),
@@ -1436,7 +1490,7 @@ app.post('/api/save-mapping-manual', authenticate, async (req, res) => {
         if (!domain || !clusterId || !url) {
             return res.status(400).json({ error: 'Domain, clusterId and url required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         await db.query(
             "INSERT INTO cluster_mappings (user_id, site_url, cluster_id, target_url) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE target_url = VALUES(target_url)",
@@ -1455,7 +1509,7 @@ app.get('/api/run-competitor-analysis-single', authenticate, async (req, res) =>
         if (!domain || !clusterId) {
             return res.status(400).json({ error: 'Domain and clusterId required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const result = await callPython(
             path.join(__dirname, 'scripts', 'run_competitor_analysis.py'),
@@ -1480,7 +1534,7 @@ app.get('/api/prepare-seo-brief', authenticate, async (req, res) => {
         if (!domain || !clusterId) {
             return res.status(400).json({ error: 'Domain and clusterId required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const result = await callPython(
             path.join(__dirname, 'scripts', 'prepare_seo_brief.py'),
@@ -1524,7 +1578,7 @@ app.get('/api/test-seo-2026', authenticate, async (req, res) => {
         // 3. Call Python Pipeline (SEO 2026)
         const pipelinePath = path.join(__dirname, '..', 'yandex_seo_pipeline', 'main.py');
         const configPath = path.join(__dirname, '..', 'yandex_seo_pipeline', 'config.yaml');
-        
+
         // We use spawn because it's more flexible for long running
         const result = await callPython(pipelinePath, [
             '--url', targetUrl,
@@ -1535,10 +1589,10 @@ app.get('/api/test-seo-2026', authenticate, async (req, res) => {
         // Note: yandex_seo_pipeline/main.py currently prints success and logs to stdout. 
         // For production, it should return JSON. I'll mock a JSON response for the frontend if needed, 
         // or ensure the script returns JSON.
-        
+
         // For now, I'll read the output file if it exists, or parse stdout if I modify the script.
         // Let's modify yandex_seo_pipeline/main.py to return JSON when called with a flag or by default.
-        
+
         // Actually, let's just parse the stdout or read the generated file.
         const fs = require('fs');
         const outputPath = path.join(__dirname, '..', 'output_article.html');
@@ -1547,10 +1601,10 @@ app.get('/api/test-seo-2026', authenticate, async (req, res) => {
             html = fs.readFileSync(outputPath, 'utf8');
         }
 
-        res.json({ 
-            success: true, 
-            logs: result.split('\n').filter(l => l.trim()), 
-            optimized_html: html 
+        res.json({
+            success: true,
+            logs: result.split('\n').filter(l => l.trim()),
+            optimized_html: html
         });
 
     } catch (error) {
@@ -1564,13 +1618,35 @@ app.get('/api/fetch-wm-queries', authenticate, async (req, res) => {
     try {
         const { domain } = req.query;
         if (!domain) return res.status(400).json({ error: 'Domain required' });
-        
+
         const normalizedDomain = normalizeUrl(domain);
+        
+        // Rate-limit: 10 minutes cooldown
+        const cacheKey = `${req.user.user_id}:${normalizedDomain}`;
+        const lastTime = lastFetchTime[cacheKey];
+        if (lastTime) {
+            const elapsed = Date.now() - lastTime;
+            if (elapsed < FETCH_COOLDOWN_MS) {
+                const remaining = Math.ceil((FETCH_COOLDOWN_MS - elapsed) / 60000);
+                return res.json({
+                    success: false,
+                    error: `Повторная загрузка запросов доступна через ${remaining} мин.`
+                });
+            }
+        }
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'fetch_yandex_queries.py'),
             [normalizedDomain, req.user.user_id]
         );
-        res.json(JSON.parse(result));
+        const parsedResult = JSON.parse(result);
+        
+        // Update cache only on success
+        if (parsedResult.success) {
+            lastFetchTime[cacheKey] = Date.now();
+        }
+        
+        res.json(parsedResult);
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -1596,7 +1672,7 @@ app.post('/api/disband-cluster', authenticate, async (req, res) => {
         if (!domain || !clusterId) {
             return res.status(400).json({ error: 'Domain and clusterId required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         await db.query(
             "UPDATE yandex_queries SET clustered = 0 WHERE user_id = ? AND site_url = ? AND clustered = ?",
@@ -1617,13 +1693,13 @@ app.post('/api/create-cluster-by-url', authenticate, async (req, res) => {
         }
 
         const normalizedDomain = normalizeUrl(domain);
-        
+
         // Quick check if URL is already mapped to any cluster on this domain
         const [existing] = await db.query(
             "SELECT cluster_id FROM cluster_mappings WHERE user_id = ? AND site_url = ? AND target_url = ?",
             [req.user.user_id, normalizedDomain, url]
         );
-        
+
         if (existing.length > 0) {
             return res.status(400).json({ success: false, error: 'Этот URL уже прикреплен к кластеру #' + existing[0].cluster_id });
         }
@@ -1632,7 +1708,7 @@ app.post('/api/create-cluster-by-url', authenticate, async (req, res) => {
             path.join(__dirname, 'scripts', 'create_cluster_from_url.py'),
             [normalizedDomain, req.user.user_id, url]
         );
-        
+
         res.json(JSON.parse(result));
     } catch (error) {
         console.error('Error creating cluster by URL:', error);
@@ -1647,19 +1723,19 @@ app.post('/api/update-keyword-text', authenticate, async (req, res) => {
         if (!domain || !keywordId || !newText) {
             return res.status(400).json({ success: false, error: 'Domain, keywordId and newText required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
-        
+
         // Update database record
         const [result] = await db.query(
             "UPDATE yandex_queries SET query = ? WHERE id = ? AND user_id = ? AND site_url = ?",
             [newText, keywordId, req.user.user_id, normalizedDomain]
         );
-        
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, error: 'Ключевое слово не найдено' });
         }
-        
+
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating keyword text:', error);
@@ -1677,15 +1753,15 @@ app.post('/api/collect-keywords-for-cluster', authenticate, async (req, res) => 
         if (!domain || !clusterId || !headQuery) {
             return res.status(400).json({ success: false, error: 'Domain, clusterId and headQuery required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const sourceType = type || 'popular';
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'collect_cluster_keywords.py'),
             [normalizedDomain, req.user.user_id, clusterId, headQuery, sourceType]
         );
-        
+
         res.json(JSON.parse(result));
     } catch (error) {
         console.error('Error collecting keywords for cluster:', error);
@@ -1700,7 +1776,7 @@ app.post('/api/update-cluster-name', authenticate, async (req, res) => {
         if (!domain || !clusterId || name === undefined) {
             return res.status(400).json({ error: 'Domain, clusterId and name required' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         await db.query(
             "INSERT INTO cluster_names (user_id, site_url, cluster_id, cluster_name) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE cluster_name = VALUES(cluster_name)",
@@ -1787,7 +1863,7 @@ app.post('/api/wordstat-settings', authenticate, async (req, res) => {
     try {
         const { name, device, region, region_name } = req.body;
         if (!name || !device) return res.status(400).json({ error: 'name and device required' });
-        
+
         const [result] = await db.query(
             "INSERT INTO wordstat_settings (user_id, name, device, region, region_name, is_default) VALUES (?, ?, ?, ?, ?, 0)",
             [req.user.user_id, name, device, region || '', region_name || 'Все регионы']
@@ -1844,7 +1920,7 @@ app.get('/api/cluster-lsi', authenticate, async (req, res) => {
     try {
         const { domain, clusterId } = req.query;
         if (!domain || !clusterId) return res.status(400).json({ error: 'domain and clusterId required' });
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const [rows] = await db.query(
             "SELECT keyword, frequency FROM cluster_lsi WHERE user_id = ? AND site_url = ? AND cluster_id = ? ORDER BY frequency DESC",
@@ -1861,13 +1937,13 @@ app.get('/api/cluster-names', authenticate, async (req, res) => {
     try {
         const { domain } = req.query;
         if (!domain) return res.status(400).json({ error: 'domain required' });
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const [rows] = await db.query(
             "SELECT cluster_id, cluster_name, is_favorite, is_pinned, pinned_order FROM cluster_names WHERE user_id = ? AND site_url = ?",
             [req.user.user_id, normalizedDomain]
         );
-        
+
         const metadata = {};
         rows.forEach(row => {
             metadata[row.cluster_id] = {
@@ -1888,12 +1964,12 @@ app.get('/api/frequency-status', authenticate, async (req, res) => {
     try {
         const { domain } = req.query;
         if (!domain) return res.status(400).json({ error: 'domain required' });
-        
+
         const [rows] = await db.execute(
             "SELECT id, status, progress FROM tasks WHERE user_id = ? AND task_type = 'frequency' AND status IN ('pending', 'scheduled', 'running') ORDER BY created_at DESC LIMIT 1",
             [req.user.user_id]
         );
-        
+
         if (rows.length > 0) {
             res.json({ running: true, task: rows[0] });
         } else {
@@ -1921,7 +1997,7 @@ app.get('/api/run-frequency-stream', authenticate, async (req, res) => {
         if (mode === 'missing') {
             queryStr += " AND (frequency IS NULL OR frequency = 0)";
         }
-        
+
         if (clusterId && clusterId !== '0') {
             queryStr += " AND clustered = ?";
             queryParams.push(clusterId);
@@ -1934,22 +2010,22 @@ app.get('/api/run-frequency-stream', authenticate, async (req, res) => {
             const cost = queryCount * settings.frequency_rate;
             await checkAndDeductBalance(req.user.user_id, cost, `Съем частоты ${queryCount} запросов (${normalizedDomain}, кластер: ${clusterId || 'все'}, режим: ${mode || 'all'})`);
         }
-        
+
         // Create task
-        const payload = JSON.stringify({ 
-            domain: normalizedDomain, 
-            device: device || '', 
-            region: region || '', 
+        const payload = JSON.stringify({
+            domain: normalizedDomain,
+            device: device || '',
+            region: region || '',
             mode: mode || 'all',
             minFrequency: minFrequency || '10',
             clusterId: clusterId || '0'
         });
-        
+
         const [result] = await db.execute(
             "INSERT INTO tasks (user_id, task_type, payload) VALUES (?, ?, ?)",
             [req.user.user_id, 'frequency', payload]
         );
-        
+
         res.json({ success: true, task_id: result.insertId });
     } catch (error) {
         if (error.code === 'INSUFFICIENT_FUNDS') {
@@ -1974,12 +2050,46 @@ app.get('/api/tasks/:id', authenticate, async (req, res) => {
             "SELECT * FROM tasks WHERE id = ? AND user_id = ?",
             [id, req.user.user_id]
         );
-        
+
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Task not found' });
         }
-        
+
         res.json(rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API: Frequency task status (polled by frontend)
+app.get('/api/frequency-task-status', authenticate, async (req, res) => {
+    try {
+        const { taskId } = req.query;
+        if (!taskId) return res.status(400).json({ error: 'taskId required' });
+
+        const [rows] = await db.execute(
+            "SELECT id, status, progress, payload FROM tasks WHERE id = ? AND user_id = ?",
+            [taskId, req.user.user_id]
+        );
+
+        if (rows.length === 0) {
+            return res.json({ status: { status: 'failed', progress: 0, total: 0 } });
+        }
+
+        const task = rows[0];
+        let total = 0;
+        try {
+            const payload = JSON.parse(task.payload || '{}');
+            total = payload.total || 0;
+        } catch {}
+
+        res.json({
+            status: {
+                status: task.status,
+                progress: task.progress || 0,
+                total: total
+            }
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -1990,14 +2100,14 @@ const RUN_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 
 function startBackgroundTasks() {
     console.log('📦 Background tasks scheduler started');
-    
+
     // Kill existing workers to prevent duplicates
     const { exec } = require('child_process');
     exec('pkill -f "python.*services/worker.py"', (err) => {
         // Start Worker
         const workerPath = path.join(__dirname, '..', 'services', 'worker.py');
         const worker = spawn(PYTHON_PATH, [workerPath]);
-        
+
         worker.stdout.on('data', (data) => console.log(`[Worker] ${data}`));
         worker.stderr.on('data', (data) => console.error(`[Worker Error] ${data}`));
         worker.on('close', (code) => {
@@ -2065,12 +2175,12 @@ app.post('/api/cluster/generate-structure', authenticate, async (req, res) => {
         if (!competitors_headers) {
             return res.status(400).json({ error: 'Missing competitors_headers' });
         }
-        
+
         const result = await callPython(
             path.join(__dirname, 'scripts', 'generate_structure.py'),
             [JSON.stringify({ competitors_headers })]
         );
-        
+
         try {
             const jsonMatch = result.match(/\{.*\}/s);
             const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(result);
@@ -2092,34 +2202,34 @@ app.post('/api/cluster/save-structure', authenticate, async (req, res) => {
         if (!domain || !clusterId || !structure) {
             return res.status(400).json({ error: 'Missing parameters' });
         }
-        
+
         const normalizedDomain = normalizeUrl(domain);
         const [rows] = await db.query(
             "SELECT analysis_data FROM cluster_analysis WHERE user_id = ? AND site_url = ? AND cluster_id = ?",
             [req.user.user_id, normalizedDomain, clusterId]
         );
-        
+
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Analysis not found' });
         }
-        
+
         const analysis = JSON.parse(rows[0].analysis_data);
         const newSaved = {
             data: structure,
             saved_at: new Date().toISOString()
         };
         analysis.saved_structure = newSaved;
-        
+
         if (!analysis.saved_structures_history) {
             analysis.saved_structures_history = [];
         }
         analysis.saved_structures_history.push(newSaved);
-        
+
         await db.query(
             "UPDATE cluster_analysis SET analysis_data = ? WHERE user_id = ? AND site_url = ? AND cluster_id = ?",
             [JSON.stringify(analysis), req.user.user_id, normalizedDomain, clusterId]
         );
-        
+
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });

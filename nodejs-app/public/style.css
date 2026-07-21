@@ -1697,3 +1697,21 @@ a.menu-tab[href^="/dashboard.html"] {
     border-radius: 6px; font-size: 13px; cursor: pointer; white-space: nowrap;
 }
 .dr-apply-btn:hover { background: #1976D2; }
+
+#clusterList {
+    overflow-y: auto;
+    max-height: calc(100vh - 234px);
+    padding: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+#clusterList::-webkit-scrollbar {
+    width: 5px;
+}
+#clusterList::-webkit-scrollbar-track {
+    background: transparent;
+}
+#clusterList::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+}
