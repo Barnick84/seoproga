@@ -104,15 +104,20 @@ def run_clustering():
             return
 
         tm.update_progress(5)
+        print("PROGRESS: 5", flush=True)
 
         # 3. Prefetch SERP for all unclustered keywords (with rate limiting)
         total_kw = len(unclustered_keywords)
+        
+        def on_prefetch_progress(done, total):
+            prog = 5 + int(done / total * 70)
+            tm.update_progress(prog)
+            print(f"PROGRESS: {prog}", flush=True)
+
         prefetch_for_clustering(
             unclustered_keywords,
             client,
-            on_progress=lambda done, total: tm.update_progress(
-                5 + int(done / total * 70)
-            ),
+            on_progress=on_prefetch_progress,
         )
 
         # 4. Run incremental clustering (use_cache=True, skip uncached)
@@ -124,6 +129,7 @@ def run_clustering():
         )
 
         tm.update_progress(85)
+        print("PROGRESS: 85", flush=True)
 
         # 5. Update database with results
         for cluster in all_clusters:
