@@ -797,8 +797,19 @@ app.get('/api/run-clustering-stream', authenticate, async (req, res) => {
     try {
         const { domain } = req.query;
         if (!domain) {
-            return res.write(`data: ${JSON.stringify({ type: 'error', message: 'Domain required' })}\n\n`);
+            res.status(400).json({ error: 'Domain required' });
+            return;
         }
+
+        // Send SSE headers immediately to prevent Nginx 504 on slow DB/Python startup
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        res.flushHeaders();
+
+        // Keepalive ping so Nginx doesn't close the connection during DB queries
+        res.write(`data: ${JSON.stringify({ type: 'progress', message: 'PROGRESS: 0' })}\n\n`);
 
         const normalizedDomain = normalizeUrl(domain);
         const settings = await getSystemSettings();
@@ -824,10 +835,6 @@ app.get('/api/run-clustering-stream', authenticate, async (req, res) => {
             }
         }
 
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-
         const py = require('child_process').spawn(PYTHON_PATH, [
             path.join(__dirname, 'scripts', 'run_clustering.py'),
             normalizedDomain,
@@ -835,6 +842,8 @@ app.get('/api/run-clustering-stream', authenticate, async (req, res) => {
         ], {
             cwd: path.resolve(__dirname, '..')
         });
+
+        const heartbeat = setInterval(() => res.write(': ping\n\n'), 15000);
 
         let output = '';
 
@@ -854,8 +863,8 @@ app.get('/api/run-clustering-stream', authenticate, async (req, res) => {
         });
 
         py.on('close', (code) => {
+            clearInterval(heartbeat);
             try {
-                // Extract JSON from output (might contain earlier prints)
                 const jsonMatch = output.match(/\{.*\}/s);
                 const finalResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(output);
                 res.write(`data: ${JSON.stringify({ type: 'done', result: finalResult })}\n\n`);
@@ -863,6 +872,11 @@ app.get('/api/run-clustering-stream', authenticate, async (req, res) => {
                 res.write(`data: ${JSON.stringify({ type: 'error', message: output || 'Process failed' })}\n\n`);
             }
             res.end();
+        });
+
+        req.on('close', () => {
+            clearInterval(heartbeat);
+            py.kill();
         });
     } catch (error) {
         res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);

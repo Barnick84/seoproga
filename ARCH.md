@@ -137,9 +137,7 @@ seo-auto-cluster/
 │
 ├── sql/
 │   └── page_content.sql         # DDL для таблиц контента
-│
-├── scripts/                     # Вспомогательные скрипты
-│
+
 ├── tests/                       # Тесты (pytest)
 │
 ├── data/                        # SQLite базы (локально)
@@ -150,12 +148,6 @@ seo-auto-cluster/
 │   └── users.db
 │
 ├── results/                     # Результаты кластеризации (JSON)
-│
-├── yandex_seo_pipeline/         # Отдельный пайплайн (экспериментальный)
-│
-├── scratch/                     # Черновики/эксперименты
-│
-└── html_temp/                   # HTML-шаблоны
 ```
 
 ---
