@@ -51,7 +51,7 @@ class AuthService:
         Returns user dict if successful, None otherwise.
         """
         conn = Config.get_conn()
-        cur = conn.cursor(dictionary=True)
+        cur = conn.cursor()
         try:
             cur.execute(
                 "SELECT * FROM users WHERE username = %s OR email = %s",
