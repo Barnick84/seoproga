@@ -1,6 +1,33 @@
+import hashlib
+import logging
+
 import bcrypt
 
 from config import Config
+
+logger = logging.getLogger(__name__)
+
+_LEGACY_SALT_LEN = 32
+
+
+def _verify_legacy(password: str, stored: str) -> bool:
+    """Verify PBKDF2-HMAC-SHA256 hash from legacy Node.js system.
+
+    Format: salt(32 hex) + pbkdf2_hmac(sha256, 100000 iters).hex()  = 96 chars total.
+    """
+    if len(stored) != 96:
+        return False
+    salt = stored[:_LEGACY_SALT_LEN]
+    expected_hex = stored[_LEGACY_SALT_LEN:]
+    try:
+        derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000)
+        return derived.hex() == expected_hex
+    except Exception:
+        return False
+
+
+def _is_legacy_hash(stored: str) -> bool:
+    return len(stored) == 96 and not stored.startswith("$2")
 
 
 class AuthService:
@@ -12,15 +39,32 @@ class AuthService:
     def verify_password(password: str, hashed: str) -> bool:
         if not hashed:
             return False
+        if _is_legacy_hash(hashed):
+            return _verify_legacy(password, hashed)
         try:
             return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
         except Exception:
-            return password == hashed
+            return False
+
+    @staticmethod
+    def _migrate_to_bcrypt(user_id: int, password: str) -> None:
+        """Silently re-hash legacy password to bcrypt on successful login."""
+        try:
+            new_hash = AuthService.hash_password(password)
+            conn = Config.get_conn()
+            cur = conn.cursor()
+            try:
+                cur.execute("UPDATE users SET password = %s WHERE id = %s", (new_hash, user_id))
+                conn.commit()
+                logger.info("Migrated password to bcrypt for user_id=%s", user_id)
+            finally:
+                conn.close()
+        except Exception as e:
+            logger.warning("Failed to migrate password for user_id=%s: %s", user_id, e)
 
     @staticmethod
     def register_user(username: str, email: str, password: str) -> int:
-        """
-        Registers a new user and returns their ID.
+        """Registers a new user and returns their ID.
         Raises ValueError if email exists.
         """
         hashed = AuthService.hash_password(password)
@@ -46,9 +90,9 @@ class AuthService:
 
     @staticmethod
     def login(identifier: str, password: str) -> dict | None:
-        """
-        Verifies login credentials by username or email.
+        """Verifies login credentials by username or email.
         Returns user dict if successful, None otherwise.
+        Migrates legacy PBKDF2 hashes to bcrypt on first successful login.
         """
         conn = Config.get_conn()
         cur = conn.cursor()
@@ -58,19 +102,25 @@ class AuthService:
                 (identifier, identifier),
             )
             user = cur.fetchone()
-
-            if user and AuthService.verify_password(password, user["password"]):
-                user.pop("password", None)
-                return user
-            return None
         finally:
             conn.close()
 
+        if not user:
+            return None
+
+        stored_hash = user.get("password", "")
+        if not AuthService.verify_password(password, stored_hash):
+            return None
+
+        if _is_legacy_hash(stored_hash):
+            AuthService._migrate_to_bcrypt(user["id"], password)
+
+        user.pop("password", None)
+        return user
+
     @staticmethod
     def change_password(user_id: int, old_password: str, new_password: str) -> bool:
-        """
-        Changes a user's password if the old one matches.
-        """
+        """Changes a user's password if the old one matches."""
         conn = Config.get_conn()
         cur = conn.cursor()
         try:
