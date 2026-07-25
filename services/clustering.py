@@ -1,6 +1,7 @@
 # services/clustering.py
-from typing import List, Dict
 from collections import defaultdict
+from typing import Dict, List
+
 from config import Config
 from services.xmlriver_client import XmlriverClient
 
@@ -64,20 +65,20 @@ def cluster_keywords(
         assigned = False
         best_cluster = None
         max_sim = 0.0
-        
+
         for cluster in clusters:
             sim = serp_similarity(serp, cluster["serp_representative"])
             if sim >= threshold and sim > max_sim:
                 max_sim = sim
                 best_cluster = cluster
-                
+
         if best_cluster:
             best_cluster["keywords"].append(keyword)
             best_cluster["serp_representative"] = merge_serps(
                 [serp, best_cluster["serp_representative"]]
             )
             assigned = True
-        
+
         if not assigned:
             clusters.append(
                 {
@@ -91,9 +92,7 @@ def cluster_keywords(
             next_id += 1
 
     if skipped:
-        print(
-            f"⚠️ Кластеризация: {skipped}/{len(keywords)} ключей пропущено (пустой SERP)"
-        )
+        print(f"⚠️ Кластеризация: {skipped}/{len(keywords)} ключей пропущено (пустой SERP)")
 
     clusters.sort(key=lambda x: len(x["keywords"]), reverse=True)
     return clusters

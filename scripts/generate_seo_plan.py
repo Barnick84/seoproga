@@ -1,11 +1,12 @@
 # scripts/generate_seo_plan.py
-import sys
-import os
 import json
+import os
+import sys
 from datetime import datetime
+
 from bs4 import BeautifulSoup
-from openai import OpenAI
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Fix console encoding on Windows
 from utils.bootstrap import bootstrap
@@ -13,10 +14,9 @@ from utils.bootstrap import bootstrap
 bootstrap()
 load_dotenv(".env")
 
-from config import Config
-from utils.db import get_db_cursor
-
 from urllib.parse import urlparse
+
+from utils.db import get_db_cursor
 
 
 def get_target_url(cur, user_id, domain, cluster_id):
@@ -73,9 +73,7 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
             raw_html = row["raw_html"] or ""
             intent_type = analysis_data.get("intent", {}).get("target", "Информационный")
 
-            client = OpenAI(
-                api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("BASE_URL")
-            )
+            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("BASE_URL"))
             model = os.getenv("LLM_MODEL", "gemini-3.1-pro")
 
             prompt_text = ""
@@ -106,12 +104,8 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
                             try:
                                 parsed = urlparse(target_url)
                                 if parsed.netloc:
-                                    puny_netloc = parsed.netloc.encode("idna").decode(
-                                        "ascii"
-                                    )
-                                    fetch_url = target_url.replace(
-                                        parsed.netloc, puny_netloc
-                                    )
+                                    puny_netloc = parsed.netloc.encode("idna").decode("ascii")
+                                    fetch_url = target_url.replace(parsed.netloc, puny_netloc)
                             except UnicodeError as e:
                                 print(f"IDNA encode error for {target_url}: {e}", file=sys.stderr)
 
@@ -136,7 +130,10 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
                         except requests.RequestException as e:
                             print(f"Live HTML fetch failed for {target_url}: {e}", file=sys.stderr)
                         except Exception as e:
-                            print(f"Unexpected error during live HTML fetch for {target_url}: {e}", file=sys.stderr)
+                            print(
+                                f"Unexpected error during live HTML fetch for {target_url}: {e}",
+                                file=sys.stderr,
+                            )
 
                 if not target_tag or (
                     not rewrite_content and len(target_tag.get_text(strip=True)) <= 20
@@ -188,9 +185,7 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
                     len(target_tag.get_text(strip=True).split()) if target_tag else 0
                 )
                 char_no_spaces_in_target_tag = (
-                    len("".join(target_tag.get_text(strip=True).split()))
-                    if target_tag
-                    else 0
+                    len("".join(target_tag.get_text(strip=True).split())) if target_tag else 0
                 )
 
                 action_text = (
@@ -209,12 +204,8 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
                 (user_id, domain, cluster_id),
             )
             lsi_rows = cur.fetchall()
-            lsi_list = [
-                f"{row['keyword']} (частота: {row['frequency']})" for row in lsi_rows
-            ]
-            lsi_text = (
-                ", ".join(lsi_list) if lsi_list else "LSI ключи не найдены в базе данных."
-            )
+            lsi_list = [f"{row['keyword']} (частота: {row['frequency']})" for row in lsi_rows]
+            lsi_text = ", ".join(lsi_list) if lsi_list else "LSI ключи не найдены в базе данных."
 
             # 3. Extract text metrics
             text_metrics = analysis_data.get("text_metrics", {})
@@ -252,11 +243,7 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
             if isinstance(raw_bigrams, list):
                 if raw_bigrams and isinstance(raw_bigrams[0], dict):
                     bigrams_text = ", ".join(
-                        [
-                            f"{b.get('phrase', '')} ({b.get('count', '')})"
-                            for b in raw_bigrams
-                            if b
-                        ]
+                        [f"{b.get('phrase', '')} ({b.get('count', '')})" for b in raw_bigrams if b]
                     )
                 else:
                     bigrams_text = ", ".join([str(b) for b in raw_bigrams if b])
@@ -267,11 +254,7 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
             if isinstance(raw_trigrams, list):
                 if raw_trigrams and isinstance(raw_trigrams[0], dict):
                     trigrams_text = ", ".join(
-                        [
-                            f"{t.get('phrase', '')} ({t.get('count', '')})"
-                            for t in raw_trigrams
-                            if t
-                        ]
+                        [f"{t.get('phrase', '')} ({t.get('count', '')})" for t in raw_trigrams if t]
                     )
                 else:
                     trigrams_text = ", ".join([str(t) for t in raw_trigrams if t])
@@ -281,9 +264,7 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
             # 5. Compile structure (saved user structure vs competitor headers)
             saved_structure = analysis_data.get("saved_structure", {}).get("data", [])
             if saved_structure:
-                structure_source = (
-                    "ПОЛЬЗОВАТЕЛЬСКАЯ СТРУКТУРА СТАТЬИ (Используйте её строго!):\n"
-                )
+                structure_source = "ПОЛЬЗОВАТЕЛЬСКАЯ СТРУКТУРА СТАТЬИ (Используйте её строго!):\n"
                 for i, item in enumerate(saved_structure, 1):
                     level = item.get("level", "H2")
                     title_text = item.get("title", "")
@@ -409,6 +390,7 @@ def generate_seo_plan(domain, cluster_id, user_id, rewrite_content=False):
 
     except Exception as e:
         import traceback
+
         traceback.print_exc(file=sys.stderr)
         return {"success": False, "error": str(e)}
 

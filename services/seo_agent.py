@@ -1,10 +1,11 @@
 # services/seo_agent.py
-from typing import Dict, List, Optional
+import json
+from typing import Dict, List, Literal, Optional
 
 from openai import OpenAI
+from pydantic import BaseModel, Field, ValidationError
 
 from config import Config
-
 
 SYSTEM_PROMPT = """ Ты senior SEO-копирайтер и фронтенд-разработчик.
 Твоя задача: естественно вписать ключевые слова в HTML-текст страницы, строго соблюдая технические рекомендации.
@@ -32,6 +33,63 @@ USER_PROMPT_TEMPLATE = """ 📄 СТРАНИЦА: {url}
 
 ✅ ОБНОВЛЪННЫЙ HTML (начинай сразу с <html> или с корневого контейнера):
 """
+
+STRUCTURE_FEW_SHOT_EXAMPLES = """
+Пример 1 (услуга):
+{
+  "structure": [
+    {"tag": "h2", "text": "Что такое ремонт квартир"},
+    {"tag": "h2", "text": "Виды ремонта"},
+    {"tag": "h3", "text": "Косметический ремонт"},
+    {"tag": "h3", "text": "Капитальный ремонт"},
+    {"tag": "h2", "text": "Как происходит ремонт"},
+    {"tag": "h3", "text": "Замер и смета"},
+    {"tag": "h3", "text": "Черновые работы"},
+    {"tag": "h3", "text": "Чистовая отделка"},
+    {"tag": "h2", "text": "Сколько стоит ремонт квартир"},
+    {"tag": "h2", "text": "Часто задаваемые вопросы"}
+  ]
+}
+
+Пример 2 (товар):
+{
+  "structure": [
+    {"tag": "h2", "text": "Что такое беспроводные наушники и зачем они нужны"},
+    {"tag": "h2", "text": "Ключевые характеристики"},
+    {"tag": "h3", "text": "Тип подключения и версия Bluetooth"},
+    {"tag": "h3", "text": "Время работы и ёмкость аккумулятора"},
+    {"tag": "h2", "text": "Как выбрать беспроводные наушники"},
+    {"tag": "h3", "text": "На что обратить внимание"},
+    {"tag": "h2", "text": "Обзор популярных моделей"},
+    {"tag": "h2", "text": "Где купить по лучшей цене"}
+  ]
+}
+
+Пример 3 (информационная статья):
+{
+  "structure": [
+    {"tag": "h2", "text": "Что такое криптовалюта"},
+    {"tag": "h2", "text": "Основные виды криптовалют"},
+    {"tag": "h3", "text": "Bitcoin"},
+    {"tag": "h3", "text": "Ethereum"},
+    {"tag": "h2", "text": "Как купить криптовалюту"},
+    {"tag": "h3", "text": "Шаг 1: Выбор биржи"},
+    {"tag": "h3", "text": "Шаг 2: Регистрация и верификация"},
+    {"tag": "h3", "text": "Шаг 3: Пополнение счёта"},
+    {"tag": "h2", "text": "Часто задаваемые вопросы"},
+    {"tag": "h2", "text": "Заключение"}
+  ]
+}
+"""
+
+
+class StructureItem(BaseModel):
+    tag: Literal["h2", "h3"]
+    text: str = Field(min_length=2, max_length=300)
+
+
+class Structure(BaseModel):
+    structure: List[StructureItem] = Field(min_length=1, max_length=50)
 
 
 class SEOAgent:
@@ -109,27 +167,29 @@ class SEOAgent:
         if text.endswith("```"):
             text = text[:-3].strip()
         return text
+
     def generate_ideal_structure(self, competitors_headers: List[Dict[str, List[str]]]) -> str:
-        """Generate an ideal content structure from competitor headers."""
+        """Generate an ideal content structure from competitor headers with validation."""
         context = []
         for i, headers in enumerate(competitors_headers):
-            lines = [f"Конкурент {i+1}:"]
+            lines = [f"Конкурент {i + 1}:"]
             for h_tag, h_list in headers.items():
                 for h_text in h_list:
                     lines.append(f"  {h_tag}: {h_text}")
             context.append("\n".join(lines))
-        
+
         headers_context = "\n\n".join(context)
-        
+
         prompt = f"""
 На основе заголовков конкурентов ниже, составь идеальную структуру (план) статьи.
 Структура должна быть логичной, последовательной и охватывать все важные темы, которые затронули конкуренты.
 
 ПРАВИЛА:
-1. Используй только заголовки H2 и H3.
+1. Используй ТОЛЬКО заголовки H2 и H3.
 2. Каждый заголовок H2 — это основной раздел.
-3. Внутри H2 могут быть подзаголовки H3.
-4. Ответ верни в формате JSON:
+3. Внутри H2 могут быть подзаголовки H3 (через поле "items").
+4. Не используй заголовки ниже H3.
+5. Ответ верни в формате JSON:
 {{
   "structure": [
     {{
@@ -142,26 +202,52 @@ class SEOAgent:
   ]
 }}
 
+ПРИМЕРЫ корректной структуры:
+{STRUCTURE_FEW_SHOT_EXAMPLES}
+
 ЗАГОЛОВКИ КОНКУРЕНТОВ:
 {headers_context}
 """
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "Ты эксперт по SEO структурированию контента. Отвечай только валидным JSON."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.4,
-            max_tokens=self.max_tokens,
-            response_format={"type": "json_object"}
-        )
-        
-        raw_output = response.choices[0].message.content or ""
-        cleaned = raw_output.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:].strip()
-        elif cleaned.startswith("```"):
-            cleaned = cleaned[3:].strip()
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3].strip()
-        return cleaned
+        for attempt in range(2):
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Ты эксперт по SEO структурированию контента. Отвечай только валидным JSON.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.2,
+                max_tokens=self.max_tokens,
+                response_format={"type": "json_object"},
+            )
+
+            raw_output = response.choices[0].message.content or ""
+            cleaned = raw_output.strip()
+            if cleaned.startswith("```json"):
+                cleaned = cleaned[7:].strip()
+            elif cleaned.startswith("```"):
+                cleaned = cleaned[3:].strip()
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3].strip()
+
+            try:
+                parsed = json.loads(cleaned)
+                Structure.model_validate(parsed)
+                return json.dumps(parsed, ensure_ascii=False)
+            except (json.JSONDecodeError, ValidationError) as e:
+                if attempt == 0:
+                    prompt += f"\n\nПредыдущий ответ был некорректен: {e}. Попробуй ещё раз, строго следуя JSON-схеме."
+                    continue
+                return json.dumps(
+                    {
+                        "structure": [
+                            {"tag": "h2", "text": "Введение"},
+                            {"tag": "h2", "text": "Основная часть"},
+                            {"tag": "h2", "text": "Заключение"},
+                        ]
+                    },
+                    ensure_ascii=False,
+                )
+        return ""

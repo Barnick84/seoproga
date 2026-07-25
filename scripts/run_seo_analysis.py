@@ -1,8 +1,8 @@
-import sys
-import os
 import json
-import requests
+import sys
 from urllib.parse import urlparse
+
+import requests
 
 from utils.bootstrap import bootstrap
 
@@ -16,6 +16,7 @@ from utils.helpers import extract_domain
 def load_stop_urls() -> set:
     """Load stop domains from stop_url.md in project root."""
     from pathlib import Path
+
     project_root = Path(__file__).resolve().parent.parent
     stop_path = project_root / "stop_url.md"
     domains = set()
@@ -100,9 +101,7 @@ def fetch_competitors_with_stop_filter(
     client = XmlriverClient()
 
     promoted_base = extract_domain(
-        "https://" + promoted_domain
-        if not promoted_domain.startswith("http")
-        else promoted_domain
+        "https://" + promoted_domain if not promoted_domain.startswith("http") else promoted_domain
     )
 
     def filter_urls(urls: list) -> list:
@@ -159,9 +158,7 @@ def run_seo_analysis_task(domain: str, cluster_id: int, user_id: int) -> dict:
             }
 
         stop_domains = load_stop_urls()
-        comp_urls = fetch_competitors_with_stop_filter(
-            main_keyword, stop_domains, domain
-        )
+        comp_urls = fetch_competitors_with_stop_filter(main_keyword, stop_domains, domain)
 
         print(f"[INFO] Main keyword: {main_keyword}", file=sys.stderr)
         print(f"[INFO] Target URL: {target_url}", file=sys.stderr)
@@ -221,6 +218,7 @@ def run_seo_analysis_task(domain: str, cluster_id: int, user_id: int) -> dict:
 
     except Exception as e:
         import traceback
+
         traceback.print_exc(file=sys.stderr)
         return {"success": False, "error": str(e)}
     finally:
@@ -249,12 +247,10 @@ def main():
 
     cluster_id = int(sys.argv[2])
     if len(sys.argv) <= 3:
-        print(
-            json.dumps({"success": False, "error": "user_id is required"})
-        )
+        print(json.dumps({"success": False, "error": "user_id is required"}))
         return
     user_id = int(sys.argv[3])
-    
+
     result = run_seo_analysis_task(domain, cluster_id, user_id)
     print(json.dumps(result, ensure_ascii=False))
 

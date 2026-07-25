@@ -1,27 +1,29 @@
 import json
+import logging
 import os
 import time
 import uuid
-import logging
 from datetime import datetime, timezone
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import (
-    health,
-    users,
-    sites,
-    keywords,
-    analysis,
-    billing,
-    admin,
-    cluster,
-    wordstat,
-    positions,
-)
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
+from api.routers import (
+    admin,
+    analysis,
+    billing,
+    cluster,
+    health,
+    keywords,
+    positions,
+    sites,
+    users,
+    wordstat,
+)
 
 
 class JSONFormatter(logging.Formatter):

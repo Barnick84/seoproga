@@ -1,9 +1,11 @@
 # nodejs-app/scripts/fetch_frequency.py
-import sys
-import os
 import json
+import os
+import sys
 import time
+
 import requests
+
 from utils.bootstrap import bootstrap
 
 bootstrap()
@@ -137,9 +139,7 @@ def fetch_frequency_task(
                 lsi_candidates = []
                 try:
                     associations = (
-                        data.get("table", {})
-                        .get("tableData", {})
-                        .get("associations", [])
+                        data.get("table", {}).get("tableData", {}).get("associations", [])
                     )
                     for item in associations:
                         text = item.get("text", "").strip().lower()
@@ -147,9 +147,7 @@ def fetch_frequency_task(
                         if text and text != kw["query"].lower():
                             lsi_candidates.append((text, val))
 
-                    popular = (
-                        data.get("table", {}).get("tableData", {}).get("popular", [])
-                    )
+                    popular = data.get("table", {}).get("tableData", {}).get("popular", [])
                     for item in popular:
                         text = item.get("text", "").strip().lower()
                         val = int(item.get("value", 0))
@@ -174,9 +172,7 @@ def fetch_frequency_task(
                             (user_id, domain, kw["clustered"], lsi_text, lsi_val),
                         )
                     except Exception as e:
-                        safe_print(
-                            f"WARN: Error saving LSI '{lsi_text}': {e}", file=sys.stderr
-                        )
+                        safe_print(f"WARN: Error saving LSI '{lsi_text}': {e}", file=sys.stderr)
 
             updated += 1
             time.sleep(Config.XMLRIVER_REQUEST_DELAY)

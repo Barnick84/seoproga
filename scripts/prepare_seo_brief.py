@@ -1,10 +1,10 @@
 # scripts/prepare_seo_brief.py
-import sys
-import os
 import json
-import sqlite3
-from openai import OpenAI
+import os
+import sys
+
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Fix console encoding on Windows
 from utils.bootstrap import bootstrap
@@ -27,20 +27,14 @@ def prepare_brief(domain, cluster_id, user_id):
         )
         row = cur.fetchone()
         if not row:
-            print(
-                json.dumps(
-                    {"success": False, "error": "Analysis not found for this cluster"}
-                )
-            )
+            print(json.dumps({"success": False, "error": "Analysis not found for this cluster"}))
             return
 
         analysis_data = json.loads(row["analysis_data"])
         raw_html = row["raw_html"]
 
         # 2. Prepare LLM client
-        client = OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("BASE_URL")
-        )
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("BASE_URL"))
         model = "gemini-3.1-pro"  # As requested by user
 
         # 3. Step 1: Generate SEO Brief (TOR)

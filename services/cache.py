@@ -1,6 +1,7 @@
 # services/cache.py
 import json
 from datetime import datetime, timedelta
+
 from config import Config
 
 
@@ -30,17 +31,11 @@ class SERPCache:
     def _make_key(self, keyword: str, engine: str, region: int) -> str:
         return f"{keyword}|{engine}|{region}"
 
-    def get(
-        self, cache_key: str, engine: str = "", region: int = 0
-    ) -> list[str] | None:
-        key = (
-            cache_key if "|" in cache_key else self._make_key(cache_key, engine, region)
-        )
+    def get(self, cache_key: str, engine: str = "", region: int = 0) -> list[str] | None:
+        key = cache_key if "|" in cache_key else self._make_key(cache_key, engine, region)
         conn = self._get_conn()
         cur = conn.cursor()
-        cur.execute(
-            "SELECT urls, fetched_at FROM serp_cache WHERE cache_key=%s", (key,)
-        )
+        cur.execute("SELECT urls, fetched_at FROM serp_cache WHERE cache_key=%s", (key,))
         row = cur.fetchone()
         if row:
             urls, fetched = row["urls"], row["fetched_at"]
@@ -49,9 +44,7 @@ class SERPCache:
         return None
 
     def set(self, cache_key: str, urls: list[str], engine: str = "", region: int = 0):
-        key = (
-            cache_key if "|" in cache_key else self._make_key(cache_key, engine, region)
-        )
+        key = cache_key if "|" in cache_key else self._make_key(cache_key, engine, region)
         conn = self._get_conn()
         cur = conn.cursor()
         cur.execute("SELECT 1 FROM serp_cache WHERE cache_key=%s", (key,))

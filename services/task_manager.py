@@ -1,6 +1,7 @@
 # services/task_manager.py
 import json
 from datetime import datetime
+
 from config import Config
 
 
@@ -41,6 +42,28 @@ class TaskManager:
             conn.commit()
         except Exception as e:
             print(f"TaskManager.update_progress error: {e}")
+            self.close()
+
+    def update_payload_partial(self, updates: dict) -> None:
+        if not self.task_id:
+            return
+        try:
+            conn = self._get_conn()
+            cur = conn.cursor()
+            cur.execute("SELECT payload FROM tasks WHERE id = %s", (self.task_id,))
+            row = cur.fetchone()
+            if row:
+                payload = json.loads(row["payload"]) if row["payload"] else {}
+            else:
+                payload = {}
+            payload.update(updates)
+            cur.execute(
+                "UPDATE tasks SET payload = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                (json.dumps(payload), self.task_id),
+            )
+            conn.commit()
+        except Exception as e:
+            print(f"TaskManager.update_payload_partial error: {e}")
             self.close()
 
     def set_status(self, status: str, error: str = None) -> None:

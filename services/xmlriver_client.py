@@ -1,11 +1,13 @@
 # services/xmlriver_client.py
-import requests
-import xmltodict
 import time
 from typing import Optional
+
+import requests
+import xmltodict
+
 from config import Config
-from utils.helpers import clean_url
 from services.cache import SERPCache
+from utils.helpers import clean_url
 
 
 class XmlriverClient:
@@ -126,7 +128,9 @@ class XmlriverClient:
                             else:
                                 time.sleep(5)
                             continue
-                        raise Exception(f"XMLRiver: исчерпаны попытки, ошибка {error_code}: {error_text}")
+                        raise Exception(
+                            f"XMLRiver: исчерпаны попытки, ошибка {error_code}: {error_text}"
+                        )
                     else:
                         raise ValueError(f"XMLRiver Fatal Error {error_code}: {error_text}")
 

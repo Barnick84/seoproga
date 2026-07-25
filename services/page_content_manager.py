@@ -6,7 +6,6 @@ from bs4 import BeautifulSoup
 
 from config import Config
 
-
 NON_EDITABLE_SELECTORS = [
     "nav",
     "header",
@@ -253,9 +252,7 @@ class PageContentManager:
                     "SELECT id, page_url, cluster_id, status FROM seo_tasks WHERE status = 'pending' ORDER BY created_at"
                 )
                 rows = cur.fetchall()
-        return [
-            {"id": r[0], "url": r[1], "cluster_id": r[2], "status": r[3]} for r in rows
-        ]
+        return [{"id": r[0], "url": r[1], "cluster_id": r[2], "status": r[3]} for r in rows]
 
     def merge_html(
         self,
@@ -270,7 +267,7 @@ class PageContentManager:
         body = soup.find("body")
         if not body:
             return editable_html
-            
+
         body.clear()
         body.append(BeautifulSoup(editable_html, "html.parser"))
         return str(soup)

@@ -1,7 +1,7 @@
 # nodejs-app/scripts/get_yandex_hosts.py
-import sys
-import os
 import json
+import os
+import sys
 
 from utils.bootstrap import bootstrap
 
@@ -49,9 +49,7 @@ def main():
                 result.append(
                     {
                         "host_id": host["host_id"],
-                        "unicode_host_url": host.get(
-                            "unicode_host_url", host["host_id"]
-                        ),
+                        "unicode_host_url": host.get("unicode_host_url", host["host_id"]),
                     }
                 )
 

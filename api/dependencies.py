@@ -84,10 +84,12 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Token
         raise HTTPException(status_code=401, detail="Missing Authorization Header")
 
     parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
+    if len(parts) == 1:
+        token = parts[0]
+    elif len(parts) == 2 and parts[0].lower() == "bearer":
+        token = parts[1]
+    else:
         raise HTTPException(status_code=401, detail="Invalid authorization format")
-
-    token = parts[1]
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -142,9 +144,11 @@ async def verify_domain_ownership(
     with get_db_cursor(dictionary=False) as (conn, cur):
         cur.execute(
             "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s",
-            (current_user.user_id, normalized_domain)
+            (current_user.user_id, normalized_domain),
         )
         if not cur.fetchone():
-            raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this domain.")
+            raise HTTPException(
+                status_code=403, detail="Forbidden: You do not have access to this domain."
+            )
 
     return normalized_domain

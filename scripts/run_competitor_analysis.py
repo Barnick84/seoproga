@@ -1,9 +1,8 @@
 # nodejs-app/scripts/run_competitor_analysis.py
-import sys
-import os
 import json
+import sys
+
 import requests
-from datetime import datetime
 
 from utils.bootstrap import bootstrap
 
@@ -14,7 +13,9 @@ from services.custom_analyzer import CustomAnalyzer
 from services.task_manager import TaskManager
 
 
-def run_competitor_analysis_task(domain: str, user_id: int, target_cluster_id: int | None = None, task_id: int = 0) -> dict:
+def run_competitor_analysis_task(
+    domain: str, user_id: int, target_cluster_id: int | None = None, task_id: int = 0
+) -> dict:
     tm = TaskManager(task_id)
     tm.set_status("running")
 
@@ -85,9 +86,7 @@ def run_competitor_analysis_task(domain: str, user_id: int, target_cluster_id: i
                 resp.raise_for_status()
                 raw_html = resp.text
 
-                analysis = analyzer.process_analysis(
-                    full_target_url, keywords, raw_html=raw_html
-                )
+                analysis = analyzer.process_analysis(full_target_url, keywords, raw_html=raw_html)
 
                 # Save to DB
                 cur.execute(
@@ -138,9 +137,7 @@ def run_analysis():
             pass
 
     user_id = int(sys.argv[2])
-    target_cluster_id = (
-        int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] != "None" else None
-    )
+    target_cluster_id = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] != "None" else None
     task_id = int(sys.argv[4]) if len(sys.argv) > 4 else 0
 
     result = run_competitor_analysis_task(domain, user_id, target_cluster_id, task_id)

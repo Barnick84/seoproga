@@ -1,11 +1,10 @@
-import sys
-import os
 import json
-import time
+import os
 import re
+import sys
+
 import requests
 from bs4 import BeautifulSoup
-from collections import defaultdict
 
 from utils.bootstrap import bootstrap
 
@@ -24,8 +23,8 @@ def safe_print(*args, **kwargs):
 
 
 from config import Config
-from services.xmlriver_client import XmlriverClient
 from services.clustering import serp_similarity
+from services.xmlriver_client import XmlriverClient
 
 
 def clean_title(title: str) -> str:
@@ -66,13 +65,13 @@ def fetch_wordstat_keywords(query: str) -> list[dict]:
 def create_cluster_from_url_task(domain: str, user_id: int, target_url: str) -> dict:
     try:
         # Fetch the target URL to extract title
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         # Handle relative URLs if any
         full_url = target_url
         if not full_url.startswith("http"):
-            full_url = f"https://{domain}{target_url if target_url.startswith('/') else '/' + target_url}"
+            full_url = (
+                f"https://{domain}{target_url if target_url.startswith('/') else '/' + target_url}"
+            )
 
         resp = requests.get(full_url, headers=headers, timeout=15)
         resp.raise_for_status()
@@ -118,10 +117,7 @@ def create_cluster_from_url_task(domain: str, user_id: int, target_url: str) -> 
         for cand in candidates:
             cand_serp = client.fetch_serp(cand["query"])
             sim = serp_similarity(base_serp, cand_serp)
-            if (
-                sim >= Config.SIMILARITY_THRESHOLD
-                or cand["query"].lower() == cleaned_title.lower()
-            ):
+            if sim >= Config.SIMILARITY_THRESHOLD or cand["query"].lower() == cleaned_title.lower():
                 matched_keywords.append(cand)
 
         if not matched_keywords:
@@ -208,9 +204,7 @@ def create_cluster_from_url_task(domain: str, user_id: int, target_url: str) -> 
 def main():
     if len(sys.argv) < 4:
         safe_print(
-            json.dumps(
-                {"success": False, "error": "Usage: script.py <domain> <user_id> <url>"}
-            )
+            json.dumps({"success": False, "error": "Usage: script.py <domain> <user_id> <url>"})
         )
         sys.exit(1)
 

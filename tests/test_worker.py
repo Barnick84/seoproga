@@ -1,6 +1,7 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from services.worker import fetch_and_schedule_tasks, run_task
+
 
 def test_fetch_and_schedule_tasks_success():
     with patch("services.worker.Config.get_conn") as mock_get_conn:
@@ -8,20 +9,22 @@ def test_fetch_and_schedule_tasks_success():
         mock_cur = MagicMock()
         mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cur
-        
+
         # Simulate successful fetch
         mock_cur.fetchone.return_value = {"id": 1, "status": "pending"}
         mock_cur.rowcount = 1
-        
+
         tasks = fetch_and_schedule_tasks(1)
         assert len(tasks) == 1
         assert tasks[0]["id"] == 1
-        mock_cur.execute.assert_any_call("SELECT * FROM tasks WHERE status = 'pending' ORDER BY created_at LIMIT 1")
         mock_cur.execute.assert_any_call(
-            "UPDATE tasks SET status = 'scheduled' WHERE id = %s AND status = 'pending'",
-            (1,)
+            "SELECT * FROM tasks WHERE status = 'pending' ORDER BY created_at LIMIT 1"
+        )
+        mock_cur.execute.assert_any_call(
+            "UPDATE tasks SET status = 'scheduled' WHERE id = %s AND status = 'pending'", (1,)
         )
         mock_conn.commit.assert_called_once()
+
 
 def test_fetch_and_schedule_tasks_race_condition():
     with patch("services.worker.Config.get_conn") as mock_get_conn:
@@ -29,14 +32,15 @@ def test_fetch_and_schedule_tasks_race_condition():
         mock_cur = MagicMock()
         mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cur
-        
+
         # Simulate fetch success but update failure (race condition)
         mock_cur.fetchone.return_value = {"id": 1, "status": "pending"}
         mock_cur.rowcount = 0
-        
+
         tasks = fetch_and_schedule_tasks(1)
         assert len(tasks) == 0
         mock_conn.commit.assert_called_once()
+
 
 @patch("services.worker.subprocess.Popen")
 def test_run_task_unknown_type(mock_popen):
@@ -45,19 +49,14 @@ def test_run_task_unknown_type(mock_popen):
         mock_cur = MagicMock()
         mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cur
-        
-        task = {
-            "id": 42,
-            "user_id": 1,
-            "task_type": "unknown_task_type",
-            "payload": "{}"
-        }
-        
+
+        task = {"id": 42, "user_id": 1, "task_type": "unknown_task_type", "payload": "{}"}
+
         run_task(task)
-        
+
         # Should not call subprocess
         mock_popen.assert_not_called()
-        
+
         # Should mark task as failed (update 2nd arg since datetime is used)
         # Using assert_any_call or check if string is matched. We will just check if execute was called.
         assert mock_cur.execute.called

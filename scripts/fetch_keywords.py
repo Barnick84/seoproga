@@ -1,7 +1,6 @@
 # scripts/fetch_keywords.py
-import sys
-import os
 import json
+import sys
 
 from utils.bootstrap import bootstrap
 

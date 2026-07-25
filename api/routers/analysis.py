@@ -1,13 +1,12 @@
 import asyncio
 import json
-import os
-import sys
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional
 
-from api.dependencies import get_current_user, TokenData, verify_domain_ownership
+from api.dependencies import TokenData, get_current_user, verify_domain_ownership
 from utils.db import get_db_cursor
 
 router = APIRouter(tags=["Analysis"])
@@ -63,6 +62,7 @@ def get_system_settings(cur):
         }
     except Exception as e:
         import logging
+
         logging.error(f"Failed to fetch system settings: {e}")
         raise HTTPException(status_code=500, detail="Failed to load system billing settings.")
 
@@ -104,7 +104,10 @@ def check_and_deduct_balance(conn, cur, user_id, amount, description):
 
 
 @router.get("/api/run-clustering-stream")
-async def run_clustering_stream(domain: str = Depends(verify_domain_ownership), current_user: TokenData = Depends(get_current_user)):
+async def run_clustering_stream(
+    domain: str = Depends(verify_domain_ownership),
+    current_user: TokenData = Depends(get_current_user),
+):
     try:
         with get_db_cursor(dictionary=True) as (conn, cur):
             settings = get_system_settings(cur)
@@ -134,7 +137,9 @@ async def run_clustering_stream(domain: str = Depends(verify_domain_ownership), 
                         async def stream_insufficient():
                             yield f"data: {json.dumps({'type': 'error', **err_data})}\n\n"
 
-                        return StreamingResponse(stream_insufficient(), media_type="text/event-stream")
+                        return StreamingResponse(
+                            stream_insufficient(), media_type="text/event-stream"
+                        )
                     else:
 
                         async def stream_err():
@@ -142,7 +147,8 @@ async def run_clustering_stream(domain: str = Depends(verify_domain_ownership), 
 
                         return StreamingResponse(stream_err(), media_type="text/event-stream")
 
-    except Exception as e:
+    except Exception:
+
         async def stream_err2():
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
 
@@ -150,6 +156,7 @@ async def run_clustering_stream(domain: str = Depends(verify_domain_ownership), 
 
     # We will yield events using StreamingResponse
     from scripts.run_clustering import run_clustering_task
+
     return StreamingResponse(
         run_streaming_process(run_clustering_task, domain, current_user.user_id, 0),
         media_type="text/event-stream",
@@ -157,8 +164,12 @@ async def run_clustering_stream(domain: str = Depends(verify_domain_ownership), 
 
 
 @router.get("/api/run-mapping-stream")
-async def run_mapping_stream(domain: str = Depends(verify_domain_ownership), current_user: TokenData = Depends(get_current_user)):
+async def run_mapping_stream(
+    domain: str = Depends(verify_domain_ownership),
+    current_user: TokenData = Depends(get_current_user),
+):
     from scripts.run_mapping import run_mapping_task
+
     return StreamingResponse(
         run_streaming_process(run_mapping_task, domain, current_user.user_id, None, 0),
         media_type="text/event-stream",
@@ -173,13 +184,19 @@ class MappingRequest(BaseModel):
 async def run_mapping(req: MappingRequest, current_user: TokenData = Depends(get_current_user)):
     # req.domain doesn't use Depends() because it's in body, so we manually verify it
     from utils.helpers import extract_domain
+
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute("SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain))
+        cur.execute(
+            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
+        )
         if not cur.fetchone():
-            raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this domain.")
-            
+            raise HTTPException(
+                status_code=403, detail="Forbidden: You do not have access to this domain."
+            )
+
     from scripts.run_mapping import run_mapping_task
+
     try:
         result = await asyncio.to_thread(run_mapping_task, domain, current_user.user_id, None, 0)
         return result
@@ -188,14 +205,18 @@ async def run_mapping(req: MappingRequest, current_user: TokenData = Depends(get
 
 
 @router.get("/api/analysis-status")
-async def get_analysis_status(domain: str = Depends(verify_domain_ownership), current_user: TokenData = Depends(get_current_user)):
+async def get_analysis_status(
+    domain: str = Depends(verify_domain_ownership),
+    current_user: TokenData = Depends(get_current_user),
+):
     analysis_key = f"{current_user.user_id}:{domain}"
     return {"running": analysis_key in running_analyses}
 
 
 @router.get("/api/run-competitor-analysis-stream")
 async def run_competitor_analysis_stream(
-    domain: str = Depends(verify_domain_ownership), current_user: TokenData = Depends(get_current_user)
+    domain: str = Depends(verify_domain_ownership),
+    current_user: TokenData = Depends(get_current_user),
 ):
     analysis_key = f"{current_user.user_id}:{domain}"
 
@@ -206,6 +227,7 @@ async def run_competitor_analysis_stream(
 
     def wrapped_task():
         from scripts.run_competitor_analysis import run_competitor_analysis_task
+
         try:
             run_competitor_analysis_task(domain, current_user.user_id)
         finally:
@@ -227,17 +249,18 @@ async def run_frequency_stream(
 ):
     try:
         cluster_id_int = int(clusterId) if clusterId else 0
-        
+
         with get_db_cursor() as (conn, cur):
             cur.execute(
                 "INSERT INTO tasks (user_id, task_type, status, created_at, started_at) VALUES (%s, %s, 'running', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                (current_user.user_id, "frequency")
+                (current_user.user_id, "frequency"),
             )
             task_id = cur.lastrowid
             conn.commit()
-            
+
         def wrapped_task():
             from scripts.fetch_frequency import fetch_frequency_task
+
             fetch_frequency_task(
                 domain=domain,
                 user_id=current_user.user_id,
@@ -246,9 +269,9 @@ async def run_frequency_stream(
                 mode=mode,
                 min_freq=minFrequency,
                 task_id=task_id,
-                cluster_id=cluster_id_int
+                cluster_id=cluster_id_int,
             )
-            
+
         asyncio.create_task(asyncio.to_thread(wrapped_task))
         return {"success": True, "task_id": task_id}
     except Exception as e:
@@ -293,3 +316,88 @@ async def get_frequency_task_status(
             return {"success": True, "task": task}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class FullPipelineRequest(BaseModel):
+    domain: str
+    clusterId: str
+    targetUrl: str
+    region: Optional[str] = "213"
+    headQuery: Optional[str] = None
+
+
+@router.post("/api/run-full-pipeline")
+async def run_full_pipeline(
+    req: FullPipelineRequest,
+    current_user: TokenData = Depends(get_current_user),
+):
+    from utils.helpers import extract_domain
+
+    domain = extract_domain(req.domain)
+    with get_db_cursor(dictionary=False) as (conn, cur):
+        cur.execute(
+            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
+        )
+        if not cur.fetchone():
+            raise HTTPException(
+                status_code=403, detail="Forbidden: You do not have access to this domain."
+            )
+
+    payload = json.dumps(
+        {
+            "domain": domain,
+            "cluster_id": req.clusterId,
+            "target_url": req.targetUrl,
+            "region": req.region,
+            "head_query": req.headQuery,
+        },
+        ensure_ascii=False,
+    )
+
+    try:
+        with get_db_cursor() as (conn, cur):
+            cur.execute(
+                "INSERT INTO tasks (user_id, task_type, status, progress, payload) VALUES (%s, 'seo_pipeline', 'pending', 0, %s)",
+                (current_user.user_id, payload),
+            )
+            task_id = cur.lastrowid
+            conn.commit()
+        return {"success": True, "task_id": task_id}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/api/active-pipeline-status")
+async def get_active_pipeline_status(
+    domain: str,
+    clusterId: str,
+    current_user: TokenData = Depends(get_current_user),
+):
+    from utils.helpers import extract_domain
+
+    clean_domain = extract_domain(domain)
+    try:
+        with get_db_cursor(dictionary=True) as (conn, cur):
+            cur.execute(
+                """
+                SELECT id, task_type, status, progress, payload, result, error, created_at, started_at, finished_at
+                FROM tasks
+                WHERE user_id = %s AND task_type = 'seo_pipeline' AND status IN ('pending', 'scheduled', 'running')
+                ORDER BY id DESC LIMIT 1
+                """,
+                (current_user.user_id,),
+            )
+            rows = cur.fetchall()
+            for task in rows:
+                p = task["payload"]
+                if isinstance(p, str):
+                    p = json.loads(p)
+                if (
+                    p
+                    and str(p.get("domain", "")).lower() == clean_domain.lower()
+                    and str(p.get("cluster_id", p.get("clusterId", ""))) == str(clusterId)
+                ):
+                    return {"success": True, "task": task}
+            return {"success": True, "task": None}
+    except Exception as e:
+        return {"success": False, "error": str(e)}

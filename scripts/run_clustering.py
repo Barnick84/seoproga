@@ -1,23 +1,25 @@
 # nodejs-app/scripts/run_clustering.py
-import sys
-import os
 import json
+import sys
 
 from utils.bootstrap import bootstrap
 
 bootstrap()
 
+from typing import Any, Callable
+
 from config import Config
-from services.clustering import cluster_keywords, merge_serps
-from services.xmlriver_client import XmlriverClient
 from services.cache import SERPCache
-from services.task_manager import TaskManager
+from services.clustering import cluster_keywords, merge_serps
 from services.serp_collector import prefetch_for_clustering
+from services.task_manager import TaskManager
+from services.xmlriver_client import XmlriverClient
 from utils.helpers import extract_domain
-from typing import Callable, Any
 
 
-def run_clustering_task(domain: str, user_id: int, task_id: int = 0, on_progress: Callable[[str], Any] | None = None) -> dict:
+def run_clustering_task(
+    domain: str, user_id: int, task_id: int = 0, on_progress: Callable[[str], Any] | None = None
+) -> dict:
     domain = extract_domain(domain)
     tm = TaskManager(task_id)
     tm.set_status("running")
@@ -71,8 +73,10 @@ def run_clustering_task(domain: str, user_id: int, task_id: int = 0, on_progress
             return {"success": True, "message": "No new keywords to cluster"}
 
         tm.update_progress(5)
-        if on_progress: on_progress("PROGRESS: 5")
-        else: print("PROGRESS: 5", flush=True)
+        if on_progress:
+            on_progress("PROGRESS: 5")
+        else:
+            print("PROGRESS: 5", flush=True)
 
         # 3. Prefetch SERP for all unclustered keywords (with rate limiting)
         total_kw = len(unclustered_keywords)
@@ -80,8 +84,10 @@ def run_clustering_task(domain: str, user_id: int, task_id: int = 0, on_progress
         def on_prefetch_progress(done, total):
             prog = 5 + int(done / total * 70)
             tm.update_progress(prog)
-            if on_progress: on_progress(f"PROGRESS: {prog}")
-            else: print(f"PROGRESS: {prog}", flush=True)
+            if on_progress:
+                on_progress(f"PROGRESS: {prog}")
+            else:
+                print(f"PROGRESS: {prog}", flush=True)
 
         prefetch_for_clustering(
             unclustered_keywords,
@@ -98,8 +104,10 @@ def run_clustering_task(domain: str, user_id: int, task_id: int = 0, on_progress
         )
 
         tm.update_progress(85)
-        if on_progress: on_progress("PROGRESS: 85")
-        else: print("PROGRESS: 85", flush=True)
+        if on_progress:
+            on_progress("PROGRESS: 85")
+        else:
+            print("PROGRESS: 85", flush=True)
 
         # 5. Update database with results
         update_args = []
@@ -111,7 +119,7 @@ def run_clustering_task(domain: str, user_id: int, task_id: int = 0, on_progress
         if update_args:
             cur.executemany(
                 "UPDATE yandex_queries SET clustered = %s WHERE user_id = %s AND site_url = %s AND query = %s",
-                update_args
+                update_args,
             )
 
         conn.commit()
@@ -122,6 +130,7 @@ def run_clustering_task(domain: str, user_id: int, task_id: int = 0, on_progress
     except Exception as e:
         tm.set_status("failed", str(e))
         import traceback
+
         error_msg = f"{str(e)}\n{traceback.format_exc()}"
         return {"success": False, "error": error_msg}
     finally:

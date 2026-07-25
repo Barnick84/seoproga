@@ -1,11 +1,12 @@
 # streamlit_app.py
-import streamlit as st
 import sqlite3
+
+import streamlit as st
 
 from config import Config
 from services.cache import SERPCache
-from services.xmlriver_client import XmlriverClient
 from services.clustering import cluster_keywords as cluster_keywords_func
+from services.xmlriver_client import XmlriverClient
 from services.yandex_webmaster import YandexWebmasterClient
 
 st.set_page_config(

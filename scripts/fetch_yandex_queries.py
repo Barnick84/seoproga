@@ -1,7 +1,7 @@
 # nodejs-app/scripts/fetch_yandex_queries.py
-import sys
-import os
 import json
+import os
+import sys
 
 from utils.bootstrap import bootstrap
 
@@ -45,6 +45,7 @@ def fetch_yandex_queries_task(domain: str, user_id: int) -> dict:
         }
     except Exception as e:
         import traceback
+
         error_msg = f"{str(e)}\n{traceback.format_exc()}"
         return {"success": False, "error": error_msg}
 
@@ -63,7 +64,7 @@ def main():
 
     domain = sys.argv[1]
     user_id = int(sys.argv[2])
-    
+
     result = fetch_yandex_queries_task(domain, user_id)
     print(json.dumps(result))
 

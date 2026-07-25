@@ -1,8 +1,10 @@
 # services/yandex_webmaster.py
-import requests
 import math
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import Dict, List
+
+import requests
+
 from config import Config
 
 

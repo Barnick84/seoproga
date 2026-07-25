@@ -1,10 +1,7 @@
-import json
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 
-from api.dependencies import get_current_user, TokenData
-from config import Config
+from api.dependencies import TokenData, get_current_user
 from utils.db import get_db_cursor
 
 router = APIRouter(tags=["Wordstat"])

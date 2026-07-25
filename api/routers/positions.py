@@ -1,13 +1,11 @@
 import asyncio
 import json
-import os
-import sys
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 from typing import Optional
 
-from api.dependencies import get_current_user, TokenData, verify_domain_ownership
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
+
+from api.dependencies import TokenData, get_current_user, verify_domain_ownership
 from utils.db import get_db_cursor
 
 router = APIRouter(tags=["Positions"])
@@ -52,14 +50,11 @@ async def check_positions(
 ):
     try:
         from scripts.check_positions import check_positions_task
-        
+
         cid = int(clusterId) if clusterId else 0
-        
+
         result = await asyncio.to_thread(
-            check_positions_task,
-            domain=domain,
-            cluster_id=cid,
-            user_id=current_user.user_id
+            check_positions_task, domain=domain, cluster_id=cid, user_id=current_user.user_id
         )
         return result
     except Exception as e:
@@ -164,8 +159,11 @@ async def run_positions_stream(
     current_user: TokenData = Depends(get_current_user),
 ):
     from scripts.check_all_positions import check_all_positions_task
+
     return StreamingResponse(
-        positions_streaming_process(check_all_positions_task, domain, current_user.user_id, engine, device),
+        positions_streaming_process(
+            check_all_positions_task, domain, current_user.user_id, engine, device
+        ),
         media_type="text/event-stream",
     )
 
@@ -177,6 +175,7 @@ async def check_cluster_positions_stream(
     current_user: TokenData = Depends(get_current_user),
 ):
     from scripts.check_positions import check_positions_task
+
     cid = int(clusterId) if clusterId else 0
     return StreamingResponse(
         positions_streaming_process(check_positions_task, domain, cid, current_user.user_id, None),
@@ -192,14 +191,11 @@ async def check_cluster_positions(
 ):
     try:
         from scripts.check_positions import check_positions_task
-        
+
         cid = int(clusterId) if clusterId else 0
-        
+
         result = await asyncio.to_thread(
-            check_positions_task,
-            domain=domain,
-            cluster_id=cid,
-            user_id=current_user.user_id
+            check_positions_task, domain=domain, cluster_id=cid, user_id=current_user.user_id
         )
         return result
     except Exception as e:

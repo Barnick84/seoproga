@@ -1,8 +1,8 @@
-import sys
-import os
 import json
+import os
+import sys
+
 import requests
-from collections import defaultdict
 
 from utils.bootstrap import bootstrap
 
@@ -21,8 +21,8 @@ def safe_print(*args, **kwargs):
 
 
 from config import Config
-from services.xmlriver_client import XmlriverClient
 from services.clustering import serp_similarity
+from services.xmlriver_client import XmlriverClient
 
 
 def fetch_wordstat_keywords(query: str, type_name: str = "popular") -> list[dict]:
@@ -54,7 +54,13 @@ def fetch_wordstat_keywords(query: str, type_name: str = "popular") -> list[dict
         return []
 
 
-def collect_cluster_keywords_task(domain: str, user_id: int, cluster_id: int, head_query: str | None = None, source_type: str = "popular") -> dict:
+def collect_cluster_keywords_task(
+    domain: str,
+    user_id: int,
+    cluster_id: int,
+    head_query: str | None = None,
+    source_type: str = "popular",
+) -> dict:
     if source_type not in ["popular", "similar"]:
         source_type = "popular"
 
@@ -66,13 +72,16 @@ def collect_cluster_keywords_task(domain: str, user_id: int, cluster_id: int, he
         if not head_query:
             cur.execute(
                 "SELECT query FROM yandex_queries WHERE user_id=%s AND site_url=%s AND clustered=%s AND minus_word=0 ORDER BY frequency DESC, hits DESC LIMIT 1",
-                (user_id, domain, cluster_id)
+                (user_id, domain, cluster_id),
             )
             row = cur.fetchone()
             if row:
                 head_query = row["query"]
             else:
-                return {"success": False, "error": "Кластер пуст, невозможно определить главный запрос"}
+                return {
+                    "success": False,
+                    "error": "Кластер пуст, невозможно определить главный запрос",
+                }
 
         # Get candidates from Wordstat
         candidates = fetch_wordstat_keywords(head_query, source_type)
@@ -172,7 +181,7 @@ def main():
     cluster_id = int(sys.argv[3])
     head_query = sys.argv[4].strip() if len(sys.argv) > 4 else None
     source_type = sys.argv[5].strip().lower() if len(sys.argv) > 5 else "popular"
-    
+
     result = collect_cluster_keywords_task(domain, user_id, cluster_id, head_query, source_type)
     safe_print(json.dumps(result, ensure_ascii=False))
 

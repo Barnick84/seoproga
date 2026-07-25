@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from api.dependencies import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, verify_admin_token
 from api.main import limiter
-from config import Config
 from utils.db import get_db_cursor
 
 router = APIRouter(tags=["Admin"])

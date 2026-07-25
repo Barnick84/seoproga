@@ -1,8 +1,6 @@
 # scripts/get_keywords.py
-import sys
-import os
-import json
 import argparse
+import json
 
 from utils.bootstrap import bootstrap
 

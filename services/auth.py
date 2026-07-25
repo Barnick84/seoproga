@@ -1,14 +1,16 @@
 import bcrypt
+
 from config import Config
+
 
 class AuthService:
     @staticmethod
     def hash_password(password: str) -> str:
-        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
     @staticmethod
     def verify_password(password: str, hashed: str) -> bool:
-        return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
 
     @staticmethod
     def register_user(username: str, email: str, password: str) -> int:
@@ -23,10 +25,10 @@ class AuthService:
             cur.execute("SELECT id FROM users WHERE email = %s", (email,))
             if cur.fetchone():
                 raise ValueError("Email already exists")
-                
+
             cur.execute(
                 "INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
-                (username, email, hashed)
+                (username, email, hashed),
             )
             user_id = cur.lastrowid
             conn.commit()
@@ -48,7 +50,7 @@ class AuthService:
         try:
             cur.execute("SELECT * FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
-            
+
             if user and AuthService.verify_password(password, user["password"]):
                 # Don't return the password hash
                 user.pop("password", None)
@@ -67,10 +69,10 @@ class AuthService:
         try:
             cur.execute("SELECT password FROM users WHERE id = %s", (user_id,))
             user = cur.fetchone()
-            
+
             if not user or not AuthService.verify_password(old_password, user["password"]):
                 return False
-                
+
             hashed_new = AuthService.hash_password(new_password)
             cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_new, user_id))
             conn.commit()

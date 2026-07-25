@@ -1,7 +1,5 @@
 # nodejs-app/scripts/scheduler.py
-import sys
 import os
-import json
 import time
 from datetime import datetime
 
@@ -62,7 +60,7 @@ def run_daily_update():
                         print(f"    ✅ Saved {saved} queries")
                         total_queries += saved
                     else:
-                        print(f"    ℹ️ No new queries found")
+                        print("    ℹ️ No new queries found")
 
                     total_sites += 1
                 except Exception as e:

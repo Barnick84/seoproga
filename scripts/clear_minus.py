@@ -1,7 +1,6 @@
 # scripts/clear_minus.py
-import sys
-import os
 import json
+import sys
 
 from utils.bootstrap import bootstrap
 
@@ -33,11 +32,7 @@ def clear_minus_words(user_id, domain):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print(
-            json.dumps(
-                {"success": False, "error": "Usage: clear_minus.py <user_id> <domain>"}
-            )
-        )
+        print(json.dumps({"success": False, "error": "Usage: clear_minus.py <user_id> <domain>"}))
         sys.exit(1)
 
     user_id = sys.argv[1]

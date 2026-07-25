@@ -2,22 +2,21 @@
 """Full SEO workflow: Yandex WM -> Clustering -> Page Mapping -> Miratext -> LLM"""
 
 import json
-from typing import Dict, List, Optional
 import sqlite3
 from pathlib import Path
+from typing import Dict, List, Optional
 
 import requests
 from bs4 import BeautifulSoup
 
 from config import Config
-from services.semantic_core import SemanticCoreManager
-from services.page_content_manager import PageContentManager
-from services.miratext_client import MiratextClient
-from services.seo_agent import SEOAgent
 from services.cache import SERPCache
-from services.xmlriver_client import XmlriverClient
 from services.clustering import cluster_keywords, serp_similarity
-
+from services.miratext_client import MiratextClient
+from services.page_content_manager import PageContentManager
+from services.semantic_core import SemanticCoreManager
+from services.seo_agent import SEOAgent
+from services.xmlriver_client import XmlriverClient
 
 SQLITE_DB = "data/seo_workflow.db"
 
@@ -73,7 +72,6 @@ class SEOWorkflow:
 
     def get_cluster_keywords(self, user_id: int) -> List[Dict]:
         from services.yandex_webmaster import YandexWebmasterClient
-        from services.semantic_core import SemanticCoreManager
 
         client = YandexWebmasterClient(Config.YANDEX_TOKEN, user_id=user_id)
         raw_queries = client.fetch_queries_recent(Config.YANDEX_SITE)
@@ -218,10 +216,6 @@ class SEOWorkflow:
 
         print("\n[3/4] Fetching and saving page content, analyzing, optimizing...")
 
-        from services.page_content_manager import PageContentManager
-        from services.miratext_client import MiratextClient
-        from services.seo_agent import SEOAgent
-
         pm = PageContentManager()
         miratext = MiratextClient()
         agent = SEOAgent()
@@ -235,18 +229,14 @@ class SEOWorkflow:
                 print(f"\nProcessing: {page_url}")
 
                 editable, non_editable = pm.fetch_and_parse_page(page_url)
-                pm.save_page(
-                    page_url, editable_html=editable, non_editable_html=non_editable
-                )
-                print(f"   Page saved")
+                pm.save_page(page_url, editable_html=editable, non_editable_html=non_editable)
+                print("   Page saved")
 
-                print(f"   Analyzing with Miratext...")
+                print("   Analyzing with Miratext...")
                 miratext_data = miratext.analyze(editable, keywords)
 
-                print(f"   Optimizing with LLM...")
-                new_editable = agent.rewrite_page(
-                    page_url, editable, keywords, miratext_data
-                )
+                print("   Optimizing with LLM...")
+                new_editable = agent.rewrite_page(page_url, editable, keywords, miratext_data)
 
                 pm.save_version(page_url, new_editable, keywords)
                 full_html = pm.merge_html(new_editable, non_editable)
@@ -254,13 +244,11 @@ class SEOWorkflow:
 
                 self._update_mapping_status(page_url, mapping["cluster_id"], "saved")
                 processed += 1
-                print(f"   Done!")
+                print("   Done!")
 
             except Exception as e:
                 print(f"   Error: {e}")
-                self._update_mapping_status(
-                    page_url, mapping["cluster_id"], "failed", str(e)
-                )
+                self._update_mapping_status(page_url, mapping["cluster_id"], "failed", str(e))
 
         print("\n" + "=" * 50)
         print(f"Workflow complete! Processed: {processed}/{len(mappings)}")

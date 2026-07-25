@@ -93,6 +93,7 @@ seo-auto-cluster/
 │
 ├── utils/
 │   ├── bootstrap.py             # Единая точка входа скриптов (chdir, sys.path, stdout)
+│   ├── retry.py                 # Декоратор with_retry (exponential backoff)
 │   └── helpers.py               # Утилиты: extract_domain, clean_url, safe_divide
 │
 ├── api/                        # FastAPI веб-сервер
@@ -133,6 +134,7 @@ seo-auto-cluster/
 │   ├── create_cluster_from_url.py # Создание кластера по URL
 │   ├── check_positions.py      # Проверка позиций
 │   ├── check_all_positions.py  # Массовая проверка позиций всех ключей сайта
+│   ├── run_seo_pipeline.py     # Оркестратор полного фонового SEO-анализа (8 этапов), retry-механизм через utils/retry.py
 │   ├── scheduler.py            # Ежедневный плановый сбор
 │   └── ...
 │
@@ -140,6 +142,14 @@ seo-auto-cluster/
 │   └── page_content.sql         # DDL для таблиц контента
 
 ├── tests/                       # Тесты (pytest)
+│   ├── test_clustering.py        # SERP similarity + merge
+│   ├── test_custom_analyzer.py   # Лемматизация, n-граммы, метрики (добавлено в Quick wins)
+│   ├── test_seo_agent.py         # Pydantic-модели Structure/StructureItem (добавлено в Quick wins)
+│   ├── test_pipeline_retry.py    # Retry-механизм шагов, completed_steps (добавлено в Quick wins)
+│   ├── test_retry.py             # Декоратор with_retry (добавлено в Quick wins)
+│   ├── test_worker.py            # Воркер: fetch_and_schedule, run_task
+│   ├── test_auth.py              # Аутентификация (hash, register, login)
+│   ├── test_billing.py           # Биллинг (баланс, вебхуки)
 │
 ├── data/                        # SQLite базы (локально)
 │   ├── serp_cache.db
@@ -304,8 +314,17 @@ seo-auto-cluster/
 - `SEOAgent`
   - `rewrite_page(url, editable_html, keywords, miratext_data)` → оптимизированный HTML
   - `generate_ideal_structure(competitors_headers)` → идеальная H2-H3 структура
-  - `_build_prompt(url, html, keywords, rec)` → формирует промпт с требованиями
+  - `_build_prompt(url, html, keywords, rec)` — формирует промпт с требованиями
   - `_clean_llm_output(text)` → удаляет markdown-блоки из ответа LLM
+
+**Pydantic-модели:**
+- `StructureItem` — `tag: Literal["h2","h3"]`, `text: str (2-300 символов)`
+- `Structure` — `structure: List[StructureItem] (1-50 элементов)`
+
+**Улучшения `generate_ideal_structure()`:**
+- `temperature=0.2` — повышение воспроизводимости
+- Few-shot: 3 эталонных примера (услуга/товар/инфо-статья) в промпте через `STRUCTURE_FEW_SHOT_EXAMPLES`
+- Retry при `ValidationError`: 1 повтор с уточняющим промптом, fallback-структура при повторной ошибке
 
 **Модель:** `gpt-4o-mini` (через Hydra AI /api/hydraai.ru/v1)
 **Параметры:** temperature 0.2, max_tokens 8192
@@ -366,6 +385,12 @@ seo-auto-cluster/
   - `generate_ngrams(lemmas, n)` — биграммы и триграммы
   - `get_lemmas(text)` — токенизация + лемматизация (pymorphy3) + стоп-слова
 
+**Улучшения (Фаза 1 Quick wins):**
+- **Параллельный сбор конкурентов** (`_fetch_serp_positions`): все ключи кластера через `ThreadPoolExecutor(max_workers=5)`, отслеживание позиций для взвешенной популярности
+- **Взвешенная популярность** (`weighted_popularity`): вместо булева `есть/нет` — вес `1/(pos+1)`, где `pos` — средняя позиция URL в SERP по всем ключам
+- **POS-фильтр n-грамм**: `get_lemmas()` возвращает `list[tuple[str, str]]` (лемма + POS), `generate_ngrams` оставляет только окна, содержащие хотя бы один `NOUN`
+- **`get_lemmas_flat()`** — convenience-обёртка для обратной совместимости
+
 **Зависимости:** pymorphy3, BeautifulSoup, numpy
 
 ---
@@ -376,6 +401,7 @@ seo-auto-cluster/
 **Классы:**
 - `TaskManager(task_id)`
   - `update_progress(progress, result)` — `%` выполнения, опциональный JSON
+  - `update_payload_partial(updates)` — merge словаря в `payload` (для `completed_steps`)
   - `set_status(status, error)` — `running/completed/failed` с таймстампами
 
 **Таблица:** `tasks(id, user_id, task_type, status, progress, payload, result, error, created_at, started_at, finished_at)`
@@ -425,7 +451,23 @@ seo-auto-cluster/
 
 ---
 
-## 5. FastAPI сервер (api/)
+### 4.15 `utils/retry.py` — Декоратор с экспоненциальной задержкой
+**Назначение:** Повторный вызов функций при временных сбоях (XMLRiver, сеть).
+
+**API:**
+- `with_retry(max_retries=2, base_delay=1.0, backoff_factor=3.0, exceptions=(Exception,), on_retry=None)`
+
+**Пример:**
+```python
+@with_retry(max_retries=2, base_delay=1.0, backoff_factor=3.0)
+def fetch_data():
+    return requests.get(url, timeout=10).json()
+```
+При сбое: ждёт 1с, потом 3с, потом `RetryExhausted`.
+
+**Исключение:** `RetryExhausted` — после исчерпания всех попыток.
+
+---## 5. FastAPI сервер (api/)
 
 **Python FastAPI сервер**, обеспечивающий строгую типизацию, асинхронную обработку и высокую производительность.
 
@@ -520,6 +562,7 @@ FastAPI `StreamingResponse` используется вместо старых �
 | `YANDEX_SITE_URL` | — | Дефолтный сайт для CLI |
 | `SIMILARITY_THRESHOLD` | 0.4 | Порог похожести SERP |
 | `CACHE_TTL_DAYS` | 7 | TTL кэша SERP |
+| `CONTENT_ANALYSIS_COMPETITORS` | 15 | Макс. кол-во конкурентов для контент-аудита |
 | `XMLRIVER_REQUEST_DELAY` | 1.5 | Мин. пауза между запросами XMLRiver (сек) |
 | `MIRATEXT_API_KEY` | — | API-ключ Miratext |
 | `OPENAI_API_KEY` | — | Ключ OpenAI/Hydra |

@@ -1,7 +1,6 @@
 # scripts/update_minus.py
-import sys
-import os
 import json
+import sys
 
 from utils.bootstrap import bootstrap
 
@@ -70,17 +69,11 @@ if __name__ == "__main__":
                 )
                 sys.exit(1)
         except Exception as e:
-            print(
-                json.dumps(
-                    {"success": False, "error": f"Failed to parse stdin: {str(e)}"}
-                )
-            )
+            print(json.dumps({"success": False, "error": f"Failed to parse stdin: {str(e)}"}))
             sys.exit(1)
 
     if not user_id or not domain:
-        print(
-            json.dumps({"success": False, "error": "user_id and domain are required"})
-        )
+        print(json.dumps({"success": False, "error": "user_id and domain are required"}))
         sys.exit(1)
 
     result = update_minus_words(user_id, domain, keywords)

@@ -1,6 +1,5 @@
-import sys
-import os
 import json
+import sys
 import time
 from datetime import datetime
 
@@ -105,9 +104,7 @@ def check_all_positions_task(
             if on_progress:
                 on_progress({"pct": pct, "done": idx, "total": total, "message": query})
 
-            pos, url = check_target(
-                client, query, engine, device, region_id, clean_target_domain
-            )
+            pos, url = check_target(client, query, engine, device, region_id, clean_target_domain)
 
             results.append(
                 {
@@ -141,7 +138,7 @@ def check_all_positions_task(
 
         if on_progress:
             on_progress({"pct": 100, "done": total, "total": total, "message": "Готово!"})
-        
+
         return {"success": True, "checked": len(results), "total": total}
 
     except Exception as e:

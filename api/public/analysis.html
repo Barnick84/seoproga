@@ -1472,13 +1472,91 @@
                 <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 16px; font-weight: bold;" onclick="runFullPipeline()">Запустить анализ</button>
             </div>
             
-            <div id="pipelineStatusContainer" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; text-align: center;">
-                <div class="spinner" style="margin: 0 auto 15px;"></div>
-                <div id="pipelineStepTitle" style="font-weight: 600; margin-bottom: 10px; color: var(--primary);">Этап 1 из 8: Инициализация</div>
-                <div style="background: #e2e8f0; border-radius: 4px; height: 8px; width: 100%; margin-bottom: 10px; overflow: hidden;">
-                    <div id="pipelineProgressBar" style="background: var(--primary); width: 0%; height: 100%; transition: width 0.3s ease;"></div>
+            <style>
+                @keyframes pulseGlow {
+                    0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+                    70% { box-shadow: 0 0 0 15px rgba(37, 99, 235, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+                }
+                @keyframes shimmerBar {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                }
+                @keyframes floatIcon {
+                    0%, 100% { transform: translateY(0px) scale(1); }
+                    50% { transform: translateY(-5px) scale(1.05); }
+                }
+                .pipeline-anim-box {
+                    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+                    border: 1px solid #bfdbfe;
+                    border-radius: 12px;
+                    padding: 24px 20px;
+                    text-align: center;
+                    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1);
+                }
+                .pipeline-icon-circle {
+                    width: 60px;
+                    height: 60px;
+                    margin: 0 auto 16px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #2563eb, #4f46e5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #fff;
+                    font-size: 24px;
+                    animation: pulseGlow 2s infinite, floatIcon 3s ease-in-out infinite;
+                }
+                .pipeline-progress-track {
+                    background: #e2e8f0;
+                    border-radius: 10px;
+                    height: 10px;
+                    width: 100%;
+                    margin: 14px 0;
+                    overflow: hidden;
+                    position: relative;
+                }
+                .pipeline-progress-fill {
+                    background: linear-gradient(90deg, #2563eb, #3b82f6, #6366f1, #2563eb);
+                    background-size: 200% 100%;
+                    animation: shimmerBar 2s linear infinite;
+                    width: 0%;
+                    height: 100%;
+                    border-radius: 10px;
+                    transition: width 0.4s ease;
+                }
+                .pipeline-bg-info {
+                    margin-top: 16px;
+                    padding: 10px 14px;
+                    background: #eff6ff;
+                    border-radius: 8px;
+                    border-left: 3px solid #3b82f6;
+                    font-size: 12px;
+                    color: #1e40af;
+                    text-align: left;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+            </style>
+
+            <div id="pipelineStatusContainer" style="display: none;" class="pipeline-anim-box">
+                <div class="pipeline-icon-circle">
+                    <i class="fas fa-brain"></i>
                 </div>
-                <div id="pipelineProgressText" style="font-size: 13px; color: var(--text-secondary);">Подождите...</div>
+                <div id="pipelineStepTitle" style="font-weight: 700; font-size: 16px; margin-bottom: 6px; color: #1e293b;">
+                    Этап 1 из 8: Инициализация...
+                </div>
+                <div class="pipeline-progress-track">
+                    <div id="pipelineProgressBar" class="pipeline-progress-fill"></div>
+                </div>
+                <div id="pipelineProgressText" style="font-size: 13px; font-weight: 500; color: #64748b;">
+                    Запуск анализа...
+                </div>
+                <div class="pipeline-bg-info">
+                    <i class="fas fa-info-circle" style="font-size: 16px; flex-shrink: 0;"></i>
+                    <span>Вы можете свернуть эту вкладку или перейти в другие разделы. Анализ безопасно выполняется на сервере в фоновом режиме!</span>
+                </div>
             </div>
         </div>
     </div>
@@ -1495,6 +1573,7 @@
         if (domain && clusterId) {
             document.getElementById('backBtn').href = `cluster.html?site=${encodeURIComponent(domain)}`;
             loadAnalysis();
+            checkActivePipeline();
         } else {
             document.getElementById('loadingText').textContent = 'Ошибка: не указаны параметры.';
         }
@@ -2811,6 +2890,76 @@
             }
         }
 
+        let activePipelinePollInterval = null;
+
+        async function checkActivePipeline() {
+            if (!domain || !clusterId) return;
+            try {
+                const res = await authFetch(`/api/active-pipeline-status?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}`);
+                const data = await res.json();
+                if (data.active && data.task_id) {
+                    pollPipelineTask(data.task_id);
+                }
+            } catch (e) {
+                console.error("Failed to check active pipeline status:", e);
+            }
+        }
+
+        async function pollPipelineTask(taskId) {
+            const firstRunModal = document.getElementById('firstRunModal');
+            const firstRunForm = document.getElementById('firstRunForm');
+            const statusContainer = document.getElementById('pipelineStatusContainer');
+            
+            if (firstRunModal) firstRunModal.style.display = 'flex';
+            if (firstRunForm) firstRunForm.style.display = 'none';
+            if (statusContainer) statusContainer.style.display = 'block';
+
+            if (activePipelinePollInterval) clearInterval(activePipelinePollInterval);
+
+            activePipelinePollInterval = setInterval(async () => {
+                try {
+                    const res = await authFetch(`/api/tasks/${taskId}`);
+                    const data = await res.json();
+                    
+                    if (data.status === 'running' || data.status === 'pending') {
+                        const step = data.step || 1;
+                        const total = data.total_steps || 8;
+                        const stepTitle = data.step_title || 'Выполнение анализа...';
+                        const progressText = data.progress_text || data.message || 'Обработка данных на сервере...';
+                        
+                        document.getElementById('pipelineStepTitle').textContent = `Этап ${step} из ${total}: ${stepTitle}`;
+                        const pct = Math.round((step / total) * 100);
+                        document.getElementById('pipelineProgressBar').style.width = pct + '%';
+                        document.getElementById('pipelineProgressText').textContent = progressText;
+                    } else if (data.status === 'completed') {
+                        clearInterval(activePipelinePollInterval);
+                        activePipelinePollInterval = null;
+                        
+                        document.getElementById('pipelineStepTitle').textContent = 'Этап 8 из 8: Анализ успешно завершен!';
+                        document.getElementById('pipelineProgressBar').style.width = '100%';
+                        document.getElementById('pipelineProgressText').textContent = 'Загрузка результатов...';
+                        
+                        await new Promise(r => setTimeout(r, 1200));
+                        
+                        if (firstRunModal) firstRunModal.style.display = 'none';
+                        document.getElementById('loading').style.display = 'flex';
+                        
+                        await loadAnalysis();
+                        checkMicrodataNotification();
+                    } else if (data.status === 'failed') {
+                        clearInterval(activePipelinePollInterval);
+                        activePipelinePollInterval = null;
+                        
+                        alert('Ошибка при выполнении анализа: ' + (data.error || data.message || 'Неизвестная ошибка'));
+                        if (firstRunForm) firstRunForm.style.display = 'block';
+                        if (statusContainer) statusContainer.style.display = 'none';
+                    }
+                } catch (e) {
+                    console.error("Pipeline task poll error:", e);
+                }
+            }, 2500);
+        }
+
         async function runFullPipeline() {
             const targetUrl = document.getElementById('firstRunTargetUrl').value.trim();
             const region = document.getElementById('firstRunRegion').value || 225;
@@ -2823,116 +2972,29 @@
             // UI transitions
             document.getElementById('firstRunForm').style.display = 'none';
             document.getElementById('pipelineStatusContainer').style.display = 'block';
-
-            const setProgress = (step, total, title, text) => {
-                document.getElementById('pipelineStepTitle').textContent = `Этап ${step} из ${total}: ${title}`;
-                const pct = Math.round((step / total) * 100);
-                document.getElementById('pipelineProgressBar').style.width = pct + '%';
-                document.getElementById('pipelineProgressText').textContent = text;
-            };
+            document.getElementById('pipelineStepTitle').textContent = 'Этап 1 из 8: Инициализация сервера...';
+            document.getElementById('pipelineProgressBar').style.width = '5%';
+            document.getElementById('pipelineProgressText').textContent = 'Создание фоновой задачи на сервере...';
 
             try {
-                // Step 1: Save target URL
-                setProgress(1, 8, 'Сохранение URL', 'Привязка страницы к кластеру...');
-                await authFetch('/api/cluster/target-url', {
+                const res = await authFetch('/api/run-full-pipeline', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain, clusterId, url: targetUrl })
+                    body: JSON.stringify({ domain, clusterId, headQuery: headQueryText, targetUrl, region })
                 });
 
-                // Step 2: Collect keywords (Wordstat)
-                setProgress(2, 8, 'Сбор ключей', 'Идет поиск запросов в Яндекс Wordstat...');
-                await authFetch('/api/collect-keywords-for-cluster', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain, clusterId, headQuery: headQueryText })
-                });
-
-                // Step 3: Collect right column keywords
-                setProgress(3, 8, 'Сбор LSI', 'Сбор похожих запросов (правая колонка)...');
-                await authFetch('/api/collect-keywords-for-cluster', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain, clusterId, headQuery: headQueryText, type: 'similar' })
-                });
-
-                // Step 4: Collect Frequency
-                setProgress(4, 8, 'Сбор частотности', 'Сбор частотности ключей кластера...');
-                const freqRes = await authFetch(`/api/run-frequency-stream?domain=${encodeURIComponent(domain)}&region=${region}&clusterId=${clusterId}&mode=missing`);
-                const freqData = await freqRes.json();
-                if (freqData.task_id) {
-                    await new Promise((resolve) => {
-                        const checkInt = setInterval(async () => {
-                            try {
-                                const stRes = await authFetch(`/api/frequency-task-status?taskId=${freqData.task_id}`);
-                                const stData = await stRes.json();
-                                if (stData.status && stData.status.status === 'completed') {
-                                    clearInterval(checkInt);
-                                    resolve();
-                                } else if (stData.status && stData.status.status === 'failed') {
-                                    clearInterval(checkInt);
-                                    resolve(); // ignore and continue
-                                } else if (stData.status && stData.status.status === 'running') {
-                                    const p = Math.round((stData.status.progress / stData.status.total) * 100);
-                                    document.getElementById('pipelineProgressText').textContent = `Собрано ${stData.status.progress} из ${stData.status.total} (${p}%)`;
-                                }
-                            } catch(e) {}
-                        }, 2000);
-                    });
+                const data = await res.json();
+                if (!res.ok || data.error) {
+                    throw new Error(data.error || 'Не удалось запустить анализ');
                 }
 
-                // Step 5: Check Positions
-                setProgress(5, 8, 'Сбор позиций', 'Определение позиций в выдаче...');
-                await new Promise((resolve) => {
-                    const evtSource = new EventSource(`/api/cluster/check-positions-stream?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}`);
-                    evtSource.onmessage = function(e) {
-                        try {
-                            const dat = JSON.parse(e.data);
-                            if (dat.status === 'progress') {
-                                document.getElementById('pipelineProgressText').textContent = `Проверено ${dat.current} из ${dat.total}`;
-                            } else if (dat.status === 'done' || dat.status === 'error') {
-                                evtSource.close();
-                                resolve();
-                            }
-                        } catch (err) {}
-                    };
-                    evtSource.onerror = function() { evtSource.close(); resolve(); };
-                });
-
-                // Step 6: Competitor Analysis
-                setProgress(6, 8, 'Анализ ТОП-10', 'Анализ конкурентов и вашей страницы...');
-                await authFetch(`/api/run-competitor-analysis-single?domain=${encodeURIComponent(domain)}&clusterId=${clusterId}`);
-
-                // Step 7: SEO Analysis
-                setProgress(7, 8, 'SEO анализ', 'Генерация SEO-отчета...');
-                await authFetch('/api/cluster/run-seo-analysis', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain, clusterId, url: targetUrl, isMain: false })
-                });
-
-                // Step 8: Generate Structure
-                setProgress(8, 8, 'Генерация структуры', 'Формирование структуры статьи...');
-                await authFetch('/api/cluster/generate-structure', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain, clusterId, headQuery: headQueryText })
-                });
-
-                // Done
-                setProgress(8, 8, 'Завершено', 'Перезагрузка данных...');
-                await new Promise(r => setTimeout(r, 1000));
-                
-                // Hide modal and reload
-                document.getElementById('firstRunModal').style.display = 'none';
-                document.getElementById('loading').style.display = 'flex';
-                
-                await loadAnalysis();
-                
-                checkMicrodataNotification();
-
+                if (data.task_id) {
+                    pollPipelineTask(data.task_id);
+                } else {
+                    throw new Error('Сервер не вернул ID задачи');
+                }
             } catch (err) {
-                alert('Ошибка при выполнении пайплайна: ' + err.message);
+                alert('Ошибка при запуске пайплайна: ' + err.message);
                 document.getElementById('firstRunForm').style.display = 'block';
                 document.getElementById('pipelineStatusContainer').style.display = 'none';
             }

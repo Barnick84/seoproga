@@ -1,7 +1,6 @@
 # nodejs-app/scripts/run_mapping.py
-import sys
-import os
 import json
+import sys
 from urllib.parse import urlparse
 
 from utils.bootstrap import bootstrap
@@ -9,10 +8,10 @@ from utils.bootstrap import bootstrap
 bootstrap()
 
 from config import Config
-from services.clustering import merge_serps
-from services.xmlriver_client import XmlriverClient
 from services.cache import SERPCache
+from services.clustering import merge_serps
 from services.task_manager import TaskManager
+from services.xmlriver_client import XmlriverClient
 from utils.helpers import extract_domain
 
 
@@ -22,7 +21,9 @@ def get_domain_from_url(url):
     return extract_domain(netloc)
 
 
-def run_mapping_task(domain: str, user_id: int, single_cluster_id: int | None = None, task_id: int = 0) -> dict:
+def run_mapping_task(
+    domain: str, user_id: int, single_cluster_id: int | None = None, task_id: int = 0
+) -> dict:
     domain = extract_domain(domain)
     tm = TaskManager(task_id)
     tm.set_status("running")
@@ -89,9 +90,7 @@ def run_mapping_task(domain: str, user_id: int, single_cluster_id: int | None = 
                     break
 
             if best_url:
-                temp_url = (
-                    best_url if best_url.startswith("http") else "http://" + best_url
-                )
+                temp_url = best_url if best_url.startswith("http") else "http://" + best_url
                 parsed = urlparse(temp_url)
                 rel_path = parsed.path
                 if parsed.query:
@@ -134,9 +133,7 @@ def run_mapping():
 
     domain = extract_domain(sys.argv[1])
     user_id = int(sys.argv[2])
-    single_cluster_id = (
-        int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] != "None" else None
-    )
+    single_cluster_id = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] != "None" else None
     task_id = int(sys.argv[4]) if len(sys.argv) > 4 else 0
 
     result = run_mapping_task(domain, user_id, single_cluster_id, task_id)

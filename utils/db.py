@@ -5,6 +5,7 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
+
 @contextmanager
 def get_db_cursor(dictionary=True, commit=False):
     """

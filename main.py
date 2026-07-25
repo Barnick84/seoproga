@@ -1,12 +1,13 @@
 # main.py
-import sys
 import io
+import sys
+
 import requests
 
 from config import Config
 from services.cache import SERPCache
-from services.xmlriver_client import XmlriverClient
 from services.clustering import cluster_keywords
+from services.xmlriver_client import XmlriverClient
 from services.yandex_webmaster import YandexWebmasterClient
 
 if hasattr(sys.stdout, "buffer") and "pytest" not in sys.modules:
@@ -72,9 +73,7 @@ def main_yandex():
         saved = client.save_queries_to_db(raw_queries)
         print(f"✅ Сохранено в БД: {saved} записей")
 
-        keywords = client.get_unique_queries_for_clustering(
-            Config.YANDEX_SITE
-        )
+        keywords = client.get_unique_queries_for_clustering(Config.YANDEX_SITE)
         print(f"🔑 Уникальных запросов для кластеризации (hits ≥ 5): {len(keywords)}")
         if keywords:
             print("   Примеры:", keywords[:5])
@@ -119,8 +118,8 @@ def main_xmlriver():
 
 
 def main_miratext():
-    from services.page_content_manager import PageContentManager
     from services.miratext_client import MiratextClient
+    from services.page_content_manager import PageContentManager
     from services.seo_agent import SEOAgent
 
     print("🚀 Запуск модуля Miratext SEO...")

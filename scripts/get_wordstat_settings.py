@@ -2,10 +2,10 @@
 get_wordstat_settings.py — CRUD операции для настроек Wordstat.
 """
 
-import sys
-import os
 import json
+import os
 import sqlite3
+import sys
 
 from utils.bootstrap import bootstrap
 
@@ -77,9 +77,7 @@ def delete_setting(setting_id: int):
     conn = sqlite3.connect(DB_PATH)
     ensure_settings_table(conn)
     # Don't delete default preset
-    conn.execute(
-        "DELETE FROM wordstat_settings WHERE id = ? AND is_default = 0", (setting_id,)
-    )
+    conn.execute("DELETE FROM wordstat_settings WHERE id = ? AND is_default = 0", (setting_id,))
     conn.commit()
     conn.close()
     return {"success": True}
@@ -131,11 +129,7 @@ if __name__ == "__main__":
         device = sys.argv[3] if len(sys.argv) > 3 else "desktop"
         region = sys.argv[4] if len(sys.argv) > 4 else ""
         region_name = sys.argv[5] if len(sys.argv) > 5 else "Все регионы"
-        print(
-            json.dumps(
-                save_setting(name, device, region, region_name), ensure_ascii=False
-            )
-        )
+        print(json.dumps(save_setting(name, device, region, region_name), ensure_ascii=False))
     elif action == "delete":
         setting_id = int(sys.argv[2]) if len(sys.argv) > 2 else 0
         print(json.dumps(delete_setting(setting_id), ensure_ascii=False))

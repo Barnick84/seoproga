@@ -1,7 +1,6 @@
 # nodejs-app/scripts/check_domain.py
-import sys
-import os
 import json
+import sys
 
 from utils.bootstrap import bootstrap
 

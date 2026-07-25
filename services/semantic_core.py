@@ -4,10 +4,13 @@
 Provides a thin wrapper around PostgreSQL to store clusters of keywords
 and their SERP representatives.
 """
+
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import psycopg2
 from psycopg2.extras import execute_values
+
 from config import Config
 
 
@@ -62,11 +65,13 @@ class SemanticCoreManager:
         clusters = []
         for row in rows:
             cid, kw_json, serp_json = row
-            clusters.append({
-                "id": cid,
-                "keywords": kw_json,  # already a Python list via psycopg2 Json adaptation
-                "serp_representative": serp_json,
-            })
+            clusters.append(
+                {
+                    "id": cid,
+                    "keywords": kw_json,  # already a Python list via psycopg2 Json adaptation
+                    "serp_representative": serp_json,
+                }
+            )
         return clusters
 
     def save_clusters(self, clusters: List[Dict[str, Any]], user_id: int, site_url: str):
@@ -79,12 +84,15 @@ class SemanticCoreManager:
             INSERT INTO semantic_clusters (user_id, site_url, keywords, serp_representative)
             VALUES %s;
         """
-        values = [(
-            user_id,
-            site_url,
-            json.dumps(c["keywords"]),
-            json.dumps(c["serp_representative"]),
-        ) for c in clusters]
+        values = [
+            (
+                user_id,
+                site_url,
+                json.dumps(c["keywords"]),
+                json.dumps(c["serp_representative"]),
+            )
+            for c in clusters
+        ]
         with psycopg2.connect(self.dsn) as conn:
             with conn.cursor() as cur:
                 cur.execute(delete_sql, (user_id, site_url))

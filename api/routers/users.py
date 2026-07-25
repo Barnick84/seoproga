@@ -14,7 +14,6 @@ from api.dependencies import (
     revoke_token,
 )
 from api.main import limiter
-from config import Config
 from services.auth import AuthService
 from utils.db import get_db_cursor
 
@@ -116,7 +115,9 @@ async def logout(
 async def get_user_info(current_user: TokenData = Depends(get_current_user)):
     try:
         with get_db_cursor(dictionary=True) as (conn, cur):
-            cur.execute("SELECT username, balance FROM users WHERE id = %s", (current_user.user_id,))
+            cur.execute(
+                "SELECT username, balance FROM users WHERE id = %s", (current_user.user_id,)
+            )
             user = cur.fetchone()
 
         if not user:

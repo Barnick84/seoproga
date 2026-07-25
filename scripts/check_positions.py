@@ -1,7 +1,6 @@
 # nodejs-app/scripts/check_positions.py
-import sys
-import os
 import json
+import sys
 import time
 from datetime import datetime
 
@@ -37,7 +36,9 @@ def check_target(client, query, engine, device, region, clean_target_domain):
             for url in serp_urls:
                 page_pos += 1
                 extracted = extract_domain(url)
-                if extracted == clean_target_domain or extracted.endswith("." + clean_target_domain):
+                if extracted == clean_target_domain or extracted.endswith(
+                    "." + clean_target_domain
+                ):
                     found_pos = (page * 10) + page_pos
                     found_url = url
                     break
@@ -105,25 +106,53 @@ def check_positions_task(
             kw_id = kw["id"]
 
             if on_progress:
-                on_progress({"status": "progress", "current": idx, "total": len(keywords), "message": f"Checking {query}..."})
+                on_progress(
+                    {
+                        "status": "progress",
+                        "current": idx,
+                        "total": len(keywords),
+                        "message": f"Checking {query}...",
+                    }
+                )
 
             # Check Yandex Desktop
             if on_progress:
-                on_progress({"status": "progress", "current": idx, "total": len(keywords), "message": f"> Yandex Desktop..."})
+                on_progress(
+                    {
+                        "status": "progress",
+                        "current": idx,
+                        "total": len(keywords),
+                        "message": "> Yandex Desktop...",
+                    }
+                )
             pos_yd, url_yd = check_target(
                 client, query, "yandex", "desktop", user_region, clean_target_domain
             )
 
             # Check Yandex Mobile
             if on_progress:
-                on_progress({"status": "progress", "current": idx, "total": len(keywords), "message": f"> Yandex Mobile..."})
+                on_progress(
+                    {
+                        "status": "progress",
+                        "current": idx,
+                        "total": len(keywords),
+                        "message": "> Yandex Mobile...",
+                    }
+                )
             pos_ym, url_ym = check_target(
                 client, query, "yandex", "mobile", user_region, clean_target_domain
             )
 
             # Check Google Desktop (Region Russia = 225)
             if on_progress:
-                on_progress({"status": "progress", "current": idx, "total": len(keywords), "message": f"> Google Desktop..."})
+                on_progress(
+                    {
+                        "status": "progress",
+                        "current": idx,
+                        "total": len(keywords),
+                        "message": "> Google Desktop...",
+                    }
+                )
             pos_g, url_g = check_target(
                 client, query, "google", "desktop", 225, clean_target_domain
             )

@@ -1,12 +1,15 @@
 from fastapi import APIRouter
+
 from utils.db import get_db_cursor
 
 router = APIRouter(tags=["Health"])
+
 
 @router.get("/health")
 async def health_check():
     """Basic health check endpoint."""
     return {"status": "ok"}
+
 
 @router.get("/ready")
 async def readiness_check():
@@ -16,6 +19,7 @@ async def readiness_check():
             cur.execute("SELECT 1")
             cur.fetchone()
         return {"status": "ready"}
-    except Exception as e:
+    except Exception:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=503, detail="Database connection failed")

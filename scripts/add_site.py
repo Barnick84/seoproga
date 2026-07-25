@@ -1,8 +1,6 @@
 # scripts/add_site.py
-import sys
-import os
 import json
-from datetime import datetime
+import sys
 
 from utils.bootstrap import bootstrap
 
@@ -22,9 +20,7 @@ def add_site(domain, user_id):
 
     try:
         # Check if exists for this user
-        cur.execute(
-            "SELECT id FROM sites WHERE domain = %s AND user_id = %s", (domain, user_id)
-        )
+        cur.execute("SELECT id FROM sites WHERE domain = %s AND user_id = %s", (domain, user_id))
         if cur.fetchone():
             return {"success": False, "error": "Сайт уже добавлен в ваш кабинет"}
 

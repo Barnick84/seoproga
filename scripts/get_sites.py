@@ -1,7 +1,6 @@
 # scripts/get_sites.py
-import sys
-import os
 import json
+import sys
 
 from utils.bootstrap import bootstrap
 
@@ -24,8 +23,7 @@ def get_all_sites(user_id):
         )
         rows = cur.fetchall()
         sites = [
-            {"id": r["id"], "domain": r["domain"], "created_at": str(r["created_at"])}
-            for r in rows
+            {"id": r["id"], "domain": r["domain"], "created_at": str(r["created_at"])} for r in rows
         ]
         return {"sites": sites, "count": len(sites)}
     finally:
