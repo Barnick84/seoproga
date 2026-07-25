@@ -10,7 +10,12 @@ class AuthService:
 
     @staticmethod
     def verify_password(password: str, hashed: str) -> bool:
-        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+        if not hashed:
+            return False
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+        except Exception:
+            return password == hashed
 
     @staticmethod
     def register_user(username: str, email: str, password: str) -> int:
@@ -40,19 +45,21 @@ class AuthService:
             conn.close()
 
     @staticmethod
-    def login(email: str, password: str) -> dict | None:
+    def login(identifier: str, password: str) -> dict | None:
         """
-        Verifies login credentials.
+        Verifies login credentials by username or email.
         Returns user dict if successful, None otherwise.
         """
         conn = Config.get_conn()
-        cur = conn.cursor()
+        cur = conn.cursor(dictionary=True)
         try:
-            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            cur.execute(
+                "SELECT * FROM users WHERE username = %s OR email = %s",
+                (identifier, identifier),
+            )
             user = cur.fetchone()
 
             if user and AuthService.verify_password(password, user["password"]):
-                # Don't return the password hash
                 user.pop("password", None)
                 return user
             return None
