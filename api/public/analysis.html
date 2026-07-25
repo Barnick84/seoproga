@@ -3201,11 +3201,15 @@
                                 try {
                                     const stRes = await authFetch(`/api/frequency-task-status?taskId=${freqData.task_id}`);
                                     const stData = await stRes.json();
-                                    if (stData.status && (stData.status.status === 'completed' || stData.status.status === 'failed')) {
-                                        clearInterval(checkInt); resolve();
+                                    const taskStatus = stData.task?.status;
+                                    if (taskStatus === 'completed' || taskStatus === 'failed') {
+                                        clearInterval(checkInt);
+                                        resolve();
                                     }
                                 } catch(e) {}
                             }, 2000);
+                            // Safety timeout: resolve after 5 minutes regardless
+                            setTimeout(() => { clearInterval(checkInt); resolve(); }, 5 * 60 * 1000);
                         });
                     }
                 }
