@@ -31,7 +31,7 @@ async def admin_login(req: AdminLoginRequest, request: Request):
 
 @router.get("/api/admin/tariffs")
 @limiter.limit("20/minute")
-async def get_tariffs(req: Request, admin: bool = Depends(verify_admin_token)):
+async def get_tariffs(request: Request, admin: bool = Depends(verify_admin_token)):
     try:
         with get_db_cursor(dictionary=True) as (conn, cur):
             cur.execute("SELECT `key`, `value` FROM settings")
