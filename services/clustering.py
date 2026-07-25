@@ -36,6 +36,30 @@ def merge_serps(serps_list: List[List[str]]) -> List[str]:
     return sorted(scores.keys(), key=lambda x: scores[x], reverse=True)[:30]
 
 
+def _find_best_cluster(
+    serp: List[str],
+    clusters: List[Dict],
+    threshold: float,
+) -> tuple[Dict | None, float]:
+    best_cluster = None
+    max_sim = 0.0
+    for cluster in clusters:
+        sim = serp_similarity(serp, cluster["serp_representative"])
+        if sim >= threshold and sim > max_sim:
+            max_sim = sim
+            best_cluster = cluster
+    return best_cluster, max_sim
+
+
+def _fetch_serp(client: XmlriverClient, keyword: str, skip_cache_miss: bool) -> List[str] | None:
+    serp = client.fetch_serp(keyword, use_cache=True)
+    if not serp:
+        if skip_cache_miss:
+            return None
+        serp = client.fetch_serp(keyword, use_cache=False)
+    return serp
+
+
 def cluster_keywords(
     keywords: List[str],
     client: XmlriverClient,
@@ -52,34 +76,19 @@ def cluster_keywords(
         next_id = max(c.get("id", 0) for c in clusters) + 1
 
     for keyword in keywords:
-        serp = client.fetch_serp(keyword, use_cache=True)
-        if not serp:
-            if skip_cache_miss:
-                skipped += 1
-                continue
-            serp = client.fetch_serp(keyword, use_cache=False)
+        serp = _fetch_serp(client, keyword, skip_cache_miss)
         if not serp:
             skipped += 1
             continue
 
-        assigned = False
-        best_cluster = None
-        max_sim = 0.0
-
-        for cluster in clusters:
-            sim = serp_similarity(serp, cluster["serp_representative"])
-            if sim >= threshold and sim > max_sim:
-                max_sim = sim
-                best_cluster = cluster
+        best_cluster, _ = _find_best_cluster(serp, clusters, threshold)
 
         if best_cluster:
             best_cluster["keywords"].append(keyword)
             best_cluster["serp_representative"] = merge_serps(
                 [serp, best_cluster["serp_representative"]]
             )
-            assigned = True
-
-        if not assigned:
+        else:
             clusters.append(
                 {
                     "id": next_id,

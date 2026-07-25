@@ -106,13 +106,7 @@ class SEOWorkflow:
 
         return clusters
 
-    def map_clusters_to_pages(self, clusters: List[Dict]) -> List[Dict]:
-        cache = SERPCache()
-        xmlriver_client = XmlriverClient(cache=cache)
-
-        site_url = Config.YANDEX_SITE
-        print(f"Fetching pages from {site_url}...")
-
+    def _fetch_site_links(self, site_url: str) -> List[str]:
         try:
             resp = requests.get(site_url, timeout=30)
             resp.raise_for_status()
@@ -131,10 +125,19 @@ class SEOWorkflow:
 
             links = links[:30]
             print(f"Found {len(links)} pages on site")
-
+            return links
         except Exception as e:
             print(f"Error fetching site: {e}")
-            links = []
+            return []
+
+    def map_clusters_to_pages(self, clusters: List[Dict]) -> List[Dict]:
+        cache = SERPCache()
+        xmlriver_client = XmlriverClient(cache=cache)
+
+        site_url = Config.YANDEX_SITE
+        print(f"Fetching pages from {site_url}...")
+
+        links = self._fetch_site_links(site_url)
 
         mappings = []
         for cluster in clusters:
@@ -163,9 +166,7 @@ class SEOWorkflow:
                         "score": best_score,
                     }
                 )
-                self._save_mapping(best_page, cluster["id"], cluster_keywords_list)
 
-        print(f"Mapped {len(mappings)} clusters to pages")
         return mappings
 
     def _save_mapping(self, page_url: str, cluster_id: int, keywords: List[str]):

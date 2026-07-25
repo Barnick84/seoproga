@@ -147,10 +147,11 @@ async def run_clustering_stream(
 
                         return StreamingResponse(stream_err(), media_type="text/event-stream")
 
-    except Exception:
+    except Exception as exc:
+        err_msg = str(exc)
 
         async def stream_err2():
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': err_msg})}\n\n"
 
         return StreamingResponse(stream_err2(), media_type="text/event-stream")
 

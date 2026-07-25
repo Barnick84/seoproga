@@ -36,13 +36,6 @@ class ClusterNameRequest(BaseModel):
     name: str
 
 
-class MoveKeywordsRequest(BaseModel):
-    domain: str
-    fromClusterId: str
-    toClusterId: str
-    keywords: list[str]
-
-
 class ToggleRequest(BaseModel):
     domain: str
     clusterId: str
