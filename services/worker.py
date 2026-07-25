@@ -3,8 +3,11 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
+
+import pymysql
 
 if sys.platform == "win32" and "pytest" not in sys.modules:
     import io
@@ -28,7 +31,7 @@ SCRIPTS_DIR = os.path.join(project_root, "scripts")
 
 def fetch_and_schedule_tasks(limit: int = 5):
     conn = Config.get_conn()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor(pymysql.cursors.DictCursor)
     tasks = []
     try:
         conn.start_transaction()
@@ -55,8 +58,6 @@ def fetch_and_schedule_tasks(limit: int = 5):
         cur.close()
         conn.close()
 
-
-import threading
 
 active_processes = []
 processes_lock = threading.Lock()
