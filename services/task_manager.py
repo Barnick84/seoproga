@@ -11,7 +11,7 @@ class TaskManager:
 
     def _get_conn(self):
         if self._conn is None:
-            self._conn = Config.get_mysql_conn()
+            self._conn = Config.get_conn()
         return self._conn
 
     def close(self) -> None:
@@ -31,12 +31,12 @@ class TaskManager:
             if result:
                 cur.execute(
                     "UPDATE tasks SET progress = %s, result = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                    (progress, json.dumps(result), self.task_id)
+                    (progress, json.dumps(result), self.task_id),
                 )
             else:
                 cur.execute(
                     "UPDATE tasks SET progress = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                    (progress, self.task_id)
+                    (progress, self.task_id),
                 )
             conn.commit()
         except Exception as e:
@@ -50,25 +50,25 @@ class TaskManager:
             conn = self._get_conn()
             cur = conn.cursor()
             now = datetime.now()
-            if status == 'running':
+            if status == "running":
                 cur.execute(
                     "UPDATE tasks SET status = %s, started_at = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                    (status, now, self.task_id)
+                    (status, now, self.task_id),
                 )
-            elif status in ['completed', 'failed']:
+            elif status in ["completed", "failed"]:
                 cur.execute(
                     "UPDATE tasks SET status = %s, finished_at = %s, error = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                    (status, now, error, self.task_id)
+                    (status, now, error, self.task_id),
                 )
             else:
                 cur.execute(
                     "UPDATE tasks SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                    (status, self.task_id)
+                    (status, self.task_id),
                 )
             conn.commit()
         except Exception as e:
             print(f"TaskManager.set_status error: {e}")
             self.close()
         finally:
-            if status in ('completed', 'failed'):
+            if status in ("completed", "failed"):
                 self.close()

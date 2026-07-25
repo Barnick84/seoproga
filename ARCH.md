@@ -2,14 +2,14 @@
 
 ## 1. Обзор проекта
 
-**seo-auto-cluster** — платформа для автоматизации SEO-процессов, ориентированная на русскоязычный рынок. Объединяет веб-интерфейс на Node.js и аналитический бэкенд на Python.
+**seo-auto-cluster** — платформа для автоматизации SEO-процессов, ориентированная на русскоязычный рынок. Это полностью Python-инфраструктура, объединяющая веб-интерфейс на базе FastAPI (встроенная раздача статики) и мощный аналитический бэкенд.
 
 **Основные функции:**
 - Сбор семантического ядра (ключевых слов) из Яндекс.Вебмастера
 - Кластеризация ключей по схожести поисковой выдачи (SERP) через XMLRiver
 - Маппинг кластеров на страницы сайта
 - SEO-анализ и генерация контента через LLM (OpenAI/Hydra) и Miratext
-- Биллинговая система (списание средств за операции, пополнение через Tegro Money)
+- Биллинговая система (списание средств за операции, пополнение через Cardlink)
 - Фоновый воркер для длительных задач (частотность, кластеризация)
 
 ---
@@ -24,25 +24,27 @@
                            │ HTTP / SSE
                            ▼
 ┌──────────────────────────────────────────────────────────┐
-│              Node.js Express Server (server.js)           │
-│  ├── Аутентификация (сессии в памяти)                    │
+│              FastAPI Server (api/main.py)                 │
+│  ├── Аутентификация (JWT + HttpOnly Cookies)             │
 │  ├── REST API (JSON) + SSE (Server-Sent Events)          │
-│  ├── spawn Python-скриптов через child_process           │
-│  └── Фоновый воркер (worker.py) + ежедневный scheduler  │
+│  ├── Раздача статических файлов (api/public)             │
+│  └── Вызов Python-скриптов и сервисов напрямую            │
 └─────────────┬──────────────────────────┬─────────────────┘
-              │ spawn Python             │ MySQL
+              │ async exec               │ MySQL
               ▼                          ▼
 ┌──────────────────────────┐  ┌──────────────────────────┐
 │  Python Backend (CLI)     │  │  MySQL Database           │
 │  main.py (4 режима)      │  │  ├── users                │
 │  services/ (ядро)        │  │  ├── yandex_queries      │
-│  nodejs-app/scripts/     │  │  ├── cluster_mappings    │
+│  scripts/ (фоновые)      │  │  ├── cluster_mappings    │
 └──────────────────────────┘  │  ├── cluster_analysis    │
                               │  ├── billing_history     │
                               │  ├── tasks               │
                               │  ├── serp_cache          │
                               │  └── ...                 │
-                              └──────────────────────────┘
+                              └───────▲──────────────────┘
+                                      │
+                                      │ Connection Pooling (DBUtils.PooledDB)
 ```
 
 **Основные потоки данных:**
@@ -75,8 +77,8 @@ seo-auto-cluster/
 │
 ├── services/                   # Python-ядро (бизнес-логика)
 │   ├── __init__.py
-│   ├── cache.py                # MySQL-кэш SERP (TTL 7 дней)
-│   ├── clustering.py           # Алгоритм кластеризации (Jaccard + позиции)
+│   ├── cache.py                # MySQL-кэш SERP (TTL 7 дней), lazy connection
+│   ├── clustering.py           # Алгоритм кластеризации (Jaccard + позиции), инкрементальный merge
 │   ├── custom_analyzer.py      # Глубокий SEO-анализ контента
 │   ├── miratext_client.py      # Клиент Miratext API
 │   ├── page_content_manager.py # Управление контентом страниц (PostgreSQL)
@@ -90,50 +92,49 @@ seo-auto-cluster/
 │   └── yandex_webmaster.py     # Клиент Яндекс.Вебмастер API v4
 │
 ├── utils/
-│   └── helpers.py              # Утилиты: extract_domain, clean_url, safe_divide
+│   ├── bootstrap.py             # Единая точка входа скриптов (chdir, sys.path, stdout)
+│   └── helpers.py               # Утилиты: extract_domain, clean_url, safe_divide
 │
-├── nodejs-app/                 # Node.js веб-сервер + фронтенд
-│   ├── server.js               # Express сервер (1927 строк, все API)
-│   ├── db.js                   # MySQL pool connection
-│   ├── package.json            # Node.js зависимости
-│   ├── package-lock.json
-│   ├── public/                 # Статические HTML-страницы
-│   │   ├── index.html          # Дашборд сайтов
-│   │   ├── cluster.html        # Управление кластерами
-│   │   ├── sort.html           # Сортировка и минус-слова
-│   │   ├── analysis.html       # SEO анализ кластера
-│   │   ├── positions.html      # Мониторинг позиций
-│   │   ├── cabinet.html        # Личный кабинет
-│   │   ├── admin.html          # Админ-панель
-│   │   ├── style.css           # Основные стили
-│   │   └── semantic_layout_schema.png  # Схема разметки для SEO
+├── api/                        # FastAPI веб-сервер
+│   ├── main.py                 # Главная точка входа (uvicorn api.main:app)
+│   ├── dependencies.py         # Зависимости FastAPI (аутентификация, БД)
+│   ├── routers/                # Маршруты API
+│   │   ├── health.py           # /health, /ready
+│   │   ├── users.py            # Регистрация, логин, профиль, настройки
+│   │   ├── sites.py            # Добавление/проверка сайтов
+│   │   ├── keywords.py         # Ключевые слова, минус-слова
+│   │   ├── analysis.py         # Кластеризация, маппинг, частотность (SSE), задачи
+│   │   ├── billing.py          # Cardlink платежи и вебхуки
+│   │   ├── admin.py            # Админ-панель (тарифы, пользователи, логи)
+│   │   ├── cluster.py          # Кластеры: маппинг, LSI, SEO-история, структура
+│   │   ├── wordstat.py         # Настройки Wordstat, регионы
+│   │   └── positions.py        # Мониторинг позиций (SSE потоки)
 │   │
-│   └── scripts/                # Python-скрипты, вызываемые из Node.js
-│       ├── user_auth.py        # Регистрация, логин, смена пароля
-│       ├── add_site.py         # Добавление сайта
-│       ├── check_domain.py     # Проверка привязки к WM
-│       ├── get_sites.py        # Список сайтов пользователя
-│       ├── get_keywords.py     # Получение ключей из MySQL
-│       ├── update_minus.py     # Добавление минус-слов
-│       ├── clear_minus.py      # Очистка минус-слов
-│       ├── restore_minus.py    # Восстановление из минус-слов
-│       ├── run_clustering.py   # Запуск кластеризации
-│       ├── run_mapping.py      # Маппинг кластеров на URL
-│       ├── run_seo_analysis.py # SEO-анализ кластера
-│       ├── run_competitor_analysis.py  # Анализ конкурентов
-│       ├── generate_seo_plan.py       # Генерация SEO-плана (LLM)
-│       ├── generate_structure.py      # Генерация идеальной структуры
-│       ├── prepare_seo_brief.py       # Подготовка брифов
-│       ├── fetch_yandex_queries.py    # Загрузка из Яндекс.Вебмастера
-│       ├── get_yandex_hosts.py        # Список хостов из WM
-│       ├── fetch_frequency.py         # Сбор частотности (Wordstat)
-│       ├── fetch_keywords.py          # Сбор ключей из Wordstat
-│       ├── collect_cluster_keywords.py # Сбор ключей для кластера
-│       ├── create_cluster_from_url.py # Создание кластера по URL
-│       ├── check_positions.py         # Проверка позиций
-│       ├── check_all_positions.py     # Массовая проверка позиций всех ключей сайта (SSE потоково)
-│       ├── scheduler.py               # Ежедневный плановый сбор
-│       └── get_wordstat_settings.py   # Настройки Wordstat
+│   └── public/                 # Статические HTML-страницы (раздаются сервером)
+│       ├── index.html          # Дашборд сайтов
+│       ├── cluster.html        # Управление кластерами
+│       ├── sort.html           # Сортировка и минус-слова
+│       ├── analysis.html       # SEO анализ кластера
+│       ├── positions.html      # Мониторинг позиций
+│       ├── cabinet.html        # Личный кабинет
+│       ├── admin.html          # Админ-панель
+│       ├── style.css           # Основные стили
+│       └── semantic_layout_schema.png  # Схема разметки для SEO
+│
+├── scripts/                    # Python-скрипты для фоновых задач
+│   ├── user_auth.py            # Утилиты auth
+│   ├── run_clustering.py       # Запуск кластеризации
+│   ├── run_mapping.py          # Маппинг кластеров на URL
+│   ├── run_seo_analysis.py     # SEO-анализ кластера
+│   ├── run_competitor_analysis.py  # Анализ конкурентов
+│   ├── fetch_yandex_queries.py # Загрузка из Яндекс.Вебмастера
+│   ├── fetch_frequency.py      # Сбор частотности (Wordstat)
+│   ├── collect_cluster_keywords.py # Сбор ключей для кластера
+│   ├── create_cluster_from_url.py # Создание кластера по URL
+│   ├── check_positions.py      # Проверка позиций
+│   ├── check_all_positions.py  # Массовая проверка позиций всех ключей сайта
+│   ├── scheduler.py            # Ежедневный плановый сбор
+│   └── ...
 │
 ├── sql/
 │   └── page_content.sql         # DDL для таблиц контента
@@ -163,6 +164,7 @@ seo-auto-cluster/
   - TTL: `Config.CACHE_TTL_DAYS` (7 дней)
   - Таблица: `serp_cache` (MySQL) с upsert (`ON DUPLICATE KEY UPDATE`)
   - Хранит URL-списки в JSON (колонка `urls TEXT`)
+  - Используется контекстный менеджер `get_db_cursor` и пул соединений `PooledDB` для надежной работы при высокой нагрузке.
 
 **Используется:** `XmlriverClient.fetch_serp()`
 
@@ -182,7 +184,7 @@ seo-auto-cluster/
 - `cluster_keywords(keywords, client, threshold, initial_clusters) → list[dict]`
   - Инкрементальная кластеризация: для каждого ключа получает SERP
   - Сравнивает с существующими кластерами через `serp_similarity()`
-  - Если похожесть >= threshold (0.4) → добавляет в кластер и пересчитывает representative SERP
+  - Если похожесть >= threshold (0.4) → добавляет в кластер и пересчитывает representative SERP (merge нового SERP с существующим, O(1), без N+1 re-fetch)
   - Иначе → создаёт новый кластер
   - Пропущенные ключи (пустой SERP) логируются (`skipped`)
 
@@ -223,7 +225,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.15 `serp_collector.py` — Prefetch SERP
+### 4.14 `serp_collector.py` — Prefetch SERP
 **Назначение:** Пакетный сбор SERP для кластеризации с прогрессом. Отделяет фазу сбора данных от фазы вычислений.
 
 **Функции:**
@@ -261,12 +263,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.5 `cache.py` — SERPCache
-*Описана выше в 4.1*
-
----
-
-### 4.6 `semantic_core.py` — PostgreSQL семантическое ядро
+### 4.5 `semantic_core.py` — PostgreSQL семантическое ядро
 **Назначение:** Сохранение/загрузка кластеров в PostgreSQL.
 
 **Классы:**
@@ -280,7 +277,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.7 `miratext_client.py` — Miratext API
+### 4.6 `miratext_client.py` — Miratext API
 **Назначение:** SEO-анализ текста через miratext.ru.
 
 **Классы:**
@@ -300,7 +297,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.8 `seo_agent.py` — LLM-агент
+### 4.7 `seo_agent.py` — LLM-агент
 **Назначение:** SEO-оптимизация контента через LLM (OpenAI / Hydra AI).
 
 **Классы:**
@@ -317,7 +314,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.9 `page_content_manager.py` — Управление страницами
+### 4.8 `page_content_manager.py` — Управление страницами
 **Назначение:** Загрузка, парсинг, версионирование контента страниц.
 
 **Классы:**
@@ -335,7 +332,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.10 `seo_workflow.py` — Полный SEO-цикл
+### 4.9 `seo_workflow.py` — Полный SEO-цикл
 **Назначение:** Оркестратор полного пайплайна из 4 шагов.
 
 **Классы:**
@@ -354,7 +351,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.11 `custom_analyzer.py` — Глубокий анализ контента
+### 4.10 `custom_analyzer.py` — Глубокий анализ контента
 **Назначение:** Полный SEO-аудит страницы: сбор конкурентов, лемматизация, n-граммы, технический аудит, определение интента.
 
 **Классы:**
@@ -373,7 +370,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.12 `task_manager.py` — Менеджер задач
+### 4.11 `task_manager.py` — Менеджер задач
 **Назначение:** Обновление статуса и прогресса фоновых задач в MySQL.
 
 **Классы:**
@@ -387,7 +384,7 @@ seo-auto-cluster/
 
 ---
 
-### 4.13 `worker.py` — Фоновый воркер
+### 4.12 `worker.py` — Фоновый воркер
 **Назначение:** Демон, polling MySQL `tasks` раз в 2 секунды, запуск скриптов.
 
 **Функции:**
@@ -405,9 +402,20 @@ seo-auto-cluster/
 | competitor_analysis | `run_competitor_analysis.py` |
 | fetch_queries | `fetch_yandex_queries.py` |
 
-**Запускается:** из `server.js` через `spawn(PYTHON_PATH, [workerPath])`
+**Запускается:** из `worker.py` (автономный процесс)
 
 ---
+
+### 4.13 bootstrap.py — Точка входа скриптов
+**Назначение:** Единый загрузчик для скриптов, вызываемых из Node.js. Заменяет 8 строк идентичного boilerplate в каждом из 26 скриптов одной строчкой `from utils.bootstrap import bootstrap; bootstrap()`.
+
+**Действия `bootstrap()`:**
+1. Вычисляет `project_root` от своего `__file__` (на 3 уровня выше)
+2. `os.chdir(project_root)` — все относительные пути работают от корня проекта
+3. Добавляет `project_root` в `sys.path` (если ещё не добавлен)
+4. На Windows: настраивает `sys.stdout`/`sys.stderr` на UTF-8 (через `reconfigure()` или `TextIOWrapper`)
+
+**Затронутые файлы:** Все 26 скриптов в `nodejs-app/scripts/`. Экономия: ~160 строк кода.
 
 ### 4.14 helpers.py — Утилиты
 **Функции:**
@@ -417,129 +425,28 @@ seo-auto-cluster/
 
 ---
 
-## 5. Node.js сервер (server.js)
+## 5. FastAPI сервер (api/)
 
-**Express-сервер** на порту 3000, ~1927 строк.
+**Python FastAPI сервер**, обеспечивающий строгую типизацию, асинхронную обработку и высокую производительность.
 
 ### Ключевые компоненты:
 
-**Сессии:** In-memory объект `sessions{}` — `session_id → {user_id, username}`
+**Сессии и Аутентификация:** Использование JWT токенов, хранящихся в `HttpOnly` cookie.
 
-**Middlewares:**
-- `authenticate` — проверка `Authorization: session_id`, проверка `is_blocked`
-- `authenticateAdmin` — проверка Bearer-токена администратора
+**Устройство:**
+- Маршрутизация (Routers): Разделение логики по доменам (`auth.py`, `sites.py`, `billing.py`, `analysis.py`).
+- Зависимости (Dependencies): Проврка аутентификации через `get_current_user`, получение сессий БД, и т.д.
+- Static Files: Прямая раздача папки `api/public/` с помощью `StaticFiles`.
 
-**Helpers:**
-- `callPython(scriptPath, args, stdin)` — spawn Python, возвращает Promise<string>
-- `normalizeUrl(url)` — strip protocol + trailing slash
-- `checkAndDeductBalance(userId, amount, description)` — транзакция: списание + billing_history
-- `getSystemSettings()` — тарифы из таблицы `settings`
+**Потоковые ответы (SSE):**
+FastAPI `StreamingResponse` используется вместо старых потоков Node.js, позволяя выводить прогресс скриптов `scripts/` в реальном времени.
 
-### API Endpoints:
-
-**Аутентификация:**
-- `POST /api/auth/register` — регистрация
-- `POST /api/auth/login` — логин
-- `GET /api/auth/session` — проверка сессии
-- `POST /api/auth/logout` — выход
-
-**Пользователи и сайты:**
-- `GET /api/user-info` — баланс
-- `GET /api/user/settings` — настройки + список сайтов
-- `POST /api/user/settings` — обновление Yandex token
-- `POST /api/user/change-password` — смена пароля
-- `POST /api/sites` — добавить сайт (с проверкой WM)
-- `GET /api/sites` — список сайтов
-
-**Ключевые слова и кластеризация:**
-- `GET /api/keywords` — ключи (фильтр по domain)
-- `POST /api/run-clustering` — запуск кластеризации (синхронный)
-- `POST /api/move-keywords` — перемещение между кластерами
-- `POST /api/delete-cluster` — удаление кластера
-- `POST /api/disband-cluster` — расформирование кластера
-- `POST /api/minus-words` — добавить в минус-слова
-- `POST /api/restore-minus` — восстановить из минус-слов
-- `POST /api/clear-minus` — очистить минус-слова
-
-**Маппинг:**
-- `GET /api/run-mapping-stream` — SSE-стрим (прогресс в реальном времени)
-- `POST /api/run-mapping` — синхронный маппинг
-- `GET /api/run-mapping-single` — маппинг одного кластера
-- `POST /api/save-mapping-manual` — ручное указание URL
-- `GET /api/mappings` — все маппинги
-- `POST /api/cluster/target-url` — обновление целевого URL
-
-**Мониторинг позиций:**
-- `GET /api/positions/history` — история позиций по сайту/кластеру
-- `GET /api/positions/run-stream` — SSE-стрим массовой проверки позиций (`check_all_positions.py`)
-- `GET /api/positions/check` — разовая проверка одного кластера (`check_positions.py`)
-
-**SEO-анализ и контент:**
-- `POST /api/cluster/run-seo-analysis` — SEO-анализ кластера
-- `GET /api/analysis-status` — проверка, идёт ли анализ
-- `GET /api/analysis` — результаты анализа
-- `POST /api/cluster/generate-structure` — генерация структуры через LLM
-- `POST /api/cluster/save-structure` — сохранение структуры (с историей)
-- `POST /api/seo-history/generate` — генерация SEO-плана
-- `GET /api/seo-history/dates` — даты сохранённых планов
-- `GET /api/seo-history/plan` — SEO-план по дате
-- `GET /api/prepare-seo-brief` — SEO-бриф
-- `POST /api/cluster/remove-lsi` — удаление LSI (в минус)
-
-**Позиции:**
-- `GET /api/cluster/check-positions-stream` — SSE-проверка позиций
-- `POST /api/cluster/check-positions` — синхронная проверка
-
-**Конкуренты:**
-- `GET /api/run-competitor-analysis-stream` — SSE-анализ конкурентов
-- `POST /api/run-competitor-analysis` — синхронный
-- `GET /api/run-competitor-analysis-single` — для одного кластера
-
-**Кластеры:**
-- `POST /api/create-cluster-by-url` — создание кластера по URL
-- `POST /api/update-keyword-text` — редактирование ключа
-- `POST /api/collect-keywords-for-cluster` — сбор ключей для кластера
-- `POST /api/update-cluster-name` — переименование
-- `POST /api/toggle-cluster-favorite` — избранное
-- `POST /api/toggle-cluster-pinned` — закрепление
-- `POST /api/update-pinned-order` — порядок закреплённых
-- `GET /api/cluster-names` — метаданные кластеров
-- `GET /api/cluster-lsi` — LSI-слова кластера
-
-**Частотность (Wordstat):**
-- `GET /api/run-frequency-stream` — запуск сбора частотности (через tasks)
-- `GET /api/frequency-status` — статус задачи
-- `GET /api/tasks/:id` — статус конкретной задачи
-- `GET /api/wordstat-settings` — настройки сбора
-- `POST /api/wordstat-settings` — сохранение настроек
-- `DELETE /api/wordstat-settings/:id` — удаление настройки
-
-**Яндекс.Вебмастер:**
-- `GET /api/fetch-wm-queries` — загрузка запросов
-- `GET /api/get-wm-hosts` — список хостов
-- `POST /api/check-domain` — проверка привязки
-
-**Биллинг:**
-- `POST /api/create-payment` — создание платежа (Tegro Money)
-- `POST /api/payment-callback` — вебхук от Tegro
-- `GET /api/billing-history` — история операций
-
-**Админ:**
-- `POST /api/admin/login`
-- `GET /api/admin/tariffs` / `POST /api/admin/tariffs/update`
-- `GET /api/admin/users` / `POST /api/admin/users/update`
-- `GET /api/admin/sites`
-- `GET /api/admin/payments`
-- `GET /api/admin/logs`
-
-**Прочее:**
-- `GET /api/geo-regions` — регионы из yandex_geo.csv
-- `GET /api/user/settings` — yandex_region_id
-- `GET /api/test-seo-2026` — тест экспериментального пайплайна
-
-**Фоновые задачи:**
-- `startBackgroundTasks()` — запускает `worker.py` и `scheduler.py` (каждые 24ч)
-- `runScheduler()` — ежедневный сбор данных для всех пользователей
+**Фоновые задачи и Безопасность:**
+- `worker.py` и `scheduler.py` управляются отдельно, читая очередь задач из таблицы `tasks`. Синхронные операции воркера обернуты в `asyncio.to_thread`, чтобы не блокировать event loop.
+- Для предотвращения race conditions при запуске задач из БД используется механизм `Auto-Retry` с экспоненциальной задержкой.
+- Биллинговые вебхуки защищены атомарными SQL-транзакциями с использованием `SELECT ... FOR UPDATE`, обеспечивая идемпотентность и безопасность финансов.
+- Защита от XSS в статических страницах (например, в `mane.html`) реализована через экранирование пользовательского ввода (`escapeHtml`).
+- Взаимодействие с внешними API (например, XMLRiver) включает строгую обработку фатальных ошибок без их маскировки, с выбросом исключений при невозможности повтора.
 
 ---
 
@@ -585,6 +492,8 @@ seo-auto-cluster/
 | `settings` | Тарифы | `key (UNIQUE), value` |
 | `wordstat_settings` | Настройки Wordstat | `user_id, name, device, region, region_name, is_default` |
 | `user_settings` | Настройки пользователя | `user_id, yandex_region_id` |
+| `token_blacklist` | JWT отзыв (jti + expires_at) | `jti (PK), expires_at, created_at` |
+| `query_history` | История позиций | `user_id, site_url, query, position, engine, device, created_at` |
 
 ### PostgreSQL таблицы (опционально):
 - `semantic_clusters` — кластеры (JSONB)
@@ -624,13 +533,14 @@ seo-auto-cluster/
 | `MYSQL_USER` | root | Пользователь MySQL |
 | `MYSQL_PASSWORD` | — | Пароль MySQL |
 | `PG_PASSWORD` | — | Пароль PostgreSQL (если задан — используется PG) |
-| `TEGRO_SHOP_ID` | фикс. ID | ID магазина Tegro Money |
-| `TEGRO_SECRET_KEY` | — | Секрет Tegro |
+| `CARDLINK_SHOP_ID` | фикс. ID | ID магазина Cardlink |
+| `CARDLINK_TOKEN` | — | Секрет Tegro |
 
 ### Логика выбора БД:
-1. Если `PG_PASSWORD` задан → PostgreSQL
-2. Иначе если `MYSQL_HOST` + `MYSQL_USER` → MySQL
-3. Иначе → SQLite
+1. Подключения к БД управляются через `DBUtils.PooledDB` (`maxconnections=20`, `blocking=True`) в `config.py` для предотвращения исчерпания лимитов соединений.
+2. Если `PG_PASSWORD` задан → PostgreSQL
+3. Иначе если `MYSQL_HOST` + `MYSQL_USER` → MySQL
+4. Иначе → SQLite
 
 ---
 
@@ -642,7 +552,7 @@ seo-auto-cluster/
 | **Яндекс.Вебмастер** | REST v4 (JSON) | Поисковые запросы сайта |
 | **Miratext** | REST (JSON) | SEO-анализ текста |
 | **OpenAI / Hydra AI** | REST (JSON) | LLM для контента |
-| **Tegro Money** | REST (JSON) | Приём платежей |
+| **Cardlink** | REST (JSON) | Приём платежей |
 
 ---
 
@@ -652,11 +562,11 @@ seo-auto-cluster/
 
 **Расположение:**
 - Git-репо: `~/seo-auto-cluster/`
-- Рабочая копия Python: `~/` (файлы дублируются из репо)
-- Node.js: запущен из `~/seo-auto-cluster/nodejs-app/`
+- Виртуальное окружение Python (venv) с зависимостями из `requirements.txt`
 
 **Процессы:**
-- Node.js: `nohup node server.js > server.log 2>&1 &` (PID ~389345)
+- Управление процессами лучше всего выполнять через `systemd`, `pm2` или `nohup`.
+- Запуск FastAPI: `uvicorn api.main:app --host 0.0.0.0 --port 3000`
 - MySQL: Docker (`docker-compose.yml`), порт 3306
 
 **Обновление:**
@@ -666,13 +576,13 @@ git add . && git commit -m "type: description" && git push
 
 # На сервере
 cd ~/seo-auto-cluster && git pull
-# Копировать в ~/ если нужно:
-cp services/*.py ~/services/
-cp nodejs-app/server.js ~/nodejs-app/
-# Перезапустить:
-kill <PID> && cd ~/seo-auto-cluster/nodejs-app && nohup node server.js > server.log 2>&1 &
+# Активация окружения и установка зависимостей:
+source .venv/bin/activate
+pip install -r requirements.txt
+# Перезапуск сервиса (зависит от вашей системы):
+# Если используете systemctl:
+sudo systemctl restart fastapi-seo
 ```
 
-**Node.js:** v20.20.2
-**Python:** 3.12.3
+**Python:** 3.10+ (рекомендуется 3.12+)
 **Git:** 2.43.0

@@ -29,46 +29,25 @@ class YandexWebmasterClient:
 
     def _normalize_url(self, url: str) -> str:
         url = url.lower().strip()
-        if url.startswith("http://"):
-            url = url[7:]
-        elif url.startswith("https://"):
-            url = url[8:]
-        elif url.startswith("http:"):
-            url = url[5:]
-        elif url.startswith("https:"):
-            url = url[6:]
+        for prefix in ("https://", "http://", "https:", "http:"):
+            if url.startswith(prefix):
+                url = url[len(prefix) :]
         return url.rstrip("/")
 
     def _get_host_id(self, site_url: str, user_id: str) -> str:
-        resp = self.session.get(f"{self.BASE_URL}/user/{user_id}/hosts")
-        resp.raise_for_status()
-        hosts = resp.json().get("hosts", [])
+        site = self._normalize_url(site_url)
+        try:
+            site = site.encode("idna").decode("ascii")
+        except (UnicodeError, ValueError):
+            pass
 
-        site = site_url.lower()
-        if not site.startswith("http"):
+        hosts_data = self.list_hosts()
+        for host in hosts_data:
+            host_id = self._normalize_url(host["host_id"])
             try:
-                site = site.encode("idna").decode("ascii")
-            except:
+                host_id = host_id.encode("idna").decode("ascii")
+            except (UnicodeError, ValueError):
                 pass
-
-        if site.startswith("http://"):
-            site = site[7:]
-        elif site.startswith("https://"):
-            site = site[8:]
-        elif site.startswith("http:") or site.startswith("https:"):
-            site = site.split(":", 1)[1]
-        site = site.lstrip("/").split(":")[0]
-
-        for host in hosts:
-            host_id = host["host_id"].lower()
-            if host_id.startswith("http://"):
-                host_id = host_id[7:]
-            elif host_id.startswith("https://"):
-                host_id = host_id[8:]
-            elif host_id.startswith("http:") or host_id.startswith("https:"):
-                host_id = host_id.split(":", 1)[1]
-            host_id = host_id.lstrip("/").split(":")[0]
-
             if site == host_id:
                 return host["host_id"]
         raise ValueError(f"Сайт {site_url} не найден в Вебмастере")
@@ -106,7 +85,7 @@ class YandexWebmasterClient:
         return queries
 
     def _get_position_rates(self) -> Dict[str, float]:
-        conn = Config.get_mysql_conn()
+        conn = Config.get_conn()
         cur = conn.cursor()
         try:
             cur.execute(
@@ -118,7 +97,7 @@ class YandexWebmasterClient:
                 "new": settings.get("position_new_rate", 0.25),
                 "step": settings.get("position_step_rate", 0.05),
             }
-        except:
+        except Exception:
             return {"new": 0.25, "step": 0.05}
         finally:
             conn.close()
@@ -136,7 +115,7 @@ class YandexWebmasterClient:
         new_cost = 0.0
         total_cost = 0.0
         rates = self._get_position_rates()
-        conn = Config.get_mysql_conn()
+        conn = Config.get_conn()
         cur = conn.cursor()
         try:
             site_url = queries[0].get("site_url", "")
@@ -217,9 +196,8 @@ class YandexWebmasterClient:
         finally:
             conn.close()
 
-
     def get_unique_queries_for_clustering(self, site_url: str) -> List[str]:
-        conn = Config.get_mysql_conn()
+        conn = Config.get_conn()
         cur = conn.cursor()
         try:
             cur.execute(

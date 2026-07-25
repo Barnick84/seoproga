@@ -49,13 +49,13 @@ class XmlriverClient:
     def fetch_serp(
         self,
         keyword: str,
-        engine: str = None,
-        region: int = None,
+        engine: str | None = None,
+        region: int | None = None,
         device: str = "desktop",
-        top_n: int = None,
+        top_n: int | None = None,
         page: int = 0,
         use_cache: bool = True,
-        retries: int = None,
+        retries: int | None = None,
     ) -> list[str]:
         engine = engine or Config.XMLRIVER_ENGINE
 
@@ -69,7 +69,7 @@ class XmlriverClient:
         retries = retries or self.max_retries
 
         if use_cache:
-            cache_key = f"{keyword}|{engine}|{region}|{device}|{page}"
+            cache_key = f"{keyword}|{engine}|{region}|{device}|{page}|{top_n}"
             cached = self.cache.get(cache_key, engine, region)
             if cached:
                 return cached
@@ -85,7 +85,7 @@ class XmlriverClient:
         params = {
             "user": Config.XMLRIVER_USER,
             "key": Config.XMLRIVER_KEY,
-            "query": keyword.replace("&", "%26"),
+            "query": keyword,
             "groupby": top_n,
             "page": page,
             "device": device,
@@ -111,43 +111,47 @@ class XmlriverClient:
 
                 data = xmltodict.parse(response.content)
 
-                # Check for error requiring retry
-                if self._is_retry_needed(data):
-                    error_code, error_text = self._get_error_info(data)
-                    if attempt < retries - 1:
-                        if error_code == "111":
-                            # No free channels — wait longer for channels to free up
-                            wait = min(30, 10 * (attempt + 1))
-                            print(
-                                f"⚠️ XMLRiver: нет свободных каналов (111), попытка {attempt + 1}/{retries}, жду {wait}с..."
-                            )
-                            time.sleep(wait)
-                        else:
-                            time.sleep(5)
-                        continue
-                    print(
-                        f"❌ XMLRiver: исчерпаны попытки, ошибка {error_code}: {error_text}"
-                    )
-                    return []
+                # Check for any error
+                error_code, error_text = self._get_error_info(data)
+                if error_code:
+                    if self._is_retry_needed(data):
+                        if attempt < retries - 1:
+                            if error_code == "111":
+                                # No free channels — wait longer for channels to free up
+                                wait = min(30, 10 * (attempt + 1))
+                                print(
+                                    f"⚠️ XMLRiver: нет свободных каналов (111), попытка {attempt + 1}/{retries}, жду {wait}с..."
+                                )
+                                time.sleep(wait)
+                            else:
+                                time.sleep(5)
+                            continue
+                        raise Exception(f"XMLRiver: исчерпаны попытки, ошибка {error_code}: {error_text}")
+                    else:
+                        raise ValueError(f"XMLRiver Fatal Error {error_code}: {error_text}")
 
-                if "yandexsearch" in data:
-                    pass
                 urls = self._parse_xmlriver_response(data)
 
                 if use_cache and urls:
-                    cache_key = f"{keyword}|{engine}|{region}|{device}|{page}"
+                    cache_key = f"{keyword}|{engine}|{region}|{device}|{page}|{top_n}"
                     self.cache.set(cache_key, urls, engine, region)
 
                 return urls
 
+            except ValueError as e:
+                # Fatal error, do not retry, do not mask
+                print(f"❌ XMLRiver: фатальная ошибка: {e}")
+                raise e
             except Exception as e:
                 last_error = e
                 if attempt < retries - 1:
                     time.sleep(self.retry_delay)
                     continue
                 print(f"❌ XMLRiver: исключение при запросе: {e}")
-                return []
+                raise e
 
+        if last_error:
+            raise last_error
         return []
 
     def _parse_xmlriver_response(self, data: dict) -> list[str]:

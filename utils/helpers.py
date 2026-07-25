@@ -10,11 +10,11 @@ def extract_domain(url: str) -> str:
         domain = parsed.netloc or parsed.path.split("/")[0]
     else:
         domain = url.split("/")[0]
-    
+
     domain = domain.replace("www.", "").lower()
     try:
         return domain.encode("idna").decode("ascii")
-    except:
+    except (UnicodeError, ValueError):
         return domain
 
 
@@ -25,7 +25,7 @@ def clean_url(url: str) -> str:
     domain = parsed.netloc.replace("www.", "").lower()
     try:
         domain = domain.encode("idna").decode("ascii")
-    except:
+    except (UnicodeError, ValueError):
         pass
     return f"{domain}{parsed.path}".lower().rstrip("/")
 

@@ -49,8 +49,7 @@ class PageContentManager:
                 full_html TEXT,
                 editable_html TEXT NOT NULL,
                 non_editable_html TEXT,
-                last_fetched TIMESTAMP DEFAULT NOW(),
-                PRIMARY KEY (page_url)
+                last_fetched TIMESTAMP DEFAULT NOW()
             );
         """
         create_versions_table = """
@@ -97,18 +96,26 @@ class PageContentManager:
 
         editable_parts = []
 
+        placeholder_inserted = False
+
         for selector in EDITABLE_SELECTORS:
             elements = soup.select(selector)
             for elem in elements:
                 editable_parts.append(str(elem))
-                elem.decompose()
+                if not placeholder_inserted:
+                    elem.replace_with("<!-- CONTENT_PLACEHOLDER -->")
+                    placeholder_inserted = True
+                else:
+                    elem.decompose()
 
         if editable_parts:
             editable_html = "\n".join(editable_parts)
         else:
             body = soup.find("body")
             if body:
-                editable_html = str(body)
+                editable_html = "".join(str(c) for c in body.contents)
+                body.clear()
+                body.append("<!-- CONTENT_PLACEHOLDER -->")
             else:
                 editable_html = html
 
@@ -135,7 +142,7 @@ class PageContentManager:
                     ON CONFLICT (page_url) DO UPDATE SET
                         full_html = EXCLUDED.full_html,
                         editable_html = EXCLUDED.editable_html,
-                        non_editable_html = EXCLUDED.non_editable_html,
+                        non_editable_html = COALESCE(EXCLUDED.non_editable_html, page_content.non_editable_html),
                         last_fetched = NOW()
                     """,
                     (url, full_html, editable_html, non_editable_html),
@@ -255,13 +262,15 @@ class PageContentManager:
         editable_html: str,
         non_editable_html: str,
     ) -> str:
-        soup = BeautifulSoup(non_editable_html, "html.parser")
+        if "<!-- CONTENT_PLACEHOLDER -->" in non_editable_html:
+            merged = non_editable_html.replace("<!-- CONTENT_PLACEHOLDER -->", editable_html)
+            return merged
 
+        soup = BeautifulSoup(non_editable_html, "html.parser")
         body = soup.find("body")
         if not body:
             return editable_html
-
+            
         body.clear()
         body.append(BeautifulSoup(editable_html, "html.parser"))
-
         return str(soup)

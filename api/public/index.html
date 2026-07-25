@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Auto Cluster — Автоматизация SEO: Кластеризация и AI-анализ</title>
+    <meta name="description"
+        content="Автоматизируйте SEO-рутину: кластеризация семантического ядра, AI-анализ конкурентов и генерация контента. Экономьте сотни часов работы.">
+
+    <!-- Шрифты: Inter для чтения, Space Grotesk для акцентов/заголовков -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Иконки -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Анимации -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #050507;
+            --bg-surface: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --bg-card-hover: rgba(255, 255, 255, 0.04);
+
+            --border-light: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(56, 189, 248, 0.3);
+
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --text-dark: #334155;
+
+            --accent-1: #0ea5e9;
+            /* Cyan blue */
+            --accent-2: #8b5cf6;
+            /* Purple */
+            --accent-3: #10b981;
+            /* Emerald */
+            --accent-danger: #ef4444;
+            /* Red */
+
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --radius-pill: 100px;
+
+            --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.6;
+        }
+
+        /* ── NOISE & BACKGROUND EFFECTS ── */
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+        }
+
+        .bg-glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-display {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── PROGRESS BAR ── */
+        .progress-wrap {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+            box-shadow: 0 0 10px var(--accent-1);
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 24px 0;
+            transition: var(--transition);
+            border-bottom: 1px solid transparent;
+        }
+
+        nav.scrolled {
+            padding: 16px 0;
+            background: rgba(5, 5, 7, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .logo i {
+            color: var(--accent-1);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .nav-links a:not(.btn) {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .nav-links a:not(.btn):hover {
+            color: #fff;
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #fff;
+            border: 1px solid var(--border-light);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-glow {
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            color: #fff;
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 0 40px rgba(14, 165, 233, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* ── HERO ── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 160px 0 80px;
+            position: relative;
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(var(--border-light) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+            background-size: 64px 64px;
+            mask-image: radial-gradient(circle at 50% 30%, black, transparent 70%);
+            -webkit-mask-image: radial-gradient(circle at 50% 30%, black, transparent 70%);
+            opacity: 0.5;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: var(--radius-pill);
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            color: var(--accent-1);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 32px;
+            font-family: 'Space Grotesk', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hero h1 {
+            font-size: clamp(48px, 6vw, 88px);
+            line-height: 1.05;
+            letter-spacing: -2.5px;
+            margin-bottom: 24px;
+            background: linear-gradient(180deg, #FFFFFF 0%, #94A3B8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: clamp(18px, 2vw, 22px);
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            font-weight: 300;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        /* HERO STATS - TERMINAL STYLE */
+        .hero-stats {
+            display: flex;
+            gap: 2px;
+            margin-top: 64px;
+            background: var(--border-light);
+            padding: 1px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-stat {
+            flex: 1;
+            background: var(--bg-surface);
+            padding: 32px 24px;
+            text-align: center;
+        }
+
+        .hero-stat h3 {
+            font-size: 40px;
+            color: #fff;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .hero-stat h3 span.symbol {
+            color: var(--accent-1);
+        }
+
+        .hero-stat p {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* ── TRUST BAR ── */
+        .trust {
+            padding: 40px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .trust-inner {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 48px;
+            opacity: 0.6;
+            filter: grayscale(100%);
+            transition: var(--transition);
+        }
+
+        .trust-inner:hover {
+            opacity: 1;
+            filter: grayscale(0%);
+        }
+
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .trust-item i {
+            font-size: 20px;
+            color: var(--text-main);
+        }
+
+        /* ── COMMON SECTIONS ── */
+        .section {
+            padding: 140px 0;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: left;
+            margin-bottom: 64px;
+            max-width: 700px;
+        }
+
+        .section-tag {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--accent-1);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            display: block;
+            font-weight: 600;
+        }
+
+        .section-title {
+            font-size: clamp(36px, 4vw, 56px);
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            color: #fff;
+        }
+
+        .section-desc {
+            font-size: 18px;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        /* ── PROBLEM / SOLUTION (SPLIT CARDS) ── */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .comp-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .comp-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+        }
+
+        .comp-old::before {
+            background: var(--accent-danger);
+        }
+
+        .comp-new::before {
+            background: var(--accent-1);
+        }
+
+        .comp-card h3 {
+            font-size: 28px;
+            margin-bottom: 32px;
+        }
+
+        .comp-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .comp-list li {
+            display: flex;
+            gap: 16px;
+            font-size: 16px;
+            color: var(--text-muted);
+            align-items: flex-start;
+        }
+
+        .comp-old .comp-list i {
+            color: var(--accent-danger);
+            margin-top: 4px;
+        }
+
+        .comp-new .comp-list i {
+            color: var(--accent-3);
+            margin-top: 4px;
+        }
+
+        .comp-new .comp-list li {
+            color: var(--text-main);
+        }
+
+        .price-tag {
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px dashed var(--border-light);
+        }
+
+        .price-tag .amount {
+            font-family: 'Space Grotesk';
+            font-size: 48px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .price-tag .label {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .comp-old .price-tag .amount {
+            color: var(--text-dark);
+            text-decoration: line-through;
+        }
+
+        /* ── BENTO GRID (FEATURES) ── */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            grid-auto-rows: minmax(280px, auto);
+        }
+
+        .bento-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .bento-item:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: var(--bg-card-hover);
+        }
+
+        .bento-item.large {
+            grid-column: span 2;
+        }
+
+        .bento-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-light);
+        }
+
+        .bento-item h4 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .bento-item p {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Decorative glow in bento */
+        .bento-item::after {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: var(--accent-1);
+            filter: blur(80px);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .bento-item:hover::after {
+            opacity: 0.15;
+        }
+
+        /* ── HOW IT WORKS (STEPS) ── */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .step {
+            padding: 40px 0;
+            border-top: 1px solid var(--border-light);
+            position: relative;
+        }
+
+        .step-num {
+            font-family: 'Space Grotesk';
+            font-size: 64px;
+            font-weight: 800;
+            color: transparent;
+            -webkit-text-stroke: 1px var(--text-dark);
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform: translateY(-30%);
+            z-index: -1;
+            transition: var(--transition);
+        }
+
+        .step:hover .step-num {
+            -webkit-text-stroke: 1px var(--accent-1);
+        }
+
+        .step h4 {
+            font-size: 22px;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .step p {
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        /* ── AUDIENCE ── */
+        .audience-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .aud-card {
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            text-align: left;
+            background: var(--bg-surface);
+            transition: var(--transition);
+        }
+
+        .aud-card:hover {
+            border-color: var(--accent-1);
+            transform: translateY(-5px);
+        }
+
+        .aud-icon {
+            font-size: 32px;
+            color: var(--accent-1);
+            margin-bottom: 24px;
+        }
+
+        .aud-card h4 {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .aud-card p {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        /* ── CTA ── */
+        .cta-section {
+            padding: 100px 0;
+        }
+
+        .cta-box {
+            background: #111116;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: 80px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-box::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(14, 165, 233, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .cta-box h2 {
+            font-size: clamp(36px, 5vw, 64px);
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+            color: #fff;
+        }
+
+        .cta-box p {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto 40px;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border-light);
+            background: var(--bg-main);
+        }
+
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-copy {
+            color: var(--text-dark);
+            font-size: 14px;
+            font-family: 'Space Grotesk';
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+        }
+
+        /* ── MOBILE MENU TOGGLE ── */
+        .mobile-toggle {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: #fff;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* ── RESPONSIVE ── */
+        /* ── MODAL ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 440px;
+            padding: 48px 40px 40px;
+            position: relative;
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--border-light);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            font-size: 16px;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 32px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius-pill);
+            padding: 4px;
+        }
+
+        .modal-tab {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius-pill);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .modal-tab.active {
+            background: #fff;
+            color: #000;
+        }
+
+        .modal-tab:hover:not(.active) {
+            color: #fff;
+        }
+
+        .modal-form {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal-form.active {
+            display: flex;
+        }
+
+        .modal-form label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-form input {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .modal-form input:focus {
+            border-color: var(--accent-1);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+        }
+
+        .modal-form input::placeholder {
+            color: var(--text-dark);
+        }
+
+        .modal-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .modal-form .btn {
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .modal-form .form-footer {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .modal-form .form-footer a {
+            color: var(--accent-1);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-form .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .modal-form .forgot-link {
+            text-align: right;
+            font-size: 13px;
+            margin-top: -12px;
+        }
+
+        .modal-form .forgot-link a {
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-form .forgot-link a:hover {
+            color: var(--accent-1);
+        }
+
+        .modal-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-dark);
+            font-size: 13px;
+        }
+
+        .modal-divider::before,
+        .modal-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-light);
+        }
+
+        .modal-form .btn-outline {
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            @keyframes modalIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .modal {
+                padding: 40px 24px 32px;
+                border-radius: var(--radius-lg);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .bento-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .bento-item.large {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .nav-links {
+                position: fixed;
+                top: 80px;
+                left: 0;
+                width: 100%;
+                background: var(--bg-surface);
+                flex-direction: column;
+                padding: 40px 24px;
+                border-bottom: 1px solid var(--border-light);
+                transform: translateY(-150%);
+                opacity: 0;
+                transition: var(--transition);
+                z-index: 999;
+            }
+
+            .nav-links.open {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            .hero-stats {
+                flex-direction: column;
+            }
+
+            .comparison-grid,
+            .bento-grid,
+            .steps,
+            .audience-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bento-item.large {
+                grid-column: span 1;
+            }
+
+            .cta-box {
+                padding: 48px 24px;
+            }
+
+            .footer-inner {
+                flex-direction: column;
+                gap: 24px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="noise"></div>
+    <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <nav id="navbar">
+        <div class="container">
+            <a href="#" class="logo"><i class="fas fa-terminal"></i> SEO Auto Cluster</a>
+            <div class="nav-links" id="navLinks">
+                <a href="#how">Алгоритм</a>
+                <a href="#features">Возможности</a>
+                <a href="#audience">Для кого</a>
+                <a href="#" class="btn btn-primary" onclick="openModal('login')">Войти</a>
+            </div>
+            <button class="mobile-toggle" onclick="toggleMenu()"><i class="fas fa-bars" id="menuIcon"></i></button>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <header class="hero">
+        <div class="hero-grid"></div>
+        <div class="bg-glow"
+            style="width: 600px; height: 600px; background: var(--accent-1); top: -200px; left: 50%; transform: translateX(-50%);">
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="badge" data-gsap="fade-up">Система AI SEO 2.0</div>
+                <h1 data-gsap="fade-up">SEO-специалист<br><span>тебе больше не нужен</span></h1>
+                <p data-gsap="fade-up">Кластеризация ключей, AI-анализ конкурентов, генерация контента и отслеживание
+                    позиций — в одном терминале. Идеально для профи.</p>
+
+                <div class="hero-btns" data-gsap="fade-up">
+                    <a href="#" class="btn btn-glow" onclick="openModal('login')">Войти <i class="fas fa-arrow-right"></i></a>
+                    <a href="#how" class="btn btn-outline">Архитектура <i class="fas fa-code"></i></a>
+                </div>
+
+                <div class="hero-stats" data-gsap="fade-up">
+                    <div class="hero-stat">
+                        <h3><span data-count="12000">0</span><span class="symbol">+</span></h3>
+                        <p>Ключей / Мин</p>
+                    </div>
+                    <div class="hero-stat"
+                        style="border-left: 1px solid var(--border-light); border-right: 1px solid var(--border-light);">
+                        <h3><span data-count="97">0</span><span class="symbol">%</span></h3>
+                        <p>Точность SERP</p>
+                    </div>
+                    <div class="hero-stat">
+                        <h3><span data-count="500">0</span><span class="symbol">₽</span></h3>
+                        <p>Средний чек</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- TRUST -->
+    <section class="trust">
+        <div class="container">
+            <div class="trust-inner" data-gsap="fade-up">
+                <div class="trust-item"><i class="fab fa-yandex"></i> Yandex.Webmaster</div>
+                <div class="trust-item"><i class="fas fa-server"></i> XMLRiver API</div>
+                <div class="trust-item"><i class="fas fa-network-wired"></i> OpenAI Neural</div>
+                <div class="trust-item"><i class="fas fa-database"></i> Miratext LSI</div>
+                <div class="trust-item"><i class="fas fa-shield-alt"></i> Secure API</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROBLEM / SOLUTION -->
+    <section class="section" id="problem">
+        <div class="container">
+            <div class="section-header" data-gsap="fade-up">
+                <span class="section-tag">Парадигма</span>
+                <h2 class="section-title">Перестаньте платить за время. Платите за данные.</h2>
+                <p class="section-desc">Ручная сборка семантики и структура "на глаз" обходятся слишком дорого.
+                    Переходите на Data-Driven подход.</p>
+            </div>
+
+            <div class="comparison-grid">
+                <!-- OLD WAY -->
+                <div class="comp-card comp-old" data-gsap="fade-right">
+                    <h3>Legacy SEO</h3>
+                    <ul class="comp-list">
+                        <li><i class="fas fa-times-circle"></i> <span><b>Оплата "за процесс".</b> Специалист берет фикс,
+                                но не гарантирует результат.</span></li>
+                        <li><i class="fas fa-times-circle"></i> <span><b>Ручная кластеризация.</b> Excel, парсеры,
+                                недели нудной работы с таблицами.</span></li>
+                        <li><i class="fas fa-times-circle"></i> <span><b>ТЗ вслепую.</b> Копирайтер пишет без
+                                LSI-анализа топ-10. Выход в ТОП — лотерея.</span></li>
+                    </ul>
+                    <div class="price-tag">
+                        <div class="amount">50 000 ₽</div>
+                        <div class="label">Средний оклад SEO-специалиста / мес</div>
+                    </div>
+                </div>
+
+                <!-- NEW WAY -->
+                <div class="comp-card comp-new" data-gsap="fade-left">
+                    <h3>AI Cluster Protocol</h3>
+                    <ul class="comp-list">
+                        <li><i class="fas fa-check-circle"></i> <span><b>Никаких абонентских плат.</b> Оплата только за
+                                ресурсы вычислений и парсинга.</span></li>
+                        <li><i class="fas fa-check-circle"></i> <span><b>Мгновенный хард-кластер.</b> Группировка 5000+
+                                ключей по SERP за 10 минут.</span></li>
+                        <li><i class="fas fa-check-circle"></i> <span><b>Машинное ТЗ.</b> ИИ парсит заголовки
+                                конкурентов и собирает идеальную структуру.</span></li>
+                    </ul>
+                    <div class="price-tag">
+                        <div class="amount"><span data-count="0">0</span> ₽</div>
+                        <div class="label">За первый тестовый прогон системы</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" id="how">
+        <div class="container">
+            <div class="section-header" data-gsap="fade-up">
+                <span class="section-tag">Протокол работы</span>
+                <h2 class="section-title">Три шага к доминации в выдаче</h2>
+            </div>
+
+            <div class="steps">
+                <div class="step" data-gsap="fade-up" data-delay="0.1">
+                    <div class="step-num">01</div>
+                    <h4>Синхронизация</h4>
+                    <p>Подключение API Яндекс.Вебмастера. Автоматическая выгрузка актуального пула запросов с
+                        частотностью и позициями.</p>
+                </div>
+                <div class="step" data-gsap="fade-up" data-delay="0.2">
+                    <div class="step-num">02</div>
+                    <h4>Анализ SERP</h4>
+                    <p>Запуск кластеризатора по методу Jaccard. Система объединяет ключи, которые поисковик уже
+                        ранжирует вместе.</p>
+                </div>
+                <div class="step" data-gsap="fade-up" data-delay="0.3">
+                    <div class="step-num">03</div>
+                    <h4>AI-Генерация</h4>
+                    <p>Нейросеть сканирует ТОП-10, вытаскивает LSI-маркеры и формирует H1-H3 структуру для абсолютной
+                        релевантности.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BENTO FEATURES -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header" data-gsap="fade-up">
+                <span class="section-tag">Инструментарий</span>
+                <h2 class="section-title">Весь отдел SEO<br>в одном интерфейсе</h2>
+            </div>
+
+            <div class="bento-grid">
+                <div class="bento-item large" data-gsap="fade-up">
+                    <div class="bento-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                    <h4>Умная SERP-Кластеризация</h4>
+                    <p>Настраиваемый порог точности. Выбирайте между Soft, Hard и Custom кластеризацией. Алгоритм
+                        учитывает миллионы связей в реальной поисковой выдаче для формирования безупречных посадочных
+                        страниц.</p>
+                </div>
+
+                <div class="bento-item" data-gsap="fade-up">
+                    <div class="bento-icon"><i class="fa-solid fa-brain"></i></div>
+                    <h4>Нейро-Структуры</h4>
+                    <p>Генерация планов статей на основе NLP-анализа текстов конкурентов.</p>
+                </div>
+
+                <div class="bento-item" data-gsap="fade-up">
+                    <div class="bento-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <h4>Live-Мониторинг</h4>
+                    <p>Отслеживание позиций через SSE-потоки без задержек. Любые регионы.</p>
+                </div>
+
+                <div class="bento-item" data-gsap="fade-up">
+                    <div class="bento-icon"><i class="fa-solid fa-link"></i></div>
+                    <h4>Авто-Маппинг</h4>
+                    <p>Система сама найдет релевантный URL на сайте под собранный кластер.</p>
+                </div>
+
+                <div class="bento-item" data-gsap="fade-up">
+                    <div class="bento-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <h4>AI-Оптимизация и Экспорт</h4>
+                    <p>Генерация SEO-ТЗ с учетом ваших текущих текстов и выдачи конкурентов. Автоматическая оптимизация
+                        контента с прямой выгрузкой на ваш сайт.</p>
+                </div>
+
+                <div class="bento-item large" data-gsap="fade-up">
+                    <div class="bento-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                    <h4>Глубокий аудит конкурентов</h4>
+                    <p>Вскрытие ТОП-10: объем текстов, вхождения ключей, коммерческие факторы, возраст документов. Вы
+                        увидите математически точную картину того, почему чужие сайты стоят выше, и как их обойти.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AUDIENCE -->
+    <section class="section" id="audience">
+        <div class="container">
+            <div class="section-header" data-gsap="fade-up">
+                <span class="section-tag">Архитектура применения</span>
+                <h2 class="section-title">Для тех, кто ценит<br>оптимизацию времени</h2>
+            </div>
+
+            <div class="audience-grid">
+                <div class="aud-card" data-gsap="fade-up">
+                    <div class="aud-icon"><i class="fas fa-laptop-code"></i></div>
+                    <h4>SEO-Инженеры</h4>
+                    <p>Перестаньте копаться в таблицах. Автоматизируйте сбор ядра, получайте больше клиентов и
+                        увеличивайте маржинальность своих услуг.</p>
+                </div>
+                <div class="aud-card" data-gsap="fade-up">
+                    <div class="aud-icon"><i class="fas fa-building"></i></div>
+                    <h4>In-house команды</h4>
+                    <p>Избавьтесь от зависимости от агентств. Управляйте органическим трафиком компании с помощью точных
+                        данных и AI-аналитики.</p>
+                </div>
+                <div class="aud-card" data-gsap="fade-up">
+                    <div class="aud-icon"><i class="fas fa-store"></i></div>
+                    <h4>Владельцы бизнеса</h4>
+                    <p>Контролируйте прозрачность SEO. Запускайте продвижение самостоятельно, используя интерфейс,
+                        который не требует 5 лет опыта.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-box" data-gsap="fade-up">
+                <h2>Инициализация проекта</h2>
+                <p>Получите доступ к вычислительным мощностям платформы. Первый запуск и кластеризация — за наш счет.
+                    Оцените уровень автоматизации прямо сейчас.</p>
+                <a href="#" class="btn btn-glow" onclick="openModal('login')">Войти <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container footer-inner">
+            <div class="footer-copy">© 2026 SEO Auto Cluster. Core v2.0.</div>
+            <div class="footer-links">
+                <a href="#" onclick="openModal('login')">Войти</a>
+                <a href="cabinet.html">Панель управления</a>
+                <a href="mailto:support@seo-autocluster.ru">Support API</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            <div class="modal-tabs">
+                <button class="modal-tab active" onclick="switchTab('login')">Вход</button>
+                <button class="modal-tab" onclick="switchTab('register')">Регистрация</button>
+                <button class="modal-tab" onclick="switchTab('recovery')">Восстановление</button>
+            </div>
+
+            <!-- LOGIN -->
+            <div id="authError" style="color: var(--accent-danger); font-size: 14px; margin-bottom: 16px; display: none;"></div>
+            <form class="modal-form active" id="form-login" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Логин</label>
+                    <input type="text" id="loginUsername" placeholder="Введите логин" required>
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <div class="forgot-link">
+                    <a onclick="switchTab('recovery')">Забыли пароль?</a>
+                </div>
+                <button type="submit" class="btn btn-glow">Войти</button>
+                <div class="form-footer">
+                    Нет аккаунта? <a onclick="switchTab('register')">Зарегистрироваться</a>
+                </div>
+            </form>
+
+            <!-- REGISTER -->
+            <form class="modal-form" id="form-register" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Логин</label>
+                    <input type="text" id="regUsername" placeholder="Придумайте логин" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="regPassword" placeholder="••••••••" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Подтвердите пароль</label>
+                    <input type="password" id="regPasswordConfirm" placeholder="••••••••" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Токен Яндекс Вебмастер</label>
+                    <input type="text" id="regYandexToken" placeholder="Вставьте OAuth-токен Яндекса">
+                </div>
+                <button type="submit" class="btn btn-glow">Создать аккаунт</button>
+                <div class="form-footer">
+                    Уже есть аккаунт? <a onclick="switchTab('login')">Войти</a>
+                </div>
+            </form>
+
+            <!-- RECOVERY -->
+            <form class="modal-form" id="form-recovery" onsubmit="handleRecovery(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" placeholder="you@example.com" required>
+                </div>
+                <button type="submit" class="btn btn-glow">Восстановить пароль</button>
+                <div class="form-footer">
+                    Вспомнили пароль? <a onclick="switchTab('login')">Войти</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // MODAL
+        function openModal(tab) {
+            document.getElementById('authModal').classList.add('active');
+            switchTab(tab);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('authModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('authModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.modal-form').forEach(f => f.classList.remove('active'));
+            document.querySelector(`.modal-tab[onclick*="${tab}"]`).classList.add('active');
+            document.getElementById(`form-${tab}`).classList.add('active');
+        }
+
+        function showAuthError(msg) {
+            const el = document.getElementById('authError');
+            el.textContent = msg;
+            el.style.display = msg ? 'block' : 'none';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            showAuthError('');
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            if (!username || !password) {
+                showAuthError('Заполните все поля');
+                return;
+            }
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('session', data.session);
+                    sessionStorage.setItem('justLoggedIn', 'true');
+                    window.location.href = '/sort.html';
+                } else {
+                    showAuthError(data.error || 'Ошибка входа');
+                }
+            } catch (err) {
+                showAuthError('Ошибка соединения с сервером');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            showAuthError('');
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+            const yandexToken = document.getElementById('regYandexToken').value.trim();
+
+            if (!username || !email || !password || !passwordConfirm) {
+                showAuthError('Заполните все обязательные поля');
+                return;
+            }
+            if (password !== passwordConfirm) {
+                showAuthError('Пароли не совпадают');
+                return;
+            }
+            if (password.length < 6) {
+                showAuthError('Пароль должен быть не менее 6 символов');
+                return;
+            }
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, email, yandex_token: yandexToken || undefined })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('session', data.session);
+                    sessionStorage.setItem('justLoggedIn', 'true');
+                    window.location.href = '/sort.html';
+                } else {
+                    showAuthError(data.error || 'Ошибка регистрации');
+                }
+            } catch (err) {
+                showAuthError('Ошибка соединения с сервером');
+            }
+        }
+
+        function handleRecovery(e) {
+            e.preventDefault();
+            alert('Инструкция по восстановлению отправлена на вашу почту');
+            closeModal();
+        }
+
+        // Check if user is already authorized — redirect to sort.html
+        document.addEventListener('DOMContentLoaded', async function() {
+            const session = localStorage.getItem('session');
+            if (session) {
+                try {
+                    const res = await fetch('/api/auth/session', {
+                        headers: { 'Authorization': session }
+                    });
+                    const data = await res.json();
+                    if (data.authenticated) {
+                        window.location.href = '/sort.html';
+                        return;
+                    }
+                } catch (e) {}
+                localStorage.removeItem('session');
+            }
+        });
+
+        // Progress Bar
+        const progressBar = document.getElementById('progressBar');
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            progressBar.style.width = `${(scrollTop / docHeight) * 100}%`;
+        });
+
+        // Navbar blur on scroll
+        const nav = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) nav.classList.add('scrolled');
+            else nav.classList.remove('scrolled');
+        });
+
+        // Mobile Menu
+        const navLinks = document.getElementById('navLinks');
+        const menuIcon = document.getElementById('menuIcon');
+        function toggleMenu() {
+            navLinks.classList.toggle('open');
+            menuIcon.className = navLinks.classList.contains('open') ? 'fas fa-times' : 'fas fa-bars';
+        }
+
+        // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Универсальная функция для анимации fade-up
+        const fadeElements = document.querySelectorAll('[data-gsap="fade-up"]');
+        fadeElements.forEach(el => {
+            const delay = el.getAttribute('data-delay') || 0;
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: 'top 85%',
+                    toggleActions: 'play none none none'
+                },
+                y: 40,
+                opacity: 0,
+                duration: 0.8,
+                delay: parseFloat(delay),
+                ease: 'power3.out'
+            });
+        });
+
+        // Split cards animations
+        gsap.from('.comp-old', {
+            scrollTrigger: { trigger: '.comparison-grid', start: 'top 80%' },
+            x: -50, opacity: 0, duration: 0.8, ease: 'power3.out'
+        });
+        gsap.from('.comp-new', {
+            scrollTrigger: { trigger: '.comparison-grid', start: 'top 80%' },
+            x: 50, opacity: 0, duration: 0.8, ease: 'power3.out'
+        });
+
+        // Анимация счетчиков "Стиль Терминала"
+        gsap.utils.toArray('[data-count]').forEach(el => {
+            const target = parseInt(el.getAttribute('data-count'));
+            if (target === 0) return; // Skip if 0
+
+            ScrollTrigger.create({
+                trigger: el,
+                start: 'top 90%',
+                once: true,
+                onEnter: () => {
+                    let obj = { val: 0 };
+                    gsap.to(obj, {
+                        val: target,
+                        duration: 2,
+                        ease: 'power2.out',
+                        onUpdate: () => {
+                            // Добавляем эффект перебора цифр
+                            el.innerText = Math.round(obj.val).toLocaleString('ru-RU');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

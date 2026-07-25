@@ -71,11 +71,11 @@ class SEOWorkflow:
                     cur.execute(create_sql)
                 conn.commit()
 
-    def get_cluster_keywords(self) -> List[Dict]:
+    def get_cluster_keywords(self, user_id: int) -> List[Dict]:
         from services.yandex_webmaster import YandexWebmasterClient
         from services.semantic_core import SemanticCoreManager
 
-        client = YandexWebmasterClient(Config.YANDEX_TOKEN)
+        client = YandexWebmasterClient(Config.YANDEX_TOKEN, user_id=user_id)
         raw_queries = client.fetch_queries_recent(Config.YANDEX_SITE)
         if not raw_queries:
             print("No queries from Yandex Webmaster")
@@ -103,7 +103,7 @@ class SEOWorkflow:
                     "serp_representative": cl["serp_representative"],
                 }
             )
-        manager.save_clusters(db_clusters)
+        manager.save_clusters(db_clusters, user_id=user_id, site_url=Config.YANDEX_SITE)
         print(f"Created {len(db_clusters)} semantic clusters")
 
         return clusters
@@ -198,13 +198,13 @@ class SEOWorkflow:
                     )
                 conn.commit()
 
-    def run_full_workflow(self):
+    def run_full_workflow(self, user_id: int):
         print("=" * 50)
         print("Starting FULL SEO workflow")
         print("=" * 50)
 
         print("\n[1/4] Getting keywords from Yandex Webmaster...")
-        clusters = self.get_cluster_keywords()
+        clusters = self.get_cluster_keywords(user_id=user_id)
         if not clusters:
             print("No clusters created")
             return

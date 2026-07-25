@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mane Panel - SEO Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            overflow: hidden;
+        }
+
+        h1, h2, h3, .logo {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Login Screen */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            padding: 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .login-card h2 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: #fff;
+            font-size: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-full:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-full:active {
+            transform: scale(0.98);
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            display: none; /* Hidden by default */
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .nav-list {
+            list-style: none;
+            flex: 1;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .sidebar-footer {
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: 500;
+            padding: 12px 16px;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #fef2f2;
+        }
+
+        /* Content Area */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            background: var(--bg);
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .page-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #fafafa;
+        }
+
+        /* Status Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-error { background: #fee2e2; color: #991b1b; }
+
+        /* Forms */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .inline-input {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-danger { background: #fef2f2; color: #ef4444; }
+        .btn-danger:hover { background: #fee2e2; }
+        .btn-success { background: #f0fdf4; color: #22c55e; }
+        .btn-success:hover { background: #dcfce7; }
+
+        /* Logs */
+        .logs-window {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 24px;
+            border-radius: 16px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            max-height: 600px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .log-time { color: #64748b; margin-right: 12px; }
+        .log-msg { color: #fecaca; }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="adminLogin" class="login-overlay">
+        <div class="login-card">
+            <h2>mane Panel</h2>
+            <p>Добро пожаловать в центр управления.</p>
+            <div class="input-group">
+                <input type="password" id="adminPassword" class="input-field" placeholder="Пароль администратора">
+            </div>
+            <button class="btn-full" onclick="adminLogin()">Войти в систему</button>
+            <div id="loginError" style="color: #ef4444; margin-top: 16px; font-size: 14px; display: none; text-align: center;"></div>
+        </div>
+    </div>
+
+    <!-- Main Panel -->
+    <div id="adminPanel" class="app-container">
+        <aside class="sidebar">
+            <div class="logo-box">
+                <svg width="32" height="32" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#6366f1"/>
+                    <circle cx="50" cy="50" r="20" fill="white"/>
+                </svg>
+                <span>mane</span>
+            </div>
+            <nav class="nav-list">
+                <li class="nav-item active" data-tab="tariffs">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Тарифы
+                </li>
+                <li class="nav-item" data-tab="users">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    Пользователи
+                </li>
+                <li class="nav-item" data-tab="sites">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                    Сайты
+                </li>
+                <li class="nav-item" data-tab="payments">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    Платежи
+                </li>
+                <li class="nav-item" data-tab="logs">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Логи ошибок
+                </li>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="logout-btn" onclick="adminLogout()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Выйти
+                </div>
+            </div>
+        </aside>
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1 id="activeTabTitle">Тарифы</h1>
+                </div>
+            </div>
+            <div id="tabContent" class="animate-fade">
+                <div class="card">Загрузка...</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let adminToken = localStorage.getItem('adminToken');
+
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    adminToken = data.token;
+                    localStorage.setItem('adminToken', adminToken);
+                    showPanel();
+                } else {
+                    const err = document.getElementById('loginError');
+                    err.textContent = data.error || 'Неверный пароль';
+                    err.style.display = 'block';
+                }
+            } catch (e) {
+                alert('Ошибка входа');
+            }
+        }
+
+        function adminLogout() {
+            localStorage.removeItem('adminToken');
+            location.reload();
+        }
+
+        function showPanel() {
+            document.getElementById('adminLogin').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'flex';
+            loadTab('tariffs');
+        }
+
+        async function loadTab(tabName) {
+            const titles = {
+                tariffs: 'Настройки тарификации',
+                users: 'Управление пользователями',
+                sites: 'Глобальный список сайтов',
+                payments: 'Финансовая история',
+                logs: 'Диагностика системы'
+            };
+            document.getElementById('activeTabTitle').textContent = titles[tabName] || tabName;
+
+            const content = document.getElementById('tabContent');
+            content.textContent = '';
+            const loading = document.createElement('div');
+            loading.className = 'card';
+            loading.textContent = 'Загрузка данных...';
+            content.appendChild(loading);
+            
+            try {
+                const res = await fetch(`/api/admin/${tabName}`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) return adminLogout();
+                
+                const data = await res.json();
+                renderTab(tabName, data);
+            } catch (e) {
+                content.textContent = '';
+                const err = document.createElement('div');
+                err.className = 'card';
+                err.style.color = '#ef4444';
+                err.textContent = 'Ошибка загрузки данных. Проверьте соединение.';
+                content.appendChild(err);
+            }
+        }
+
+        function createEl(tag, className, text) {
+            const el = document.createElement(tag);
+            if (className) el.className = className;
+            if (text !== undefined) el.textContent = text;
+            return el;
+        }
+
+        function renderTab(tab, data) {
+            const content = document.getElementById('tabContent');
+            content.textContent = '';
+            
+            if (tab === 'tariffs') {
+                const card = createEl('div', 'card');
+                
+                const createInputGroup = (labelText, id, value) => {
+                    const group = createEl('div', 'input-group');
+                    group.appendChild(createEl('label', '', labelText));
+                    const input = createEl('input', 'input-field');
+                    input.type = 'number';
+                    input.id = id;
+                    input.step = '0.01';
+                    input.value = value;
+                    group.appendChild(input);
+                    return group;
+                };
+                
+                card.appendChild(createInputGroup('Кластеризация (за 1 запрос, ₽)', 'rate_clustering', data.clustering_rate || 0.10));
+                card.appendChild(createInputGroup('Съем частоты (за 1 запрос, ₽)', 'rate_frequency', data.frequency_rate || 0.20));
+                card.appendChild(createInputGroup('Съем позиции (новый запрос, ₽)', 'rate_pos_new', data.position_new_rate || 0.25));
+                card.appendChild(createInputGroup('Съем позиции (шаг 10 поз., ₽)', 'rate_pos_step', data.position_step_rate || 0.05));
+                
+                const btn = createEl('button', 'btn-full', 'Применить новые тарифы');
+                btn.onclick = saveTariffs;
+                card.appendChild(btn);
+                
+                content.appendChild(card);
+            } else if (tab === 'users') {
+                const card = createEl('div', 'card table-container');
+                const table = createEl('table');
+                const thead = createEl('thead');
+                const hTr = createEl('tr');
+                ['User', 'Баланс', 'Токен', 'Статус', 'Действия'].forEach(h => hTr.appendChild(createEl('th', '', h)));
+                thead.appendChild(hTr);
+                table.appendChild(thead);
+                
+                const tbody = createEl('tbody');
+                (data.users || []).forEach(u => {
+                    const tr = createEl('tr');
+                    
+                    const tdUser = createEl('td');
+                    const divEmail = createEl('div');
+                    divEmail.style.fontWeight = '600';
+                    divEmail.textContent = u.email || u.username || 'No email';
+                    const divId = createEl('div');
+                    divId.style.color = 'var(--text-muted)';
+                    divId.style.fontSize = '12px';
+                    divId.textContent = 'ID: ' + u.id;
+                    tdUser.appendChild(divEmail);
+                    tdUser.appendChild(divId);
+                    tr.appendChild(tdUser);
+                    
+                    const tdBal = createEl('td');
+                    const inBal = createEl('input', 'inline-input');
+                    inBal.type = 'number';
+                    inBal.id = 'balance_' + u.id;
+                    inBal.step = '0.01';
+                    inBal.style.width = '100px';
+                    inBal.value = parseFloat(u.balance || 0).toFixed(2);
+                    tdBal.appendChild(inBal);
+                    tr.appendChild(tdBal);
+                    
+                    const tdTok = createEl('td');
+                    const inTok = createEl('input', 'inline-input');
+                    inTok.type = 'text';
+                    inTok.id = 'token_' + u.id;
+                    inTok.style.width = '140px';
+                    inTok.placeholder = '—';
+                    inTok.value = u.yandex_token || '';
+                    tdTok.appendChild(inTok);
+                    tr.appendChild(tdTok);
+                    
+                    const tdStat = createEl('td');
+                    const spanStat = createEl('span', 'badge ' + (u.is_blocked ? 'badge-error' : 'badge-success'), u.is_blocked ? 'Blocked' : 'Active');
+                    tdStat.appendChild(spanStat);
+                    tr.appendChild(tdStat);
+                    
+                    const tdAct = createEl('td');
+                    tdAct.style.display = 'flex';
+                    tdAct.style.gap = '8px';
+                    
+                    const btnSave = createEl('button', 'btn btn-primary', 'Save');
+                    btnSave.onclick = () => saveUser(u.id);
+                    
+                    const btnBlock = createEl('button', 'btn ' + (u.is_blocked ? 'btn-success' : 'btn-danger'), u.is_blocked ? 'Unlock' : 'Block');
+                    btnBlock.onclick = () => toggleBlock(u.id, u.is_blocked);
+                    
+                    tdAct.appendChild(btnSave);
+                    tdAct.appendChild(btnBlock);
+                    tr.appendChild(tdAct);
+                    
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                card.appendChild(table);
+                content.appendChild(card);
+            } else if (tab === 'sites') {
+                const card = createEl('div', 'card table-container');
+                const table = createEl('table');
+                const thead = createEl('thead');
+                const hTr = createEl('tr');
+                ['Owner ID', 'Domain', 'Keywords'].forEach(h => hTr.appendChild(createEl('th', '', h)));
+                thead.appendChild(hTr);
+                table.appendChild(thead);
+                
+                const tbody = createEl('tbody');
+                (data.sites || []).forEach(s => {
+                    const tr = createEl('tr');
+                    
+                    const tdOwner = createEl('td');
+                    const spanOwner = createEl('span', 'badge', 'UID: ' + s.user_id);
+                    spanOwner.style.background = '#f1f5f9';
+                    tdOwner.appendChild(spanOwner);
+                    tr.appendChild(tdOwner);
+                    
+                    const tdDomain = createEl('td');
+                    tdDomain.style.fontWeight = '500';
+                    tdDomain.textContent = s.domain;
+                    tr.appendChild(tdDomain);
+                    
+                    const tdKeys = createEl('td');
+                    tdKeys.appendChild(createEl('span', 'badge badge-success', s.query_count || 0));
+                    tr.appendChild(tdKeys);
+                    
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                card.appendChild(table);
+                content.appendChild(card);
+            } else if (tab === 'payments') {
+                const card = createEl('div', 'card table-container');
+                const table = createEl('table');
+                const thead = createEl('thead');
+                const hTr = createEl('tr');
+                ['User', 'Amount', 'Type', 'Description', 'Date'].forEach(h => hTr.appendChild(createEl('th', '', h)));
+                thead.appendChild(hTr);
+                table.appendChild(thead);
+                
+                const tbody = createEl('tbody');
+                (data.payments || []).forEach(p => {
+                    const tr = createEl('tr');
+                    
+                    tr.appendChild(createEl('td', '', p.email || 'ID: ' + p.user_id));
+                    
+                    const tdAmt = createEl('td');
+                    tdAmt.style.fontWeight = '700';
+                    tdAmt.style.color = p.type === 'deposit' ? '#166534' : '#991b1b';
+                    tdAmt.textContent = (p.type === 'deposit' ? '+' : '-') + parseFloat(p.amount).toFixed(2) + ' ₽';
+                    tr.appendChild(tdAmt);
+                    
+                    const tdType = createEl('td');
+                    const spanType = createEl('span', 'badge', p.type);
+                    spanType.style.background = '#f1f5f9';
+                    tdType.appendChild(spanType);
+                    tr.appendChild(tdType);
+                    
+                    const tdDesc = createEl('td');
+                    tdDesc.style.color = 'var(--text-muted)';
+                    tdDesc.style.fontSize = '13px';
+                    tdDesc.textContent = p.description;
+                    tr.appendChild(tdDesc);
+                    
+                    const tdDate = createEl('td');
+                    tdDate.style.fontSize = '12px';
+                    tdDate.textContent = new Date(p.created_at).toLocaleString();
+                    tr.appendChild(tdDate);
+                    
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                card.appendChild(table);
+                content.appendChild(card);
+            } else if (tab === 'logs') {
+                const logsWindow = createEl('div', 'logs-window');
+                logsWindow.textContent = (data.logs && typeof data.logs === 'string') ? data.logs : 'Нет ошибок в логах.';
+                content.appendChild(logsWindow);
+            }
+        }
+
+        // Tab switching
+        document.addEventListener('click', e => {
+            const navItem = e.target.closest('.nav-item');
+            if (navItem) {
+                document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+                navItem.classList.add('active');
+                loadTab(navItem.dataset.tab);
+            }
+        });
+
+        async function toggleBlock(userId, currentStatus) {
+            if (!confirm(`Вы уверены, что хотите ${currentStatus ? 'разблокировать' : 'заблокировать'} пользователя?`)) return;
+            
+            try {
+                const res = await fetch('/api/admin/users/update', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ userId, is_blocked: !currentStatus })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadTab('users');
+                } else {
+                    alert(data.error || 'Ошибка обновления статуса');
+                }
+            } catch (e) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        async function saveUser(userId) {
+            const balance = document.getElementById(`balance_${userId}`).value;
+            const yandex_token = document.getElementById(`token_${userId}`).value;
+            
+            try {
+                const res = await fetch('/api/admin/users/update', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ userId, balance, yandex_token })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Данные пользователя сохранены');
+                    loadTab('users');
+                } else {
+                    alert(data.error || 'Ошибка при сохранении');
+                }
+            } catch (e) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        async function saveTariffs() {
+            const clustering = document.getElementById('rate_clustering').value;
+            const frequency = document.getElementById('rate_frequency').value;
+            const position_new = document.getElementById('rate_pos_new').value;
+            const position_step = document.getElementById('rate_pos_step').value;
+            
+            try {
+                const res = await fetch('/api/admin/tariffs/update', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ clustering, frequency, position_new, position_step })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Тарифы успешно обновлены');
+                    loadTab('tariffs');
+                } else {
+                    alert(data.error || 'Ошибка при сохранении тарифов');
+                }
+            } catch (e) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        if (adminToken) {
+            showPanel();
+        }
+    </script>
+</body>
+</html>

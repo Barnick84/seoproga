@@ -19,7 +19,7 @@ def prefetch_for_clustering(
     if fetched < total:
         print(
             f"⚠️ Prefetch: {fetched}/{total} ключей в кэше, "
-            f"{total - fetched} будут запрошены из API"
+            f"{total - fetched} запрошено из API"
         )
     else:
         print(f"✓ Prefetch: все {total} ключей в кэше")

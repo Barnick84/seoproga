@@ -9,7 +9,8 @@ from services.xmlriver_client import XmlriverClient
 from services.clustering import cluster_keywords
 from services.yandex_webmaster import YandexWebmasterClient
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if hasattr(sys.stdout, "buffer") and "pytest" not in sys.modules:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 
 def main():
@@ -58,7 +59,7 @@ def main():
 def main_yandex():
     print("🚀 Запуск модуля Яндекс.Вебмастер...")
 
-    client = YandexWebmasterClient(Config.YANDEX_TOKEN)
+    client = YandexWebmasterClient(Config.YANDEX_TOKEN, user_id=1)
 
     try:
         raw_queries = client.fetch_queries_recent(Config.YANDEX_SITE)
@@ -72,21 +73,11 @@ def main_yandex():
         print(f"✅ Сохранено в БД: {saved} записей")
 
         keywords = client.get_unique_queries_for_clustering(
-            Config.YANDEX_SITE, min_hits=5
+            Config.YANDEX_SITE
         )
         print(f"🔑 Уникальных запросов для кластеризации (hits ≥ 5): {len(keywords)}")
         if keywords:
             print("   Примеры:", keywords[:5])
-            # Initialize XMLRiver client with cache for SERP fetching
-            cache = SERPCache()
-            xmlriver_client = XmlriverClient(cache=cache)
-            # Process semantic core: create/update clusters in PostgreSQL
-            client.process_semantic_core(xmlriver_client)
-        print(f"🔑 Уникальных запросов для кластеризации (hits ≥ 5): {len(keywords)}")
-        if keywords:
-            print("   Примеры:", keywords[:5])
-
-    # Semantic core processing completed; clustering output handled inside process_semantic_core
 
     except requests.exceptions.HTTPError as e:
         print(f"❌ Ошибка API: {e.response.status_code} → {e.response.text}")

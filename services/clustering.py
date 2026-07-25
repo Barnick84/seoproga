@@ -62,19 +62,22 @@ def cluster_keywords(
             continue
 
         assigned = False
+        best_cluster = None
+        max_sim = 0.0
+        
         for cluster in clusters:
             sim = serp_similarity(serp, cluster["serp_representative"])
-            if sim >= threshold:
-                cluster["keywords"].append(keyword)
-                cluster["serp_representative"] = merge_serps(
-                    [
-                        client.fetch_serp(kw, use_cache=True)
-                        for kw in cluster["keywords"]
-                    ]
-                )
-                assigned = True
-                break
-
+            if sim >= threshold and sim > max_sim:
+                max_sim = sim
+                best_cluster = cluster
+                
+        if best_cluster:
+            best_cluster["keywords"].append(keyword)
+            best_cluster["serp_representative"] = merge_serps(
+                [serp, best_cluster["serp_representative"]]
+            )
+            assigned = True
+        
         if not assigned:
             clusters.append(
                 {

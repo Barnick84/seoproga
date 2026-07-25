@@ -58,15 +58,11 @@ def get_wm_queries_from_db(site_url: str = "", min_hits: int = 0) -> list:
                 rows = cur.fetchall()
                 if not rows:
                     # Show all queries as fallback
-                    cur = conn.execute(
-                        "SELECT query, hits FROM yandex_queries ORDER BY hits DESC"
-                    )
+                    cur = conn.execute("SELECT query, hits FROM yandex_queries ORDER BY hits DESC")
                     rows = cur.fetchall()
             else:
                 # No site_url - show all
-                cur = conn.execute(
-                    "SELECT query, hits FROM yandex_queries ORDER BY hits DESC"
-                )
+                cur = conn.execute("SELECT query, hits FROM yandex_queries ORDER BY hits DESC")
                 rows = cur.fetchall()
 
             # Filter by min_hits only if we have non-zero hits in data
@@ -139,9 +135,7 @@ def render_clustering_tab():
         )
         minus_words = []
         if minus_input:
-            minus_words = [
-                k.strip().lower() for k in minus_input.split("\n") if k.strip()
-            ]
+            minus_words = [k.strip().lower() for k in minus_input.split("\n") if k.strip()]
             if minus_words:
                 st.warning(f"⚠️ Будет исключено: {len(minus_words)} слов")
 
@@ -191,9 +185,7 @@ def render_clustering_tab():
 
     st.divider()
 
-    if st.button(
-        "🚀 Запустить кластеризацию", type="primary", use_container_width=True
-    ):
+    if st.button("🚀 Запустить кластеризацию", type="primary", use_container_width=True):
         if not filtered_keywords:
             st.error("Нет ключевых слов для кластеризации")
             return
@@ -207,9 +199,7 @@ def render_clustering_tab():
             client = XmlriverClient(cache=cache)
 
             try:
-                clusters = cluster_keywords_func(
-                    filtered_keywords, client, threshold=threshold
-                )
+                clusters = cluster_keywords_func(filtered_keywords, client, threshold=threshold)
                 st.session_state.clusters = clusters
                 st.session_state.unclustered = []
                 st.session_state.selected_keywords = set()
@@ -244,9 +234,7 @@ def render_clusters_display(clusters: list):
             for c in clusters
         ]
     )
-    all_sections = [
-        (sid, sname, skwlist) for sid, sname, skwlist in all_sections if skwlist
-    ]
+    all_sections = [(sid, sname, skwlist) for sid, sname, skwlist in all_sections if skwlist]
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Всего кластеров", len(clusters))
@@ -270,9 +258,7 @@ def render_clusters_display(clusters: list):
     target_options = ["Не кластеризованные", "Минус слова"] + [
         f"Кластер #{c['id']}" for c in clusters
     ]
-    target_idx = st.selectbox(
-        "Переместить выбранные в:", target_options, key="move_target"
-    )
+    target_idx = st.selectbox("Переместить выбранные в:", target_options, key="move_target")
     target_type = (
         "unclustered"
         if target_idx == "Не кластеризованные"
@@ -302,36 +288,24 @@ def render_clusters_display(clusters: list):
                     if current_section:
                         if current_section == "unclustered":
                             removed = [
-                                kw
-                                for kw in st.session_state.unclustered
-                                if kw in move_keywords
+                                kw for kw in st.session_state.unclustered if kw in move_keywords
                             ]
                             section_name = "Не кластеризованные"
                             st.session_state.unclustered = [
-                                kw
-                                for kw in st.session_state.unclustered
-                                if kw not in move_keywords
+                                kw for kw in st.session_state.unclustered if kw not in move_keywords
                             ]
                         else:
                             cid = int(current_section.replace("cluster_", ""))
                             for c in st.session_state.clusters:
                                 if c["id"] == cid:
-                                    removed = [
-                                        kw
-                                        for kw in c["keywords"]
-                                        if kw in move_keywords
-                                    ]
+                                    removed = [kw for kw in c["keywords"] if kw in move_keywords]
                                     section_name = f"Кластер #{cid}"
                                     c["keywords"] = [
-                                        kw
-                                        for kw in c["keywords"]
-                                        if kw not in move_keywords
+                                        kw for kw in c["keywords"] if kw not in move_keywords
                                     ]
                                     break
                         if removed:
-                            st.info(
-                                f"🗑️ Удалено из {section_name}: {len(removed)} ключей"
-                            )
+                            st.info(f"🗑️ Удалено из {section_name}: {len(removed)} ключей")
 
                     if target_type == "unclustered":
                         st.session_state.unclustered.extend(move_keywords)
@@ -341,9 +315,7 @@ def render_clusters_display(clusters: list):
                     elif target_type == "minus_words":
                         current_minus = st.session_state.get("minus_words", [])
                         st.session_state.minus_words = current_minus + move_keywords
-                        st.success(
-                            f"✅ Добавлено в минус слова: {len(move_keywords)} ключей"
-                        )
+                        st.success(f"✅ Добавлено в минус слова: {len(move_keywords)} ключей")
                     elif target_type and target_type.startswith("cluster_"):
                         cid = int(target_type.replace("cluster_", ""))
                         for c in st.session_state.clusters:
@@ -461,7 +433,11 @@ def render_data_tab():
             else:
                 with st.spinner("Загружаю данные из Яндекс Вебмастер..."):
                     try:
-                        client = YandexWebmasterClient(Config.YANDEX_TOKEN)
+                        uid = st.session_state.get("user_id")
+                        if not uid:
+                            st.error("Укажите User ID в боковой панели настроек")
+                            st.stop()
+                        client = YandexWebmasterClient(Config.YANDEX_TOKEN, user_id=uid)
                         queries = client.fetch_queries_recent(site_url)
 
                         if not queries:
@@ -474,17 +450,38 @@ def render_data_tab():
                         st.error(f"Ошибка: {e}")
 
     with col_clear:
-        if st.button("🗑�� Очистить", use_container_width=True):
+        if st.button("🗑️ Очистить", use_container_width=True):
             if site_url:
+                uid_clear = st.session_state.get("user_id")
+                if not uid_clear:
+                    st.error("Укажите User ID в боковой панели настроек")
+                    st.stop()
                 try:
-                    import os
-
-                    db_path = "data/yandex_queries.db"
-                    if os.path.exists(db_path):
-                        os.remove(db_path)
-                        st.success("База очищена")
+                    conn = Config.get_conn()
+                    cur = conn.cursor()
+                    cur.execute(
+                        "DELETE FROM yandex_queries WHERE user_id = %s AND site_url = %s",
+                        (uid_clear, site_url),
+                    )
+                    deleted = cur.rowcount
+                    conn.commit()
+                    conn.close()
+                    st.success(f"Удалено записей: {deleted}")
                 except Exception as e:
-                    st.error(f"Ошибка: {e}")
+                    import sqlite3
+
+                    try:
+                        conn_sqlite = sqlite3.connect("data/yandex_queries.db")
+                        conn_sqlite.execute(
+                            "DELETE FROM yandex_queries WHERE user_id = ?",
+                            (uid_clear,),
+                        )
+                        deleted_sqlite = conn_sqlite.total_changes
+                        conn_sqlite.commit()
+                        conn_sqlite.close()
+                        st.success(f"Удалено записей (SQLite): {deleted_sqlite}")
+                    except Exception as e2:
+                        st.error(f"Ошибка: {e} / {e2}")
 
     st.divider()
 
@@ -541,6 +538,11 @@ def render_settings_tab():
             key="yandex_token",
         )
         st.text_input("YANDEX_SITE_URL", value=Config.YANDEX_SITE or "")
+
+        uid_input = st.number_input(
+            "Ваш User ID", value=st.session_state.get("user_id", 0), min_value=1
+        )
+        st.session_state["user_id"] = uid_input
 
     st.divider()
 

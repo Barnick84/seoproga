@@ -120,7 +120,7 @@ seo-auto-cluster/
 ├── streamlit_app.py  # Dashboard
 ├── services/
 │   ├── clustering.py      # SERP similarity + Jaccard
-│   ├── cache.py           # SQLite SERP cache
+│   ├── cache.py           # MySQL SERP cache (lazy conn)
 │   ├── xmlriver_client.py # XMLRiver API
 │   ├── yandex_webmaster.py# Yandex WM API
 │   ├── semantic_core.py   # PostgreSQL storage
@@ -128,7 +128,10 @@ seo-auto-cluster/
 │   ├── seo_agent.py       # OpenAI LLM agent
 │   ├── seo_workflow.py    # Full pipeline
 │   └── page_content_manager.py
-├── utils/helpers.py
+├── utils/
+│   ├── bootstrap.py   # Script entry: chdir, sys.path, stdout fix
+│   └── helpers.py
+├── scripts/  # 26 scripts, all use bootstrap()
 └── tests/
 ```
 
