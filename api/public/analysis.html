@@ -2383,7 +2383,7 @@
                 const res = await authFetch('/api/cluster/target-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain, clusterId, targetUrl: url })
+                    body: JSON.stringify({ domain, clusterId, target_url: url })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -3055,7 +3055,7 @@
                 const res = await authFetch('/api/cluster/target-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain, clusterId, url })
+                    body: JSON.stringify({ domain, clusterId, target_url: url })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -3170,7 +3170,7 @@
                 await authFetch('/api/cluster/target-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain, clusterId, url: targetUrl })
+                    body: JSON.stringify({ domain, clusterId, target_url: targetUrl })
                 });
 
                 // Step 2-3: Keywords
