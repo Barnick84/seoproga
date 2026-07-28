@@ -26,7 +26,12 @@ def run_clustering_task(
 
     try:
         conn = Config.get_conn()
-        cur = conn.cursor(dictionary=True)
+        if Config.DB_TYPE == "postgresql":
+            import psycopg2.extras
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        else:
+            import pymysql.cursors
+            cur = conn.cursor(pymysql.cursors.DictCursor)
 
         # 1. Get existing clusters
         cur.execute(

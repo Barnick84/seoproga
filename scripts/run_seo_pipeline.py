@@ -81,7 +81,12 @@ def run_seo_pipeline_task(
         # Check completed steps from payload
         try:
             conn_check = Config.get_conn()
-            cur_check = conn_check.cursor(dictionary=True)
+            if Config.DB_TYPE == "postgresql":
+                import psycopg2.extras
+                cur_check = conn_check.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            else:
+                import pymysql.cursors
+                cur_check = conn_check.cursor(pymysql.cursors.DictCursor)
             cur_check.execute("SELECT payload FROM tasks WHERE id = %s", (task_id,))
             row = cur_check.fetchone()
             payload_data = json.loads(row["payload"]) if row and row["payload"] else {}
@@ -151,14 +156,14 @@ def run_seo_pipeline_task(
                 50,
                 "Сбор частотности ключей кластера",
                 fetch_frequency_task,
-                domain=domain,
-                user_id=user_id,
-                device="",
-                region=region,
-                mode="missing",
-                min_freq=10,
-                task_id=task_id,
-                cluster_id=cluster_id,
+                domain,
+                user_id,
+                "",  # device
+                region,
+                "missing",  # mode
+                10,  # min_freq
+                task_id,
+                cluster_id,
             )
             mark_complete(4)
         else:
@@ -208,7 +213,12 @@ def run_seo_pipeline_task(
             keywords = []
             try:
                 conn = Config.get_conn()
-                cur = conn.cursor(dictionary=True)
+                if Config.DB_TYPE == "postgresql":
+                    import psycopg2.extras
+                    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                else:
+                    import pymysql.cursors
+                    cur = conn.cursor(pymysql.cursors.DictCursor)
                 cur.execute(
                     "SELECT query FROM yandex_queries WHERE user_id = %s AND site_url = %s AND clustered = %s AND minus_word = 0",
                     (user_id, domain, cluster_id),
