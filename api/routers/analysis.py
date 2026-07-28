@@ -69,7 +69,7 @@ def get_system_settings(cur):
 
 def check_and_deduct_balance(conn, cur, user_id, amount, description):
     try:
-        conn.start_transaction()
+        conn.begin()
         cur.execute(
             "UPDATE users SET balance = balance - %s WHERE id = %s AND balance >= %s",
             (amount, user_id, amount),

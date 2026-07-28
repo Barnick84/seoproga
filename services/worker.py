@@ -34,7 +34,7 @@ def fetch_and_schedule_tasks(limit: int = 5):
     cur = conn.cursor(pymysql.cursors.DictCursor)
     tasks = []
     try:
-        conn.start_transaction()
+        conn.begin()
         for _ in range(limit):
             cur.execute("SELECT * FROM tasks WHERE status = 'pending' ORDER BY created_at LIMIT 1")
             task = cur.fetchone()
