@@ -17,7 +17,24 @@ def get_db_cursor(dictionary=True, commit=False):
     conn = Config.get_conn()
     cur = None
     try:
-        cur = conn.cursor(dictionary=dictionary)
+        if Config.DB_TYPE == "postgresql":
+            if dictionary:
+                import psycopg2.extras
+
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            else:
+                cur = conn.cursor()
+        elif Config.DB_TYPE == "mysql":
+            if dictionary:
+                import pymysql.cursors
+
+                cur = conn.cursor(pymysql.cursors.DictCursor)
+            else:
+                import pymysql.cursors
+
+                cur = conn.cursor(pymysql.cursors.Cursor)
+        else:
+            cur = conn.cursor()
         yield conn, cur
         if commit:
             conn.commit()
