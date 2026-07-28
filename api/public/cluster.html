@@ -55,7 +55,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:20px;">
                     <div style="display:flex; align-items:center; gap: 15px; flex: 1;">
                         <h2>Кластеры</h2>
-                        <input type="text" id="clusterSearchInput" placeholder="Поиск по ключам..." oninput="filterClustersByKeywords()" style="padding:6px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; max-width:300px; width:100%;">
+                        <input type="text" id="clusterSearchInput" name="main_search_no_autofill" autocomplete="new-password" placeholder="Поиск по ключам..." oninput="filterClustersByKeywords()" style="padding:6px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; max-width:300px; width:100%;">
                     </div>
                     <div class="header-actions" style="display:flex; gap:10px;">
                         <button id="btnRunCluster" class="btn btn-primary" onclick="runClustering()"><i class="fas fa-rocket"></i> Запустить кластеризацию</button>
@@ -257,8 +257,11 @@
                     некластеризовано</button>
             </div>
             <div class="search-wrapper" style="position: relative; margin-top: 10px;">
-                <input type="text" id="sidebarSearch" class="sidebar-search" value="" placeholder="Поиск кластера..."
-                    oninput="filterSidebarClusters()" autocomplete="off" spellcheck="false" style="width: 100%; margin-top: 0;">
+                <!-- Antifill hacks -->
+                <input type="text" style="display:none" aria-hidden="true">
+                <input type="password" style="display:none" aria-hidden="true">
+                <input type="text" id="sidebarSearch" name="sidebarSearchRandom" class="sidebar-search" value="" placeholder="Поиск кластера..."
+                    oninput="filterSidebarClusters()" autocomplete="new-password" spellcheck="false" style="width: 100%; margin-top: 0;">
                 <span id="clearSearch" class="clear-icon" onclick="clearSidebarSearch()">&times;</span>
             </div>
         </div>
