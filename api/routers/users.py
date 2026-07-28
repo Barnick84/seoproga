@@ -89,7 +89,7 @@ async def login(req: LoginRequest, request: Request):
 
 @router.get("/api/auth/session")
 async def get_session(current_user: TokenData = Depends(get_current_user)):
-    return {"success": True, "user_id": current_user.user_id, "username": current_user.username}
+    return {"success": True, "authenticated": True, "user_id": current_user.user_id, "username": current_user.username}
 
 
 @router.post("/api/auth/logout")
