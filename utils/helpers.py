@@ -12,8 +12,12 @@ def extract_domain(url: str) -> str:
         domain = url.split("/")[0]
 
     domain = domain.replace("www.", "").lower()
+    
+    # Always return Unicode (decode punycode if it's already punycode)
     try:
-        return domain.encode("idna").decode("ascii")
+        if domain.startswith("xn--"):
+            return domain.encode("ascii").decode("idna")
+        return domain
     except (UnicodeError, ValueError):
         return domain
 
@@ -24,7 +28,8 @@ def clean_url(url: str) -> str:
     parsed = urlparse(url)
     domain = parsed.netloc.replace("www.", "").lower()
     try:
-        domain = domain.encode("idna").decode("ascii")
+        if domain.startswith("xn--"):
+            domain = domain.encode("ascii").decode("idna")
     except (UnicodeError, ValueError):
         pass
     return f"{domain}{parsed.path}".lower().rstrip("/")
