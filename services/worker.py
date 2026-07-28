@@ -160,7 +160,9 @@ def run_task(task: dict) -> None:
         )
 
     try:
-        proc = subprocess.Popen(args, cwd=project_root)
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+        proc = subprocess.Popen(args, cwd=project_root, env=env)
         with processes_lock:
             active_processes.append((proc, task))
     except Exception as e:
