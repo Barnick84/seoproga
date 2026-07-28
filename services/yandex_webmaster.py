@@ -34,23 +34,27 @@ class YandexWebmasterClient:
         for prefix in ("https://", "http://", "https:", "http:"):
             if url.startswith(prefix):
                 url = url[len(prefix) :]
-        return url.rstrip("/")
+        url = url.rstrip("/")
+        if url.endswith(":443"):
+            url = url[:-4]
+        elif url.endswith(":80"):
+            url = url[:-3]
+        
+        # Always use Unicode for comparison
+        try:
+            if url.startswith("xn--"):
+                url = url.encode("ascii").decode("idna")
+        except (UnicodeError, ValueError):
+            pass
+        return url
 
     def _get_host_id(self, site_url: str, user_id: str) -> str:
         site = self._normalize_url(site_url)
-        try:
-            site = site.encode("idna").decode("ascii")
-        except (UnicodeError, ValueError):
-            pass
 
         hosts_data = self.list_hosts()
         for host in hosts_data:
-            host_id = self._normalize_url(host["host_id"])
-            try:
-                host_id = host_id.encode("idna").decode("ascii")
-            except (UnicodeError, ValueError):
-                pass
-            if site == host_id:
+            host_id_normalized = self._normalize_url(host["host_id"])
+            if site == host_id_normalized:
                 return host["host_id"]
         raise ValueError(f"Сайт {site_url} не найден в Вебмастере")
 
