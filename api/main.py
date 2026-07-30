@@ -23,6 +23,7 @@ from api.routers import (
     keywords,
     positions,
     sites,
+    structure,
     users,
     wordstat,
 )
@@ -117,6 +118,7 @@ app.include_router(analysis.router)
 app.include_router(billing.router)
 app.include_router(admin.router)
 app.include_router(cluster.router)
+app.include_router(structure.router)
 app.include_router(wordstat.router)
 app.include_router(positions.router)
 

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Структура сайта - SEO Keyword Manager</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
+    <link rel="stylesheet" href="style.css?v=4.3">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <div class="layout-wrapper" id="mainLayout" style="display:flex;">
+        <aside class="main-sidebar" id="sidebar">
+            <div class="logo">SEO Auto Cluster</div>
+            <div class="menu-tabs">
+                <a href="dashboard.html" class="menu-tab">Dashboard</a>
+                <a href="sort.html" class="menu-tab">Сортировка</a>
+                <a href="cluster.html" class="menu-tab">Кластер</a>
+                <a href="structure.html" class="menu-tab active">Структура сайта</a>
+                <a href="positions.html" class="menu-tab">Позиции</a>
+            </div>
+            <div class="menu-bottom">
+                <a href="cabinet.html" class="menu-tab">Кабинет</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar" id="topBar">
+                <div class="balance-display">
+                    <span class="balance-label">Баланс:</span>
+                    <span class="balance-value">0.00 ₽</span>
+                    <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
+                </div>
+                <div class="site-selector">
+                    <select id="siteSelect" onchange="selectSite()">
+                        <option value="">-- Выберите сайт --</option>
+                    </select>
+                    <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+                    <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
+                </div>
+            </header>
+
+            <div class="container" id="mainApp">
+                <div id="status" class="status"></div>
+
+                <div class="tree-container">
+                    <div class="tree-toolbar">
+                        <div class="tree-toolbar-group">
+                            <button class="btn-action primary" onclick="addNewFolder()">
+                                <i class="fa-solid fa-folder-plus"></i> Добавить раздел
+                            </button>
+                            <button class="btn-action primary" onclick="addNewPage()">
+                                <i class="fa-solid fa-file-circle-plus"></i> Добавить страницу
+                            </button>
+                            <button class="btn-action secondary" onclick="openPageTypesModal()">
+                                <i class="fa-solid fa-tags"></i> Типы страниц
+                            </button>
+                        </div>
+                        <div class="tree-toolbar-group">
+                            <button class="btn-action" style="background:#8b5cf6; color:#fff;" onclick="openGenerateModal()">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Сгенерировать ИИ
+                            </button>
+                            <button class="btn-action" style="background:#10b981; color:#fff;" onclick="saveTree()">
+                                <i class="fa-solid fa-floppy-disk"></i> Сохранить
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="treeLoading" style="display:none; text-align:center; padding:40px; color:#64748b;">
+                        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                        <p style="margin-top:12px;">Загрузка структуры сайта...</p>
+                    </div>
+
+                    <div id="treeEmpty" style="display:none; text-align:center; padding:60px 20px;">
+                        <i class="fa-solid fa-sitemap" style="font-size:48px; color:#cbd5e1; margin-bottom:16px;"></i>
+                        <h3 style="color:#334155; font-size:18px; margin-bottom:8px;">Структура сайта еще не создана</h3>
+                        <p style="color:#64748b; font-size:14px; max-width:500px; margin:0 auto 20px;">
+                            Вы можете сгенерировать идеальную структуру сайта на основе поисковых кластеров с помощью ИИ Gemini или вручную создать разделы и страницы.
+                        </p>
+                        <button class="btn-action" style="background:#8b5cf6; color:#fff; padding:10px 24px; font-size:15px;" onclick="openGenerateModal()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Сгенерировать структуру ИИ
+                        </button>
+                    </div>
+
+                    <ul id="treeRoot" class="tree-root"></ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Generate Structure -->
+    <div id="generateModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width:500px;">
+            <div class="modal-header">
+                <h3>Генерация структуры сайта (ИИ Hydra/Gemini)</h3>
+                <button class="modal-close" onclick="closeGenerateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:14px; color:#475569; margin-bottom:16px;">
+                    Выберите режим генерации структуры сайта на основе ваших поисковых кластеров:
+                </p>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <label class="freq-mode-option" style="border:1px solid #e2e8f0; border-radius:8px; padding:12px; cursor:pointer; display:flex; gap:12px; align-items:flex-start;">
+                        <input type="radio" name="genMode" value="auto" checked style="margin-top:3px;">
+                        <div>
+                            <div style="font-weight:600; font-size:14px; color:#1e293b;">Сформировать с нуля</div>
+                            <div style="font-size:12px; color:#64748b; margin-top:2px;">Полностью перестроит структуру, логично распределив все кластеры по разделам и страницам.</div>
+                        </div>
+                    </label>
+                    <label class="freq-mode-option" style="border:1px solid #e2e8f0; border-radius:8px; padding:12px; cursor:pointer; display:flex; gap:12px; align-items:flex-start;">
+                        <input type="radio" name="genMode" value="incremental" style="margin-top:3px;">
+                        <div>
+                            <div style="font-weight:600; font-size:14px; color:#1e293b;">Инкрементальное добавление</div>
+                            <div style="font-size:12px; color:#64748b; margin-top:2px;">Сохранит текущую структуру и аккуратно встроит только новые/нераспределенные кластеры.</div>
+                        </div>
+                    </label>
+                </div>
+                <div id="genStatus" style="display:none; margin-top:16px; text-align:center; color:#8b5cf6;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> <span id="genStatusText">ИИ анализирует кластеры и проектирует карту сайта...</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeGenerateModal()">Отмена</button>
+                <button class="btn-primary" style="background:#8b5cf6;" onclick="runGenerateStructure()">Сгенерировать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Page Types Manager -->
+    <div id="pageTypesModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width:650px;">
+            <div class="modal-header">
+                <h3>Управление типами страниц</h3>
+                <button class="modal-close" onclick="closePageTypesModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="pageTypeForm" onsubmit="savePageType(event)" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#f8fafc; padding:16px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:20px;">
+                    <input type="hidden" id="ptId">
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#475569;">Название типа</label>
+                        <input type="text" id="ptName" required placeholder="Например: Услуга" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#475569;">Иконка (FontAwesome class)</label>
+                        <input type="text" id="ptIcon" placeholder="fa-concierge-bell" value="fa-file" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#475569;">Цвет бейджа</label>
+                        <input type="color" id="ptColor" value="#3b82f6" style="width:100%; height:38px; padding:2px; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#475569;">Описание шаблона</label>
+                        <input type="text" id="ptDesc" placeholder="Посадочная страница для услуг" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    </div>
+                    <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:8px;">
+                        <button type="button" class="btn-secondary" onclick="resetPageTypeForm()">Сбросить</button>
+                        <button type="submit" class="btn-primary">Сохранить тип</button>
+                    </div>
+                </form>
+
+                <h4 style="font-size:14px; color:#334155; margin-bottom:12px;">Существующие типы страниц:</h4>
+                <div id="pageTypesList" class="page-types-grid"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closePageTypesModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="tree-context-menu" style="display:none;">
+        <div class="tree-context-item" onclick="ctxAddSubFolder()"><i class="fa-solid fa-folder-plus"></i> Добавить подраздел</div>
+        <div class="tree-context-item" onclick="ctxAddPage()"><i class="fa-solid fa-file-circle-plus"></i> Добавить страницу</div>
+        <div class="tree-context-divider"></div>
+        <div class="tree-context-item" onclick="ctxRename()"><i class="fa-solid fa-pen"></i> Переименовать</div>
+        <div class="tree-context-divider"></div>
+        <div class="tree-context-item danger" onclick="ctxDelete()"><i class="fa-solid fa-trash"></i> Удалить</div>
+    </div>
+
+    <script src="app.js?v=4.3"></script>
+    <script>
+        let currentTreeData = [];
+        let pageTypes = [];
+        let selectedNodeId = null;
+        let draggedNodeId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            await loadPageTypes();
+            if (currentSite) {
+                await loadTree();
+            }
+        });
+
+        // Hide context menu on click outside
+        document.addEventListener('click', (e) => {
+            const ctx = document.getElementById('contextMenu');
+            if (ctx) ctx.style.display = 'none';
+        });
+
+        async function loadPageTypes() {
+            try {
+                const res = await apiRequest('/api/page-types');
+                if (res && res.types) {
+                    pageTypes = res.types;
+                    renderPageTypesList();
+                }
+            } catch (e) {
+                console.error('Error loading page types:', e);
+            }
+        }
+
+        function renderPageTypesList() {
+            const container = document.getElementById('pageTypesList');
+            if (!container) return;
+            container.innerHTML = pageTypes.map(pt => `
+                <div class="page-type-card">
+                    <div class="page-type-card-info">
+                        <div class="page-type-icon-box" style="background:${pt.color || '#3b82f6'}">
+                            <i class="fa-solid ${pt.icon || 'fa-file'}"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:600; font-size:13px; color:#1e293b;">${escapeHtml(pt.name)}</div>
+                            <div style="font-size:11px; color:#64748b;">${escapeHtml(pt.template_description || '')}</div>
+                        </div>
+                    </div>
+                    ${pt.id ? `
+                        <div style="display:flex; gap:4px;">
+                            <button class="tree-action-btn" onclick="editPageType(${pt.id})"><i class="fa-solid fa-pen"></i></button>
+                            <button class="tree-action-btn danger" onclick="deletePageType(${pt.id})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function openPageTypesModal() {
+            resetPageTypeForm();
+            document.getElementById('pageTypesModal').style.display = 'flex';
+        }
+
+        function closePageTypesModal() {
+            document.getElementById('pageTypesModal').style.display = 'none';
+        }
+
+        function resetPageTypeForm() {
+            document.getElementById('ptId').value = '';
+            document.getElementById('ptName').value = '';
+            document.getElementById('ptIcon').value = 'fa-file';
+            document.getElementById('ptColor').value = '#3b82f6';
+            document.getElementById('ptDesc').value = '';
+        }
+
+        function editPageType(id) {
+            const pt = pageTypes.find(t => t.id === id);
+            if (!pt) return;
+            document.getElementById('ptId').value = pt.id;
+            document.getElementById('ptName').value = pt.name;
+            document.getElementById('ptIcon').value = pt.icon || 'fa-file';
+            document.getElementById('ptColor').value = pt.color || '#3b82f6';
+            document.getElementById('ptDesc').value = pt.template_description || '';
+        }
+
+        async function savePageType(e) {
+            e.preventDefault();
+            const id = document.getElementById('ptId').value;
+            const payload = {
+                name: document.getElementById('ptName').value,
+                icon: document.getElementById('ptIcon').value,
+                color: document.getElementById('ptColor').value,
+                template_description: document.getElementById('ptDesc').value
+            };
+
+            try {
+                if (id) {
+                    await apiRequest(`/api/page-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                } else {
+                    await apiRequest('/api/page-types', { method: 'POST', body: JSON.stringify(payload) });
+                }
+                await loadPageTypes();
+                resetPageTypeForm();
+            } catch (err) {
+                showStatus('Ошибка при сохранении типа страницы: ' + err.message, 'error');
+            }
+        }
+
+        async function deletePageType(id) {
+            if (!confirm('Удалить этот тип страницы?')) return;
+            try {
+                await apiRequest(`/api/page-types/${id}`, { method: 'DELETE' });
+                await loadPageTypes();
+            } catch (err) {
+                showStatus('Ошибка при удалении типа страницы: ' + err.message, 'error');
+            }
+        }
+
+        // Tree Operations
+        async function loadTree() {
+            if (!currentSite) return;
+            document.getElementById('treeLoading').style.display = 'block';
+            document.getElementById('treeEmpty').style.display = 'none';
+            document.getElementById('treeRoot').innerHTML = '';
+
+            try {
+                const res = await apiRequest(`/api/site-structure?site_url=${encodeURIComponent(currentSite)}`);
+                document.getElementById('treeLoading').style.display = 'none';
+                
+                if (res && res.exists && res.structure && res.structure.length > 0) {
+                    currentTreeData = res.structure;
+                    renderTree();
+                } else {
+                    currentTreeData = [];
+                    document.getElementById('treeEmpty').style.display = 'block';
+                }
+            } catch (e) {
+                document.getElementById('treeLoading').style.display = 'none';
+                showStatus('Ошибка загрузки структуры: ' + e.message, 'error');
+            }
+        }
+
+        function renderTree() {
+            const rootEl = document.getElementById('treeRoot');
+            if (!rootEl) return;
+            
+            if (!currentTreeData || currentTreeData.length === 0) {
+                document.getElementById('treeEmpty').style.display = 'block';
+                rootEl.innerHTML = '';
+                return;
+            }
+
+            document.getElementById('treeEmpty').style.display = 'none';
+            rootEl.innerHTML = currentTreeData.map(node => renderNodeHtml(node)).join('');
+        }
+
+        function renderNodeHtml(node) {
+            const isFolder = node.is_folder || (node.children && node.children.length > 0);
+            const hasChildren = node.children && node.children.length > 0;
+            const pt = pageTypes.find(t => t.name === node.page_type);
+
+            let iconClass = isFolder ? 'fa-folder folder' : 'fa-file page';
+            let iconColor = isFolder ? '#f59e0b' : '#3b82f6';
+            if (pt) {
+                iconClass = pt.icon;
+                iconColor = pt.color;
+            }
+
+            return `
+                <li class="tree-node" id="node-${node.id}">
+                    <div class="tree-node-content" draggable="true"
+                         ondragstart="onDragStart(event, '${node.id}')"
+                         ondragover="onDragOver(event)"
+                         ondragleave="onDragLeave(event)"
+                         ondrop="onDrop(event, '${node.id}')"
+                         oncontextmenu="showContextMenu(event, '${node.id}')">
+                        
+                        ${isFolder ? `
+                            <span class="tree-toggle" onclick="toggleNode('${node.id}', event)">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </span>
+                        ` : '<span style="width:20px; display:inline-block;"></span>'}
+
+                        <i class="fa-solid ${iconClass} tree-node-icon" style="color:${iconColor}"></i>
+                        
+                        <span class="tree-node-title" id="title-${node.id}" onclick="selectNode('${node.id}')">
+                            ${escapeHtml(node.title || 'Без названия')}
+                        </span>
+
+                        <span style="font-size:11px; color:#94a3b8;">${escapeHtml(node.url || '')}</span>
+
+                        ${node.cluster_id ? `
+                            <span class="tree-node-cluster" title="Кластер ID: ${node.cluster_id}">
+                                <i class="fa-solid fa-diagram-project"></i> ${node.cluster_id}
+                            </span>
+                        ` : ''}
+
+                        ${node.page_type ? `
+                            <span class="tree-node-type-badge" style="background:${iconColor}">
+                                ${escapeHtml(node.page_type)}
+                            </span>
+                        ` : ''}
+
+                        <div class="tree-node-actions">
+                            ${isFolder ? `
+                                <button class="tree-action-btn" title="Добавить подраздел" onclick="addChildFolder('${node.id}', event)"><i class="fa-solid fa-folder-plus"></i></button>
+                                <button class="tree-action-btn" title="Добавить страницу" onclick="addChildPage('${node.id}', event)"><i class="fa-solid fa-plus"></i></button>
+                            ` : ''}
+                            <button class="tree-action-btn" title="Переименовать" onclick="startEditNode('${node.id}', event)"><i class="fa-solid fa-pen"></i></button>
+                            <button class="tree-action-btn danger" title="Удалить" onclick="deleteNode('${node.id}', event)"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    ${hasChildren ? `
+                        <ul id="children-${node.id}">
+                            ${node.children.map(child => renderNodeHtml(child)).join('')}
+                        </ul>
+                    ` : ''}
+                </li>
+            `;
+        }
+
+        // Drag and Drop Logic
+        function onDragStart(e, id) {
+            draggedNodeId = id;
+            e.dataTransfer.setData('text/plain', id);
+            e.target.classList.add('dragging');
+            e.stopPropagation();
+        }
+
+        function onDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const contentNode = e.currentTarget;
+            contentNode.parentElement.classList.add('drag-over');
+        }
+
+        function onDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const contentNode = e.currentTarget;
+            contentNode.parentElement.classList.remove('drag-over');
+        }
+
+        function onDrop(e, targetId) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.querySelectorAll('.tree-node').forEach(el => el.classList.remove('drag-over', 'dragging'));
+
+            if (!draggedNodeId || draggedNodeId === targetId) return;
+
+            // Move node inside target in data structure
+            const draggedObj = removeNodeFromTree(currentTreeData, draggedNodeId);
+            if (!draggedObj) return;
+
+            const targetObj = findNodeInTree(currentTreeData, targetId);
+            if (targetObj) {
+                if (!targetObj.children) targetObj.children = [];
+                targetObj.children.push(draggedObj);
+                targetObj.is_folder = true;
+            } else {
+                currentTreeData.push(draggedObj);
+            }
+
+            renderTree();
+        }
+
+        function findNodeInTree(tree, id) {
+            for (let node of tree) {
+                if (node.id === id) return node;
+                if (node.children) {
+                    let found = findNodeInTree(node.children, id);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function removeNodeFromTree(tree, id) {
+            for (let i = 0; i < tree.length; i++) {
+                if (tree[i].id === id) {
+                    return tree.splice(i, 1)[0];
+                }
+                if (tree[i].children) {
+                    let removed = removeNodeFromTree(tree[i].children, id);
+                    if (removed) return removed;
+                }
+            }
+            return null;
+        }
+
+        function toggleNode(id, e) {
+            e.stopPropagation();
+            const ul = document.getElementById(`children-${id}`);
+            const toggleBtn = e.currentTarget;
+            if (ul) {
+                if (ul.style.display === 'none') {
+                    ul.style.display = 'block';
+                    toggleBtn.classList.remove('collapsed');
+                } else {
+                    ul.style.display = 'none';
+                    toggleBtn.classList.add('collapsed');
+                }
+            }
+        }
+
+        function selectNode(id) {
+            selectedNodeId = id;
+            document.querySelectorAll('.tree-node-content').forEach(el => el.style.borderColor = '#e2e8f0');
+            const target = document.querySelector(`#node-${id} > .tree-node-content`);
+            if (target) target.style.borderColor = '#3b82f6';
+        }
+
+        function addNewFolder() {
+            const newId = 'folder-' + Date.now();
+            const newNode = {
+                id: newId,
+                title: 'Новый раздел',
+                url: '/new-folder',
+                is_folder: true,
+                children: []
+            };
+
+            if (currentTreeData.length === 0) {
+                currentTreeData = [{
+                    id: 'root-1',
+                    title: 'Главная',
+                    url: '/',
+                    is_folder: true,
+                    page_type: 'Главная',
+                    children: [newNode]
+                }];
+            } else {
+                currentTreeData[0].children = currentTreeData[0].children || [];
+                currentTreeData[0].children.push(newNode);
+            }
+            renderTree();
+        }
+
+        function addNewPage() {
+            const newId = 'page-' + Date.now();
+            const newNode = {
+                id: newId,
+                title: 'Новая страница',
+                url: '/new-page',
+                is_folder: false,
+                page_type: 'Информационная'
+            };
+
+            if (currentTreeData.length === 0) {
+                currentTreeData = [{
+                    id: 'root-1',
+                    title: 'Главная',
+                    url: '/',
+                    is_folder: true,
+                    page_type: 'Главная',
+                    children: [newNode]
+                }];
+            } else {
+                currentTreeData[0].children = currentTreeData[0].children || [];
+                currentTreeData[0].children.push(newNode);
+            }
+            renderTree();
+        }
+
+        function addChildFolder(parentId, e) {
+            e.stopPropagation();
+            const parentNode = findNodeInTree(currentTreeData, parentId);
+            if (!parentNode) return;
+            parentNode.children = parentNode.children || [];
+            parentNode.children.push({
+                id: 'folder-' + Date.now(),
+                title: 'Подраздел',
+                url: parentNode.url + '/subfolder',
+                is_folder: true,
+                children: []
+            });
+            renderTree();
+        }
+
+        function addChildPage(parentId, e) {
+            e.stopPropagation();
+            const parentNode = findNodeInTree(currentTreeData, parentId);
+            if (!parentNode) return;
+            parentNode.children = parentNode.children || [];
+            parentNode.children.push({
+                id: 'page-' + Date.now(),
+                title: 'Новая страница',
+                url: parentNode.url + '/page',
+                is_folder: false,
+                page_type: 'Информационная'
+            });
+            renderTree();
+        }
+
+        function startEditNode(id, e) {
+            if (e) e.stopPropagation();
+            const titleSpan = document.getElementById(`title-${id}`);
+            if (!titleSpan) return;
+            titleSpan.contentEditable = true;
+            titleSpan.focus();
+            titleSpan.onblur = () => {
+                titleSpan.contentEditable = false;
+                const node = findNodeInTree(currentTreeData, id);
+                if (node) node.title = titleSpan.innerText.trim();
+            };
+            titleSpan.onkeydown = (ev) => {
+                if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    titleSpan.blur();
+                }
+            };
+        }
+
+        function deleteNode(id, e) {
+            if (e) e.stopPropagation();
+            if (!confirm('Удалить этот элемент и его содержимое?')) return;
+            removeNodeFromTree(currentTreeData, id);
+            renderTree();
+        }
+
+        // Context Menu Handlers
+        function showContextMenu(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+            selectedNodeId = id;
+            const ctx = document.getElementById('contextMenu');
+            ctx.style.left = e.clientX + 'px';
+            ctx.style.top = e.clientY + 'px';
+            ctx.style.display = 'block';
+        }
+
+        function ctxAddSubFolder() {
+            if (selectedNodeId) addChildFolder(selectedNodeId, { stopPropagation: ()=>{} });
+        }
+
+        function ctxAddPage() {
+            if (selectedNodeId) addChildPage(selectedNodeId, { stopPropagation: ()=>{} });
+        }
+
+        function ctxRename() {
+            if (selectedNodeId) startEditNode(selectedNodeId);
+        }
+
+        function ctxDelete() {
+            if (selectedNodeId) deleteNode(selectedNodeId);
+        }
+
+        // Save Tree
+        async function saveTree() {
+            if (!currentSite) {
+                showStatus('Пожалуйста, выберите сайт', 'error');
+                return;
+            }
+
+            try {
+                await apiRequest('/api/site-structure/save', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        site_url: currentSite,
+                        structure: currentTreeData
+                    })
+                });
+                showStatus('Структура сайта успешно сохранена!', 'success');
+            } catch (err) {
+                showStatus('Ошибка сохранения структуры: ' + err.message, 'error');
+            }
+        }
+
+        // LLM Generation Modal Logic
+        function openGenerateModal() {
+            document.getElementById('generateModal').style.display = 'flex';
+        }
+
+        function closeGenerateModal() {
+            document.getElementById('generateModal').style.display = 'none';
+        }
+
+        async function runGenerateStructure() {
+            if (!currentSite) {
+                showStatus('Выберите сайт для генерации структуры', 'error');
+                return;
+            }
+
+            const mode = document.querySelector('input[name="genMode"]:checked').value;
+            const statusBox = document.getElementById('genStatus');
+            statusBox.style.display = 'block';
+
+            try {
+                const res = await apiRequest('/api/site-structure/generate', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        site_url: currentSite,
+                        mode: mode
+                    })
+                });
+
+                statusBox.style.display = 'none';
+                closeGenerateModal();
+
+                if (res && res.structure) {
+                    currentTreeData = res.structure;
+                    renderTree();
+                    showStatus('Структура сайта успешно сгенерирована ИИ!', 'success');
+                }
+            } catch (err) {
+                statusBox.style.display = 'none';
+                showStatus('Ошибка при генерации структуры: ' + err.message, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>
