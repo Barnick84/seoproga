@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 
 <head>
@@ -254,7 +254,7 @@
     </style>
 
     <script>
-        /* Auth guard: dashboard.html is deprecated вЂ” redirect appropriately */
+        /* Auth guard: dashboard.html is deprecated — redirect appropriately */
         (async function() {
             var session = localStorage.getItem('session');
             if (!session) {
@@ -283,26 +283,26 @@
             <div class="logo">SEO Auto Cluster</div>
             <div class="menu-tabs">
                 <a href="dashboard.html" class="menu-tab active">Dashboard</a>
-                <a href="sort.html" class="menu-tab">РЎРѕСЂС‚РёСЂРѕРІРєР°</a>
-                <a href="cluster.html" class="menu-tab">РљР»Р°СЃС‚РµСЂ</a>
-                <a href="positions.html" class="menu-tab">РџРѕР·РёС†РёРё</a>
-                <a href="cabinet.html" class="menu-tab">РљР°Р±РёРЅРµС‚</a>
+                <a href="sort.html" class="menu-tab">Сортировка</a>
+                <a href="cluster.html" class="menu-tab">Кластер</a>
+                <a href="positions.html" class="menu-tab">Позиции</a>
+                <a href="cabinet.html" class="menu-tab">Кабинет</a>
             </div>
         </aside>
 
         <main class="main-content">
             <header class="top-bar" id="topBar">
                 <div class="balance-display">
-                    <span class="balance-label">Р‘Р°Р»Р°РЅСЃ:</span>
-                    <span class="balance-value">0.00 в‚Ѕ</span>
-                    <button class="btn-topup-icon" onclick="showTopupModal()" title="РџРѕРїРѕР»РЅРёС‚СЊ Р±Р°Р»Р°РЅСЃ">+</button>
+                    <span class="balance-label">Баланс:</span>
+                    <span class="balance-value">0.00 ₽</span>
+                    <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
                 </div>
                 <div class="site-selector">
                     <select id="siteSelect" onchange="selectSite()">
-                        <option value="">-- Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ --</option>
+                        <option value="">-- Выберите сайт --</option>
                     </select>
-                    <button class="btn-add" onclick="showAddSiteModal()">+ Р”РѕР±Р°РІРёС‚СЊ СЃР°Р№С‚</button>
-                    <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Р’С‹Р№С‚Рё</button>
+                    <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+                    <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
                 </div>
             </header>
 
@@ -310,45 +310,45 @@
         <div id="noSitesMessage" style="display:none;">
             <div class="no-sites-container">
                 <span style="font-size: 60px; display: block; margin-bottom: 20px;"><i class="fas fa-globe"></i></span>
-                <h2>Р”РѕР±СЂРѕ РїРѕР¶Р°Р»РѕРІР°С‚СЊ РІ SEO Proga!</h2>
-                <p>РЈ РІР°СЃ РµС‰Рµ РЅРµС‚ РґРѕР±Р°РІР»РµРЅРЅС‹С… СЃР°Р№С‚РѕРІ. Р”РѕР±Р°РІСЊС‚Рµ РІР°С€ РїРµСЂРІС‹Р№ РґРѕРјРµРЅ, С‡С‚РѕР±С‹ РЅР°С‡Р°С‚СЊ СЂР°Р±РѕС‚Сѓ СЃ СЃРµРјР°РЅС‚РёС‡РµСЃРєРёРј
-                    СЏРґСЂРѕРј.</p>
+                <h2>Добро пожаловать в SEO Proga!</h2>
+                <p>У вас еще нет добавленных сайтов. Добавьте ваш первый домен, чтобы начать работу с семантическим
+                    ядром.</p>
                 <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
                     <select id="newSiteDomainHero"
                         style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 350px;">
-                        <option value="">Р—Р°РіСЂСѓР·РєР° СЃРїРёСЃРєР° СЃР°Р№С‚РѕРІ...</option>
+                        <option value="">Загрузка списка сайтов...</option>
                     </select>
-                    <button class="btn btn-primary" onclick="addSiteHero()">Р”РѕР±Р°РІРёС‚СЊ СЃР°Р№С‚</button>
+                    <button class="btn btn-primary" onclick="addSiteHero()">Добавить сайт</button>
                 </div>
             </div>
         </div>
 
         <div id="sitesContent" style="display:none;">
             <div class="welcome-hero">
-                <h1>РџР°РЅРµР»СЊ СѓРїСЂР°РІР»РµРЅРёСЏ</h1>
-                <p>Р’С‹Р±РµСЂРёС‚Рµ СЂР°Р·РґРµР» РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ С‚РµРєСѓС‰РёРј СЃР°Р№С‚РѕРј РёР»Рё РїРµСЂРµРєР»СЋС‡РёС‚Рµ РґРѕРјРµРЅ РІ РІРµСЂС…РЅРµРј РјРµРЅСЋ.</p>
+                <h1>Панель управления</h1>
+                <p>Выберите раздел для работы с текущим сайтом или переключите домен в верхнем меню.</p>
             </div>
 
             <div class="dashboard-grid">
                 <a href="sort.html" class="dashboard-card">
                     <i class="fas fa-download"></i>
-                    <h3>РЎРѕСЂС‚РёСЂРѕРІРєР°</h3>
-                    <p>Р—Р°РіСЂСѓР·РєР° РєР»СЋС‡РµР№ РёР· Р’РµР±РјР°СЃС‚РµСЂР°, С„РёР»СЊС‚СЂР°С†РёСЏ Рё СЂР°Р±РѕС‚Р° СЃ РјРёРЅСѓСЃ-СЃР»РѕРІР°РјРё.</p>
+                    <h3>Сортировка</h3>
+                    <p>Загрузка ключей из Вебмастера, фильтрация и работа с минус-словами.</p>
                 </a>
                 <a href="cluster.html" class="dashboard-card">
                     <i class="fas fa-folder"></i>
-                    <h3>РљР»Р°СЃС‚РµСЂРёР·Р°С†РёСЏ</h3>
-                    <p>Р“СЂСѓРїРїРёСЂРѕРІРєР° Р·Р°РїСЂРѕСЃРѕРІ РїРѕ SERP, РјР°РїРїРёРЅРі URL Рё РїРѕР»РЅС‹Р№ SEO Р°РЅР°Р»РёР·.</p>
+                    <h3>Кластеризация</h3>
+                    <p>Группировка запросов по SERP, маппинг URL и полный SEO анализ.</p>
                 </a>
                 <a href="positions.html" class="dashboard-card">
                     <i class="fas fa-chart-bar"></i>
-                    <h3>РџРѕР·РёС†РёРё</h3>
-                    <p>РњРѕРЅРёС‚РѕСЂРёРЅРі РІРёРґРёРјРѕСЃС‚Рё Рё РїРѕР·РёС†РёР№ РІ РїРѕРёСЃРєРѕРІС‹С… СЃРёСЃС‚РµРјР°С….</p>
+                    <h3>Позиции</h3>
+                    <p>Мониторинг видимости и позиций в поисковых системах.</p>
                 </a>
                 <a href="cabinet.html" class="dashboard-card">
                     <i class="fas fa-user"></i>
-                    <h3>РљР°Р±РёРЅРµС‚</h3>
-                    <p>РќР°СЃС‚СЂРѕР№РєРё РїСЂРѕС„РёР»СЏ, API РєР»СЋС‡Рё Рё СѓРїСЂР°РІР»РµРЅРёРµ Р°РєРєР°СѓРЅС‚РѕРј.</p>
+                    <h3>Кабинет</h3>
+                    <p>Настройки профиля, API ключи и управление аккаунтом.</p>
                 </a>
             </div>
         </div>
@@ -358,48 +358,48 @@
 
     <div id="authSection" class="auth-section" style="display:none;">
         <div class="auth-tabs">
-            <button class="auth-tab active" onclick="showAuthForm('login')">Р’С…РѕРґ</button>
-            <button class="auth-tab" onclick="showAuthForm('register')">Р РµРіРёСЃС‚СЂР°С†РёСЏ</button>
+            <button class="auth-tab active" onclick="showAuthForm('login')">Вход</button>
+            <button class="auth-tab" onclick="showAuthForm('register')">Регистрация</button>
         </div>
         <div id="authError" class="status error" style="display:none; margin-bottom:20px;"></div>
 
         <div id="authForm">
-            <input type="text" id="authUsername" placeholder="Р›РѕРіРёРЅ">
+            <input type="text" id="authUsername" placeholder="Логин">
             <div class="password-wrapper">
-                <input type="password" id="authPassword" placeholder="РџР°СЂРѕР»СЊ">
+                <input type="password" id="authPassword" placeholder="Пароль">
                 <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')"><i class="fas fa-eye"></i></span>
             </div>
-            <button class="btn btn-primary" onclick="submitAuth()">Р’РѕР№С‚Рё</button>
+            <button class="btn btn-primary" onclick="submitAuth()">Войти</button>
         </div>
 
         <div id="registerFields" style="display:none;">
-            <input type="text" id="authUsernameReg" placeholder="РџСЂРёРґСѓРјР°Р№С‚Рµ Р»РѕРіРёРЅ">
+            <input type="text" id="authUsernameReg" placeholder="Придумайте логин">
             <input type="email" id="authEmailReg" placeholder="Email">
-            <input type="text" id="authYandexTokenReg" placeholder="РўРѕРєРµРЅ РЇРЅРґРµРєСЃ Р’РµР±РјР°СЃС‚РµСЂ">
+            <input type="text" id="authYandexTokenReg" placeholder="Токен Яндекс Вебмастер">
             <div class="password-wrapper">
-                <input type="password" id="authPasswordReg" placeholder="РџР°СЂРѕР»СЊ">
+                <input type="password" id="authPasswordReg" placeholder="Пароль">
                 <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordReg')"><i class="fas fa-eye"></i></span>
             </div>
             <div class="password-wrapper">
-                <input type="password" id="authPasswordConfirmReg" placeholder="РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїР°СЂРѕР»СЊ">
+                <input type="password" id="authPasswordConfirmReg" placeholder="Подтвердите пароль">
                 <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordConfirmReg')"><i class="fas fa-eye"></i></span>
             </div>
-            <button class="btn btn-primary" onclick="submitRegister()">Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ</button>
+            <button class="btn btn-primary" onclick="submitRegister()">Зарегистрироваться</button>
         </div>
     </div>
 
     <div id="addSiteModal" class="modal">
         <div class="modal-content">
-            <h2>Р”РѕР±Р°РІРёС‚СЊ РЅРѕРІС‹Р№ СЃР°Р№С‚</h2>
-            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚, РїРѕРґС‚РІРµСЂР¶РґРµРЅРЅС‹Р№ РІ РІР°С€РµРј РЇРЅРґРµРєСЃ
-                Р’РµР±РјР°СЃС‚РµСЂРµ:</p>
+            <h2>Добавить новый сайт</h2>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Выберите сайт, подтвержденный в вашем Яндекс
+                Вебмастере:</p>
             <select id="newSiteDomain"
                 style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
-                <option value="">Р—Р°РіСЂСѓР·РєР° СЃРїРёСЃРєР° СЃР°Р№С‚РѕРІ...</option>
+                <option value="">Загрузка списка сайтов...</option>
             </select>
             <div class="buttons">
-                <button class="btn btn-secondary" onclick="hideAddSiteModal()">РћС‚РјРµРЅР°</button>
-                <button class="btn btn-primary" onclick="addSite()">Р”РѕР±Р°РІРёС‚СЊ</button>
+                <button class="btn btn-secondary" onclick="hideAddSiteModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="addSite()">Добавить</button>
             </div>
         </div>
     </div>
@@ -410,22 +410,22 @@
     <!-- Domain Progress Modal (Premium Glassmorphism Overlay) -->
     <div id="domainProgressModal" class="modal" style="z-index: 2500;">
         <div class="modal-content domain-progress-card">
-            <h2 class="progress-title"><i class="fas fa-rocket"></i> РќР°СЃС‚СЂРѕР№РєР° РЅРѕРІРѕРіРѕ СЃР°Р№С‚Р°</h2>
-            <p class="progress-subtitle">Р—Р°РїСѓС‰РµРЅ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ РїСЂРѕС†РµСЃСЃ РґРѕР±Р°РІР»РµРЅРёСЏ, РёРјРїРѕСЂС‚Р° РєР»СЋС‡РµР№ Рё СЃР±РѕСЂР° С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚Рё.
+            <h2 class="progress-title"><i class="fas fa-rocket"></i> Настройка нового сайта</h2>
+            <p class="progress-subtitle">Запущен автоматический процесс добавления, импорта ключей и сбора частотности.
             </p>
 
             <div class="progress-steps">
                 <div class="progress-step" id="step-add">
                     <span class="step-status"><i class="far fa-circle"></i></span>
-                    <span class="step-text">Р”РѕР±Р°РІР»РµРЅРёРµ РґРѕРјРµРЅР° РІ СЃРёСЃС‚РµРјСѓ</span>
+                    <span class="step-text">Добавление домена в систему</span>
                 </div>
                 <div class="progress-step" id="step-import">
                     <span class="step-status"><i class="far fa-circle"></i></span>
-                    <span class="step-text">РРјРїРѕСЂС‚ РїРѕРёСЃРєРѕРІС‹С… Р·Р°РїСЂРѕСЃРѕРІ РёР· Р’РµР±РјР°СЃС‚РµСЂР°</span>
+                    <span class="step-text">Импорт поисковых запросов из Вебмастера</span>
                 </div>
                 <div class="progress-step" id="step-frequency">
                     <span class="step-status"><i class="far fa-circle"></i></span>
-                    <span class="step-text">РЎР±РѕСЂ С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚Рё Рё СЃРѕРїСѓС‚СЃС‚РІСѓСЋС‰РёС… LSI-Р·Р°РїСЂРѕСЃРѕРІ</span>
+                    <span class="step-text">Сбор частотности и сопутствующих LSI-запросов</span>
                 </div>
             </div>
 
@@ -435,12 +435,12 @@
                 <div class="progress-bar-fill" id="progressBarFill"></div>
             </div>
 
-            <div class="progress-info-text" id="progressInfoText">РџРѕРґРіРѕС‚РѕРІРєР° РґРѕРјРµРЅР°...</div>
+            <div class="progress-info-text" id="progressInfoText">Подготовка домена...</div>
             <div class="progress-details" id="progressDetailsText"></div>
 
             <div class="progress-footer" id="progressFooter" style="display:none;">
-                <button class="btn btn-primary" onclick="closeProgressModalAndRedirect()">РџРµСЂРµР№С‚Рё Рє
-                    РєР»Р°СЃС‚РµСЂРёР·Р°С†РёРё</button>
+                <button class="btn btn-primary" onclick="closeProgressModalAndRedirect()">Перейти к
+                    кластеризации</button>
             </div>
         </div>
     </div>
@@ -449,11 +449,11 @@
     <div id="topupModal" class="modal">
         <div class="modal-content topup-modal-content">
             <div class="modal-header">
-                <span class="modal-title">РџРѕРїРѕР»РЅРµРЅРёРµ Р±Р°Р»Р°РЅСЃР°</span>
+                <span class="modal-title">Пополнение баланса</span>
                 <button onclick="closeTopupModal()" class="modal-close">&times;</button>
             </div>
             <div class="topup-input-group">
-                <label for="topupAmount">РЎСѓРјРјР° РїРѕРїРѕР»РЅРµРЅРёСЏ (СЂСѓР±.)</label>
+                <label for="topupAmount">Сумма пополнения (руб.)</label>
                 <input type="number" id="topupAmount" value="500" min="500" step="100">
                 <div class="topup-hints">
                     <button class="btn-hint" onclick="setTopupAmount(500)">500</button>
@@ -462,8 +462,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeTopupModal()">РћС‚РјРµРЅР°</button>
-                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">РћРїР»Р°С‚РёС‚СЊ</button>
+                <button class="btn btn-secondary" onclick="closeTopupModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">Оплатить</button>
             </div>
         </div>
     </div>
@@ -485,7 +485,7 @@
         async function addSiteHero() {
             const domain = document.getElementById('newSiteDomainHero').value.trim();
             if (!domain) {
-                alert('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІС‹Р±РµСЂРёС‚Рµ РґРѕРјРµРЅ');
+                alert('Пожалуйста, выберите домен');
                 return;
             }
 
@@ -511,7 +511,7 @@
 
             document.getElementById('progressBarContainer').style.display = 'none';
             document.getElementById('progressBarFill').style.width = '0%';
-            document.getElementById('progressInfoText').textContent = 'Р”РѕР±Р°РІР»РµРЅРёРµ СЃР°Р№С‚Р°...';
+            document.getElementById('progressInfoText').textContent = 'Добавление сайта...';
             document.getElementById('progressInfoText').style.color = '#2196F3';
             document.getElementById('progressDetailsText').textContent = '';
             document.getElementById('progressFooter').style.display = 'none';
@@ -519,7 +519,7 @@
             // --- STAGE 1: Add Site ---
             stepAdd.className = 'progress-step active';
             stepAdd.querySelector('.step-status').innerHTML = loaderHtml;
-            document.getElementById('progressInfoText').textContent = 'РџСЂРёРІСЏР·РєР° РґРѕРјРµРЅР° РІ СЃРёСЃС‚РµРјСѓ...';
+            document.getElementById('progressInfoText').textContent = 'Привязка домена в систему...';
 
             try {
                 const res = await authFetch('/api/sites', {
@@ -529,7 +529,7 @@
 
                 const data = await res.json();
                 if (!data.success) {
-                    throw new Error(data.message || 'РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРёРІСЏР·Р°С‚СЊ РґРѕРјРµРЅ. РЈР±РµРґРёС‚РµСЃСЊ, С‡С‚Рѕ РѕРЅ РїРѕРґС‚РІРµСЂР¶РґРµРЅ РІ РЇРЅРґРµРєСЃ.Р’РµР±РјР°СЃС‚РµСЂРµ.');
+                    throw new Error(data.message || 'Не удалось привязать домен. Убедитесь, что он подтвержден в Яндекс.Вебмастере.');
                 }
 
                 // Success Add Site
@@ -539,14 +539,14 @@
                 // --- STAGE 2: Import Keywords ---
                 stepImport.className = 'progress-step active';
                 stepImport.querySelector('.step-status').innerHTML = loaderHtml;
-                document.getElementById('progressInfoText').textContent = 'Р—Р°РіСЂСѓР·РєР° РїРѕРёСЃРєРѕРІС‹С… Р·Р°РїСЂРѕСЃРѕРІ РёР· Р’РµР±РјР°СЃС‚РµСЂР°...';
-                document.getElementById('progressDetailsText').textContent = 'РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РїРѕРґРѕР¶РґРёС‚Рµ, РёРґРµС‚ СЃРєР°С‡РёРІР°РЅРёРµ...';
+                document.getElementById('progressInfoText').textContent = 'Загрузка поисковых запросов из Вебмастера...';
+                document.getElementById('progressDetailsText').textContent = 'Пожалуйста, подождите, идет скачивание...';
 
                 const importRes = await authFetch(`/api/fetch-wm-queries?domain=${encodeURIComponent(domain)}`);
                 const importData = await importRes.json();
 
                 if (!importRes.ok || !importData.success) {
-                    throw new Error(importData.error || 'РћС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РєР»СЋС‡РµРІС‹С… Р·Р°РїСЂРѕСЃРѕРІ.');
+                    throw new Error(importData.error || 'Ошибка при загрузке ключевых запросов.');
                 }
 
                 const queriesCount = importData.added || 0;
@@ -556,8 +556,8 @@
                 // --- STAGE 3: Run Frequency & LSI similar collection ---
                 stepFrequency.className = 'progress-step active';
                 stepFrequency.querySelector('.step-status').innerHTML = loaderHtml;
-                document.getElementById('progressInfoText').textContent = 'Р—Р°РїСѓСЃРє СЃР±РѕСЂР° С‡Р°СЃС‚РѕС‚С‹ Р·Р°РїСЂРѕСЃРѕРІ...';
-                document.getElementById('progressDetailsText').textContent = `Р—Р°РіСЂСѓР¶РµРЅРѕ ${queriesCount} РєР»СЋС‡РµРІС‹С… СЃР»РѕРІ. РћС†РµРЅРєР° С‚Р°СЂРёС„Р°...`;
+                document.getElementById('progressInfoText').textContent = 'Запуск сбора частоты запросов...';
+                document.getElementById('progressDetailsText').textContent = `Загружено ${queriesCount} ключевых слов. Оценка тарифа...`;
 
                 const freqParams = new URLSearchParams({
                     domain: domain,
@@ -575,9 +575,9 @@
                     stepFrequency.className = 'progress-step error';
                     stepFrequency.querySelector('.step-status').innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
 
-                    document.getElementById('progressInfoText').textContent = 'Р§Р°СЃС‚РёС‡РЅРѕ РіРѕС‚РѕРІРѕ';
+                    document.getElementById('progressInfoText').textContent = 'Частично готово';
                     document.getElementById('progressInfoText').style.color = '#ff9800';
-                    document.getElementById('progressDetailsText').innerHTML = `РЎР°Р№С‚ РґРѕР±Р°РІР»РµРЅ, РєР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР° РёРјРїРѕСЂС‚РёСЂРѕРІР°РЅС‹ (${queriesCount} С€С‚.), РЅРѕ РґР»СЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРіРѕ СЃР±РѕСЂР° С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚Рё <strong>РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р±Р°Р»Р°РЅСЃР°</strong>.`;
+                    document.getElementById('progressDetailsText').innerHTML = `Сайт добавлен, ключевые слова импортированы (${queriesCount} шт.), но для автоматического сбора частотности <strong>недостаточно баланса</strong>.`;
 
                     document.getElementById('progressFooter').style.display = 'flex';
                     return;
@@ -590,7 +590,7 @@
                 while (true) {
                     const statusResp = await authFetch(`/api/tasks/${taskId}`);
                     if (!statusResp.ok) {
-                        throw new Error('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚СѓСЃР° СЃР±РѕСЂР°.');
+                        throw new Error('Ошибка получения статуса сбора.');
                     }
                     const task = await statusResp.json();
 
@@ -599,9 +599,9 @@
                         stepFrequency.querySelector('.step-status').innerHTML = '<i class="fas fa-check-circle"></i>';
 
                         document.getElementById('progressBarFill').style.width = '100%';
-                        document.getElementById('progressInfoText').innerHTML = '<i class="fas fa-check-circle"></i> РќР°СЃС‚СЂРѕР№РєР° СѓСЃРїРµС€РЅРѕ Р·Р°РІРµСЂС€РµРЅР°!';
+                        document.getElementById('progressInfoText').innerHTML = '<i class="fas fa-check-circle"></i> Настройка успешно завершена!';
                         document.getElementById('progressInfoText').style.color = '#4CAF50';
-                        document.getElementById('progressDetailsText').textContent = 'Р’СЃРµ Р·Р°РїСЂРѕСЃС‹ РёРјРїРѕСЂС‚РёСЂРѕРІР°РЅС‹ Рё С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚СЊ СЃРѕР±СЂР°РЅР°.';
+                        document.getElementById('progressDetailsText').textContent = 'Все запросы импортированы и частотность собрана.';
 
                         document.getElementById('progressFooter').style.display = 'flex';
 
@@ -611,7 +611,7 @@
                         }, 2500);
                         break;
                     } else if (task.status === 'failed') {
-                        throw new Error(task.error || 'РћС€РёР±РєР° РІРѕ РІСЂРµРјСЏ СЃР±РѕСЂР° С‡Р°СЃС‚РѕС‚С‹.');
+                        throw new Error(task.error || 'Ошибка во время сбора частоты.');
                     } else {
                         // Polling active
                         const pct = task.progress || 0;
@@ -623,15 +623,15 @@
                         document.getElementById('progressBarFill').style.width = pct + '%';
 
                         if (task.status === 'running') {
-                            document.getElementById('progressInfoText').textContent = `РЎР±РѕСЂ С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚Рё: ${pct}%`;
+                            document.getElementById('progressInfoText').textContent = `Сбор частотности: ${pct}%`;
                         } else {
-                            document.getElementById('progressInfoText').textContent = 'РћР¶РёРґР°РЅРёРµ Р·Р°РїСѓСЃРєР° СЃР±РѕСЂР°...';
+                            document.getElementById('progressInfoText').textContent = 'Ожидание запуска сбора...';
                         }
 
                         if (currentQuery) {
                             document.getElementById('progressDetailsText').textContent = `[${processed} / ${total}]: ${currentQuery}`;
                         } else {
-                            document.getElementById('progressDetailsText').textContent = 'РЎР±РѕСЂ Wordstat Рё СЃРѕРїСѓС‚СЃС‚РІСѓСЋС‰РёС… С„СЂР°Р·...';
+                            document.getElementById('progressDetailsText').textContent = 'Сбор Wordstat и сопутствующих фраз...';
                         }
                     }
 
@@ -647,7 +647,7 @@
                     activeStep.querySelector('.step-status').innerHTML = '<i class="fas fa-times-circle"></i>';
                 }
 
-                document.getElementById('progressInfoText').innerHTML = '<i class="fas fa-times-circle"></i> РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°';
+                document.getElementById('progressInfoText').innerHTML = '<i class="fas fa-times-circle"></i> Произошла ошибка';
                 document.getElementById('progressInfoText').style.color = '#F44336';
                 document.getElementById('progressDetailsText').textContent = e.message;
 

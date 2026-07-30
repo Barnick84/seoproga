@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>РљР»Р°СЃС‚РµСЂ - SEO Keyword Manager</title>
+    <title>Кластер - SEO Keyword Manager</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
     <link rel="stylesheet" href="style.css?v=4.1">
@@ -17,26 +17,26 @@
             <div class="logo">SEO Auto Cluster</div>
             <div class="menu-tabs">
                 <a href="dashboard.html" class="menu-tab">Dashboard</a>
-                <a href="sort.html" class="menu-tab">РЎРѕСЂС‚РёСЂРѕРІРєР°</a>
-                <a href="cluster.html" class="menu-tab active">РљР»Р°СЃС‚РµСЂ</a>
-                <a href="positions.html" class="menu-tab">РџРѕР·РёС†РёРё</a>
-                <a href="cabinet.html" class="menu-tab">РљР°Р±РёРЅРµС‚</a>
+                <a href="sort.html" class="menu-tab">Сортировка</a>
+                <a href="cluster.html" class="menu-tab active">Кластер</a>
+                <a href="positions.html" class="menu-tab">Позиции</a>
+                <a href="cabinet.html" class="menu-tab">Кабинет</a>
             </div>
         </aside>
 
         <main class="main-content">
             <header class="top-bar" id="topBar">
                 <div class="balance-display">
-                    <span class="balance-label">Р‘Р°Р»Р°РЅСЃ:</span>
-                    <span class="balance-value">0.00 в‚Ѕ</span>
-                    <button class="btn-topup-icon" onclick="showTopupModal()" title="РџРѕРїРѕР»РЅРёС‚СЊ Р±Р°Р»Р°РЅСЃ">+</button>
+                    <span class="balance-label">Баланс:</span>
+                    <span class="balance-value">0.00 ₽</span>
+                    <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
                 </div>
                 <div class="site-selector">
                     <select id="siteSelect" onchange="selectSite()">
-                        <option value="">-- Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ --</option>
+                        <option value="">-- Выберите сайт --</option>
                     </select>
-                    <button class="btn-add" onclick="showAddSiteModal()">+ Р”РѕР±Р°РІРёС‚СЊ СЃР°Р№С‚</button>
-                    <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Р’С‹Р№С‚Рё</button>
+                    <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+                    <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
                 </div>
             </header>
 
@@ -46,45 +46,45 @@
         <div id="sitesContent">
             <div id="analysisStatusBanner" class="analysis-status-banner">
                 <div class="loader-mini"></div>
-                <div id="analysisStatusText">Р’С‹РїРѕР»РЅСЏРµС‚СЃСЏ SEO Р°РЅР°Р»РёР· СЃР°Р№С‚Р°...</div>
+                <div id="analysisStatusText">Выполняется SEO анализ сайта...</div>
             </div>
 
             <div id="wmStatusBanner" class="analysis-status-banner">
                 <div class="loader-mini"></div>
-                <div id="wmStatusText">Р—Р°РіСЂСѓР·РєР° Р·Р°РїСЂРѕСЃРѕРІ РёР· РЇРЅРґРµРєСЃ Р’РµР±РјР°СЃС‚РµСЂР°...</div>
+                <div id="wmStatusText">Загрузка запросов из Яндекс Вебмастера...</div>
             </div>
 
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:20px;">
                     <div style="display:flex; align-items:center; gap: 15px; flex: 1;">
-                        <h2>РљР»Р°СЃС‚РµСЂС‹</h2>
-                        <input type="text" id="clusterSearchInput" placeholder="РџРѕРёСЃРє РїРѕ РєР»СЋС‡Р°Рј..." oninput="filterClustersByKeywords()" style="padding:6px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; max-width:300px; width:100%;">
+                        <h2>Кластеры</h2>
+                        <input type="text" id="clusterSearchInput" placeholder="Поиск по ключам..." oninput="filterClustersByKeywords()" style="padding:6px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; max-width:300px; width:100%;">
                     </div>
                     <div class="header-actions" style="display:flex; gap:10px;">
-                        <button id="btnRunCluster" class="btn btn-primary" onclick="runClustering()"><i class="fas fa-rocket"></i> Р—Р°РїСѓСЃС‚РёС‚СЊ РєР»Р°СЃС‚РµСЂРёР·Р°С†РёСЋ</button>
-                        <button class="btn btn-green" onclick="runMapping()"><i class="fas fa-link"></i> РњР°РїРїРёРЅРі</button>
-                        <button class="btn btn-purple" onclick="runSEOAnalysis()" style="display:none;"><i class="fas fa-chart-bar"></i> РЎР•Рћ Р°РЅР°Р»РёР·</button>
-                        <button id="btnCreateClusterByUrl" class="btn btn-orange" onclick="showCreateClusterByUrlModal()"><i class="fas fa-globe"></i> РЎРѕР·РґР°С‚СЊ РєР»Р°СЃС‚РµСЂ РїРѕ URL</button>
+                        <button id="btnRunCluster" class="btn btn-primary" onclick="runClustering()"><i class="fas fa-rocket"></i> Запустить кластеризацию</button>
+                        <button class="btn btn-green" onclick="runMapping()"><i class="fas fa-link"></i> Маппинг</button>
+                        <button class="btn btn-purple" onclick="runSEOAnalysis()" style="display:none;"><i class="fas fa-chart-bar"></i> СЕО анализ</button>
+                        <button id="btnCreateClusterByUrl" class="btn btn-orange" onclick="showCreateClusterByUrlModal()"><i class="fas fa-globe"></i> Создать кластер по URL</button>
                     </div>
                 </div>
 
                 <div class="filter-bar" style="margin-bottom:10px; display: none;">
-                    <button class="btn btn-secondary" onclick="deselectClusterAll()">РЎРЅСЏС‚СЊ РІС‹Р±РѕСЂ</button>
+                    <button class="btn btn-secondary" onclick="deselectClusterAll()">Снять выбор</button>
                 </div>
 
                 <div class="two-columns">
                     <div class="cluster-list-wrapper">
                         <div id="clusterList">
-                            <div class="empty-state">Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚</div>
+                            <div class="empty-state">Выберите сайт</div>
                         </div>
                         <div class="actions-bar" style="display: none;">
                         </div>
                     </div>
 
                     <div class="unclustered-wrapper">
-                        <h3>РќРµ РєР»Р°СЃС‚РµСЂРёР·РѕРІР°РЅРѕ</h3>
+                        <h3>Не кластеризовано</h3>
                         <div id="unclusteredList" class="keyword-list" style="margin-top:10px;">
-                            <div class="empty-state">РќРµС‚ РґР°РЅРЅС‹С…</div>
+                            <div class="empty-state">Нет данных</div>
                         </div>
                     </div>
                 </div>
@@ -95,11 +95,11 @@
     <!-- Modals & Sidebar -->
     <div id="manualUrlModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">РЈРєР°Р·Р°С‚СЊ С†РµР»РµРІРѕР№ URL</div>
-            <input type="text" id="manualUrlInput" placeholder="РќР°РїСЂРёРјРµСЂ: /tours/dagestan">
+            <div class="modal-header">Указать целевой URL</div>
+            <input type="text" id="manualUrlInput" placeholder="Например: /tours/dagestan">
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeManualUrlModal()">РћС‚РјРµРЅР°</button>
-                <button class="btn btn-primary" id="btnSaveManualUrl">РЎРѕС…СЂР°РЅРёС‚СЊ</button>
+                <button class="btn btn-secondary" onclick="closeManualUrlModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnSaveManualUrl">Сохранить</button>
             </div>
         </div>
     </div>
@@ -107,12 +107,12 @@
     <!-- Create Cluster by URL Modal -->
     <div id="createClusterByUrlModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">РЎРѕР·РґР°С‚СЊ РєР»Р°СЃС‚РµСЂ РїРѕ URL</div>
-            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Р’РІРµРґРёС‚Рµ URL СЃС‚СЂР°РЅРёС†С‹. РЎРёСЃС‚РµРјР° РїРѕР»СѓС‡РёС‚ РµС‘ Title, СЃРѕР±РµСЂРµС‚ РєР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР° РёР· Wordstat Рё СЃРѕР·РґР°СЃС‚ РЅРѕРІС‹Р№ РєР»Р°СЃС‚РµСЂ СЃ РїРѕРґС…РѕРґСЏС‰РёРјРё СЃР»РѕРІР°РјРё.</p>
+            <div class="modal-header">Создать кластер по URL</div>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Введите URL страницы. Система получит её Title, соберет ключевые слова из Wordstat и создаст новый кластер с подходящими словами.</p>
             <input type="text" id="createClusterUrlInput" placeholder="https://example.com/page">
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeCreateClusterByUrlModal()">РћС‚РјРµРЅР°</button>
-                <button class="btn btn-primary" id="btnSaveClusterByUrl" onclick="createClusterByUrl()">РЎРѕС…СЂР°РЅРёС‚СЊ</button>
+                <button class="btn btn-secondary" onclick="closeCreateClusterByUrlModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnSaveClusterByUrl" onclick="createClusterByUrl()">Сохранить</button>
             </div>
         </div>
     </div>
@@ -121,28 +121,28 @@
     <div id="frequencyModal" class="modal" style="z-index:1100;">
         <div class="modal-content" style="max-width:560px; width:100%;">
             <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <span><i class="fas fa-chart-line"></i> РџРѕР»СѓС‡РёС‚СЊ С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚СЊ</span>
+                <span><i class="fas fa-chart-line"></i> Получить частотность</span>
                 <button onclick="closeFrequencyModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
             </div>
 
             <!-- Collection Mode -->
             <div style="margin:16px 0 12px;">
-                <div style="font-weight:600;font-size:14px;margin-bottom:10px;">Р РµР¶РёРј СЃР±РѕСЂР°:</div>
+                <div style="font-weight:600;font-size:14px;margin-bottom:10px;">Режим сбора:</div>
                 <div style="display:flex;flex-direction:column;gap:8px;">
                     <label class="freq-mode-option" id="modeAllLabel">
                         <input type="radio" name="freqMode" value="all" id="modeAll" checked>
                         <span class="freq-mode-radio"></span>
                         <div>
-                            <div class="freq-mode-title"><i class="fas fa-sync-alt"></i> РџРµСЂРµСЃРѕР±СЂР°С‚СЊ РІСЃСЋ С‡Р°СЃС‚РѕС‚Сѓ</div>
-                            <div class="freq-mode-desc">Р—Р°РїСЂР°С€РёРІР°РµС‚ С‡Р°СЃС‚РѕС‚Сѓ РґР»СЏ РІСЃРµС… РєР»СЋС‡РµРІС‹С… СЃР»РѕРІ, РІРєР»СЋС‡Р°СЏ СѓР¶Рµ СЃРѕР±СЂР°РЅРЅС‹Рµ</div>
+                            <div class="freq-mode-title"><i class="fas fa-sync-alt"></i> Пересобрать всю частоту</div>
+                            <div class="freq-mode-desc">Запрашивает частоту для всех ключевых слов, включая уже собранные</div>
                         </div>
                     </label>
                     <label class="freq-mode-option" id="modeMissingLabel">
                         <input type="radio" name="freqMode" value="missing" id="modeMissing">
                         <span class="freq-mode-radio"></span>
                         <div>
-                            <div class="freq-mode-title"><i class="fas fa-plus"></i> Р”РѕСЃРѕР±СЂР°С‚СЊ С‡Р°СЃС‚РѕС‚Сѓ</div>
-                            <div class="freq-mode-desc">РЎРѕР±РёСЂР°РµС‚ С‚РѕР»СЊРєРѕ РґР»СЏ СЃР»РѕРІ, Сѓ РєРѕС‚РѕСЂС‹С… С‡Р°СЃС‚РѕС‚Р° РµС‰С‘ РЅРµ РѕРїСЂРµРґРµР»РµРЅР°</div>
+                            <div class="freq-mode-title"><i class="fas fa-plus"></i> Дособрать частоту</div>
+                            <div class="freq-mode-desc">Собирает только для слов, у которых частота ещё не определена</div>
                         </div>
                     </label>
                 </div>
@@ -150,7 +150,7 @@
 
             <!-- Min Frequency Setting -->
             <div style="margin:12px 0 16px; display:flex; align-items:center; gap:10px; padding:0 4px;">
-                <label for="minFreqInput" style="font-size:13px; font-weight:500; color:#555;">РњРёРЅРёРјР°Р»СЊРЅР°СЏ С‡Р°СЃС‚РѕС‚Р° РґР»СЏ РїРµСЂРµРЅРѕСЃР° РІ РјРёРЅСѓСЃ-СЃР»РѕРІР°:</label>
+                <label for="minFreqInput" style="font-size:13px; font-weight:500; color:#555;">Минимальная частота для переноса в минус-слова:</label>
                 <input type="text" id="minFreqInput" value="10" 
                     style="width:60px; padding:6px 8px; border:1px solid #ddd; border-radius:6px; text-align:center; font-size:14px; font-weight:600;"
                     oninput="this.value = this.value.replace(/[^0-9]/g, '')">
@@ -159,57 +159,57 @@
             <div style="border-top:1px solid #eee;margin:14px 0;"></div>
 
             <!-- Presets -->
-            <div style="margin:0 0 8px;font-weight:600;font-size:14px;">Р’С‹Р±РµСЂРёС‚Рµ РЅР°СЃС‚СЂРѕР№РєРё:</div>
+            <div style="margin:0 0 8px;font-weight:600;font-size:14px;">Выберите настройки:</div>
             <div id="frequencyPresets" style="display:flex;flex-direction:column;gap:8px;"></div>
 
             <div style="margin-top:14px;">
-                <button class="btn btn-secondary" onclick="toggleNewFilterForm()" style="width:100%;">+ РЎРѕР·РґР°С‚СЊ РЅРѕРІС‹Р№ С„РёР»СЊС‚СЂ</button>
+                <button class="btn btn-secondary" onclick="toggleNewFilterForm()" style="width:100%;">+ Создать новый фильтр</button>
             </div>
 
             <!-- New filter form -->
             <div id="newFilterForm" style="display:none;margin-top:14px;border-top:1px solid #eee;padding-top:14px;">
-                <div style="margin-bottom:10px;font-weight:600;font-size:13px;">РќРѕРІС‹Р№ С„РёР»СЊС‚СЂ</div>
+                <div style="margin-bottom:10px;font-weight:600;font-size:13px;">Новый фильтр</div>
 
                 <div style="margin-bottom:8px;">
-                    <label style="font-size:13px;font-weight:500;">РќР°Р·РІР°РЅРёРµ С„РёР»СЊС‚СЂР°</label>
-                    <input type="text" id="newFilterName" placeholder="РќР°РїСЂРёРјРµСЂ: РњРѕР±РёР»СЊРЅС‹Рµ, Р РѕСЃСЃРёСЏ" style="width:100%;margin-top:4px;">
+                    <label style="font-size:13px;font-weight:500;">Название фильтра</label>
+                    <input type="text" id="newFilterName" placeholder="Например: Мобильные, Россия" style="width:100%;margin-top:4px;">
                 </div>
 
                 <div style="margin-bottom:10px;">
-                    <label style="font-size:13px;font-weight:500;">РЈСЃС‚СЂРѕР№СЃС‚РІРѕ:</label>
+                    <label style="font-size:13px;font-weight:500;">Устройство:</label>
                     <div style="display:flex;gap:16px;margin-top:6px;">
                         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                            <input type="checkbox" id="devDesktop" checked> Р”РµСЃРєС‚РѕРї
+                            <input type="checkbox" id="devDesktop" checked> Десктоп
                         </label>
                         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                            <input type="checkbox" id="devPhone"> РЎРјР°СЂС‚С„РѕРЅС‹
+                            <input type="checkbox" id="devPhone"> Смартфоны
                         </label>
                         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                            <input type="checkbox" id="devTablet"> РџР»Р°РЅС€РµС‚С‹
+                            <input type="checkbox" id="devTablet"> Планшеты
                         </label>
                     </div>
                 </div>
 
                 <div style="margin-bottom:14px;">
-                    <label style="font-size:13px;font-weight:500;">Р РµРіРёРѕРЅ:</label>
+                    <label style="font-size:13px;font-weight:500;">Регион:</label>
                     <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
-                        <input type="text" id="newFilterRegionName" placeholder="Р’СЃРµ СЂРµРіРёРѕРЅС‹" readonly
+                        <input type="text" id="newFilterRegionName" placeholder="Все регионы" readonly
                             style="flex:1;cursor:pointer;" onclick="openGeoModal()">
                         <input type="hidden" id="newFilterRegionId" value="">
-                        <button class="btn btn-secondary" onclick="openGeoModal()" style="white-space:nowrap;">Р’С‹Р±СЂР°С‚СЊ</button>
+                        <button class="btn btn-secondary" onclick="openGeoModal()" style="white-space:nowrap;">Выбрать</button>
                         <button class="btn btn-secondary" onclick="clearRegion()" style="white-space:nowrap;"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
 
                 <div style="display:flex;gap:8px;">
-                    <button class="btn btn-secondary" onclick="toggleNewFilterForm()" style="flex:1;">РћС‚РјРµРЅР°</button>
-                    <button class="btn btn-primary" onclick="saveNewFilter()" style="flex:1;">РЎРѕС…СЂР°РЅРёС‚СЊ С„РёР»СЊС‚СЂ</button>
+                    <button class="btn btn-secondary" onclick="toggleNewFilterForm()" style="flex:1;">Отмена</button>
+                    <button class="btn btn-primary" onclick="saveNewFilter()" style="flex:1;">Сохранить фильтр</button>
                 </div>
             </div>
 
             <div class="modal-footer" style="margin-top:16px;">
-                <button class="btn btn-secondary" onclick="closeFrequencyModal()">РћС‚РјРµРЅР°</button>
-                <button class="btn btn-primary" onclick="startFrequency()">Р—Р°РїСѓСЃС‚РёС‚СЊ</button>
+                <button class="btn btn-secondary" onclick="closeFrequencyModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="startFrequency()">Запустить</button>
             </div>
         </div>
     </div>
@@ -218,17 +218,17 @@
     <div id="geoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1200;align-items:center;justify-content:center;">
         <div style="background:#fff;border-radius:10px;width:380px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
             <div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-weight:600;">Р’С‹Р±РѕСЂ СЂРµРіРёРѕРЅР°</span>
+                <span style="font-weight:600;">Выбор региона</span>
                 <button onclick="closeGeoModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
             </div>
             <div style="padding:12px 16px;border-bottom:1px solid #eee;">
-                <input type="text" id="geoSearch" placeholder="РџРѕРёСЃРє СЂРµРіРёРѕРЅР°..." oninput="filterGeoTree(this.value)"
+                <input type="text" id="geoSearch" placeholder="Поиск региона..." oninput="filterGeoTree(this.value)"
                     style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
             </div>
             <div style="flex:1;overflow-y:auto;padding:8px 0;" id="geoTree"></div>
             <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;">
-                <button class="btn btn-primary" onclick="applyGeoSelection()" style="flex:1;">Р’С‹Р±СЂР°С‚СЊ</button>
-                <button class="btn btn-secondary" onclick="clearGeoSelection()" style="flex:1;">РћС‡РёСЃС‚РёС‚СЊ</button>
+                <button class="btn btn-primary" onclick="applyGeoSelection()" style="flex:1;">Выбрать</button>
+                <button class="btn btn-secondary" onclick="clearGeoSelection()" style="flex:1;">Очистить</button>
             </div>
         </div>
     </div>
@@ -237,9 +237,9 @@
     <div id="frequencyProgressBanner" style="display:none;position:fixed;bottom:20px;right:20px;background:#fff;border:1px solid #ddd;border-radius:10px;padding:14px 20px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:2000;min-width:300px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
             <div class="loader-mini"></div>
-            <span style="font-weight:600;font-size:14px;">РЎР±РѕСЂ С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚Рё...</span>
+            <span style="font-weight:600;font-size:14px;">Сбор частотности...</span>
         </div>
-        <div id="frequencyProgressText" style="font-size:12px;color:#666;margin-bottom:8px;">РџРѕРґРіРѕС‚РѕРІРєР°...</div>
+        <div id="frequencyProgressText" style="font-size:12px;color:#666;margin-bottom:8px;">Подготовка...</div>
         <div style="background:#f0f0f0;border-radius:4px;height:6px;">
             <div id="frequencyProgressBar" style="background:#2196F3;height:6px;border-radius:4px;width:0%;transition:width 0.3s;"></div>
         </div>
@@ -253,20 +253,20 @@
         <div class="sidebar-actions">
 
             <div style="display:flex; gap:10px;">
-                <button class="btn btn-primary" onclick="moveToSelectedCluster()">РџРµСЂРµРЅРµСЃС‚Рё РІ РєР»Р°СЃС‚РµСЂ</button>
-                <button class="btn btn-secondary" onclick="moveToMinusFromSidebar()" style="flex:1;">Р’ РјРёРЅСѓСЃ
-                    СЃР»РѕРІР°</button>
-                <button class="btn btn-secondary" onclick="moveToUnclusteredFromSidebar()" style="flex:1;">Р’
-                    РЅРµРєР»Р°СЃС‚РµСЂРёР·РѕРІР°РЅРѕ</button>
+                <button class="btn btn-primary" onclick="moveToSelectedCluster()">Перенести в кластер</button>
+                <button class="btn btn-secondary" onclick="moveToMinusFromSidebar()" style="flex:1;">В минус
+                    слова</button>
+                <button class="btn btn-secondary" onclick="moveToUnclusteredFromSidebar()" style="flex:1;">В
+                    некластеризовано</button>
             </div>
             <div class="search-wrapper" style="position: relative; margin-top: 10px;">
-                <input type="text" id="sidebarSearch" class="sidebar-search" value="" placeholder="РџРѕРёСЃРє РєР»Р°СЃС‚РµСЂР°..."
+                <input type="text" id="sidebarSearch" class="sidebar-search" value="" placeholder="Поиск кластера..."
                     oninput="filterSidebarClusters()" autocomplete="off" spellcheck="false" style="width: 100%; margin-top: 0;">
                 <span id="clearSearch" class="clear-icon" onclick="clearSidebarSearch()">&times;</span>
             </div>
         </div>
         <div class="sidebar-content" id="sidebarClusterList">
-            <div class="empty-state">РќРµС‚ РґР°РЅРЅС‹С…</div>
+            <div class="empty-state">Нет данных</div>
         </div>
     </div>
 
@@ -275,27 +275,27 @@
 
     <div id="authSection" class="auth-section" style="display:none;">
         <div class="auth-tabs">
-            <button class="auth-tab active" onclick="showAuthForm('login')">Р’С…РѕРґ</button>
-            <button class="auth-tab" onclick="showAuthForm('register')">Р РµРіРёСЃС‚СЂР°С†РёСЏ</button>
+            <button class="auth-tab active" onclick="showAuthForm('login')">Вход</button>
+            <button class="auth-tab" onclick="showAuthForm('register')">Регистрация</button>
         </div>
         <div id="authError" class="status error" style="display:none; margin-bottom:20px;"></div>
         <div id="authForm">
-            <input type="text" id="authUsername" placeholder="Р›РѕРіРёРЅ">
+            <input type="text" id="authUsername" placeholder="Логин">
             <div class="password-wrapper">
-                <input type="password" id="authPassword" placeholder="РџР°СЂРѕР»СЊ">
+                <input type="password" id="authPassword" placeholder="Пароль">
                 <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')"><i class="fas fa-eye"></i></span>
             </div>
-            <button class="btn btn-primary" onclick="submitAuth()">Р’РѕР№С‚Рё</button>
+            <button class="btn btn-primary" onclick="submitAuth()">Войти</button>
         </div>
     </div>
 
     <div id="addSiteModal" class="modal">
         <div class="modal-content">
-            <h2>Р”РѕР±Р°РІРёС‚СЊ РЅРѕРІС‹Р№ СЃР°Р№С‚</h2>
+            <h2>Добавить новый сайт</h2>
             <input type="text" id="newSiteDomain" placeholder="example.com">
             <div class="buttons">
-                <button class="btn btn-secondary" onclick="hideAddSiteModal()">РћС‚РјРµРЅР°</button>
-                <button class="btn btn-primary" onclick="addSite()">Р”РѕР±Р°РІРёС‚СЊ</button>
+                <button class="btn btn-secondary" onclick="hideAddSiteModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="addSite()">Добавить</button>
             </div>
         </div>
     </div>
@@ -304,11 +304,11 @@
     <div id="topupModal" class="modal">
         <div class="modal-content topup-modal-content">
             <div class="modal-header">
-                <span class="modal-title">РџРѕРїРѕР»РЅРµРЅРёРµ Р±Р°Р»Р°РЅСЃР°</span>
+                <span class="modal-title">Пополнение баланса</span>
                 <button onclick="closeTopupModal()" class="modal-close">&times;</button>
             </div>
             <div class="topup-input-group">
-                <label for="topupAmount">РЎСѓРјРјР° РїРѕРїРѕР»РЅРµРЅРёСЏ (СЂСѓР±.)</label>
+                <label for="topupAmount">Сумма пополнения (руб.)</label>
                 <input type="number" id="topupAmount" value="500" min="500" step="100">
                 <div class="topup-hints">
                     <button class="btn-hint" onclick="setTopupAmount(500)">500</button>
@@ -317,8 +317,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeTopupModal()">РћС‚РјРµРЅР°</button>
-                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">РћРїР»Р°С‚РёС‚СЊ</button>
+                <button class="btn btn-secondary" onclick="closeTopupModal()">Отмена</button>
+                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">Оплатить</button>
             </div>
         </div>
     </div>
@@ -386,8 +386,8 @@
             const unclusteredList = document.getElementById('unclusteredList');
 
             if (!keywords || keywords.length === 0) {
-                clusterList.innerHTML = '<div class="empty-state">РќРµС‚ РґР°РЅРЅС‹С… РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ</div>';
-                unclusteredList.innerHTML = '<div class="empty-state">РќРµС‚ РґР°РЅРЅС‹С…</div>';
+                clusterList.innerHTML = '<div class="empty-state">Нет данных для отображения</div>';
+                unclusteredList.innerHTML = '<div class="empty-state">Нет данных</div>';
                 return;
             }
 
@@ -461,8 +461,8 @@
                         <input type="checkbox" class="cluster-select-all" data-cluster="${clusterId}" onclick="event.stopPropagation(); toggleClusterSelectAll(this)">
                         
                         <div class="cluster-meta-actions" onclick="event.stopPropagation()" style="display:flex; gap:5px;">
-                            <span class="btn-pin ${cluster.is_pinned ? 'active' : ''}" onclick="toggleClusterPinned('${clusterId}', ${!cluster.is_pinned})" title="${cluster.is_pinned ? 'РћС‚РєСЂРµРїРёС‚СЊ' : 'Р—Р°РєСЂРµРїРёС‚СЊ СЃРІРµСЂС…Сѓ'}"><i class="fas fa-thumbtack"></i></span>
-                            <span class="btn-star ${cluster.is_favorite ? 'active' : ''}" onclick="toggleClusterFavorite('${clusterId}', ${!cluster.is_favorite})" title="${cluster.is_favorite ? 'РЈР±СЂР°С‚СЊ РёР· РёР·Р±СЂР°РЅРЅРѕРіРѕ' : 'Р’ РёР·Р±СЂР°РЅРЅРѕРµ'}"><i class="fas fa-star"></i></span>
+                            <span class="btn-pin ${cluster.is_pinned ? 'active' : ''}" onclick="toggleClusterPinned('${clusterId}', ${!cluster.is_pinned})" title="${cluster.is_pinned ? 'Открепить' : 'Закрепить сверху'}"><i class="fas fa-thumbtack"></i></span>
+                            <span class="btn-star ${cluster.is_favorite ? 'active' : ''}" onclick="toggleClusterFavorite('${clusterId}', ${!cluster.is_favorite})" title="${cluster.is_favorite ? 'Убрать из избранного' : 'В избранное'}"><i class="fas fa-star"></i></span>
                         </div>
 
                         <span class="cluster-name" style="flex:1;">
@@ -483,11 +483,11 @@
                                 }
                                 return `<a href="${fullUrl}" target="_blank" class="mapping-icon" title="${fullUrl}"><i class="fas fa-globe"></i></a>`;
                             })() : ''}
-                            <span class="mapping-icon" onclick="openManualUrlModal(${clusterId})" title="РЈРєР°Р·Р°С‚СЊ URL"><i class="fas fa-pen"></i></span>
-                            <a href="analysis.html?domain=${encodeURIComponent(currentDomain)}&clusterId=${clusterId}&name=${encodeURIComponent(cluster.name)}" class="mapping-icon" title="РЎР•Рћ Р°РЅР°Р»РёР·"><i class="fas fa-chart-bar"></i></a>
+                            <span class="mapping-icon" onclick="openManualUrlModal(${clusterId})" title="Указать URL"><i class="fas fa-pen"></i></span>
+                            <a href="analysis.html?domain=${encodeURIComponent(currentDomain)}&clusterId=${clusterId}&name=${encodeURIComponent(cluster.name)}" class="mapping-icon" title="СЕО анализ"><i class="fas fa-chart-bar"></i></a>
                         </div>
                         <div class="cluster-actions" onclick="event.stopPropagation()">
-                            <button class="btn-disband" onclick="disbandCluster(${clusterId})" title="Р Р°СЃС„РѕСЂРјРёСЂРѕРІР°С‚СЊ"><i class="fas fa-trash-alt"></i></button>
+                            <button class="btn-disband" onclick="disbandCluster(${clusterId})" title="Расформировать"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     </div>
                     <div class="cluster-content ${isCollapsed ? 'collapsed' : ''}">
@@ -495,10 +495,10 @@
                             <div class="kw-row">
                                 <input type="checkbox" class="kw-checkbox" data-cluster="${clusterId}" data-kw="${escapeHtml(k.query)}" onchange="updateSidebarVisibility()">
                                 <span class="kw-query-container">
-                                    вЂў ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
+                                    • ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
                                     <span class="kw-text-wrapper" style="position: relative; display: inline;">
-                                        <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Р”РІРѕР№РЅРѕР№ РєР»РёРє РґР»СЏ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
-                                        <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 5px; display: inline-block; vertical-align: middle;"><i class="fas fa-pencil-alt"></i></span>
+                                        <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Двойной клик для редактирования" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
+                                        <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 5px; display: inline-block; vertical-align: middle;"><i class="fas fa-pencil-alt"></i></span>
                                     </span>
                                 </span>
                             </div>
@@ -506,7 +506,7 @@
                     </div>
                 </div>`;
             });
-            clusterList.innerHTML = html || '<div class="empty-state">РќРµС‚ РєР»Р°СЃС‚РµСЂРѕРІ</div>';
+            clusterList.innerHTML = html || '<div class="empty-state">Нет кластеров</div>';
 
             // Initialize Sortable for pinned clusters
             initSortable();
@@ -518,14 +518,14 @@
                 <div class="keyword-item kw-row unclustered">
                     <input type="checkbox" class="kw-checkbox" data-cluster="0" data-kw="${escapeHtml(k.query)}" onchange="updateSidebarVisibility()">
                     <span class="kw-query-container">
-                        вЂў ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
+                        • ${k.freq > 0 ? `<span class="kw-freq">[${k.freq}]</span>` : ''}
                         <span class="kw-text-wrapper" style="position: relative; display: inline;">
-                            <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Р”РІРѕР№РЅРѕР№ РєР»РёРє РґР»СЏ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
-                            <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 5px; display: inline-block; vertical-align: middle;"><i class="fas fa-pencil-alt"></i></span>
+                            <span class="kw-text" data-raw-query="${escapeHtml(k.query)}" ondblclick="makeKeywordEditable(this, ${k.id})" title="Двойной клик для редактирования" style="cursor:pointer; user-select:none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2196F3'" onmouseout="this.style.borderBottomColor='transparent'">${escapeHtml(k.query)}</span>
+                            <span class="kw-edit-icon" onclick="makeKeywordEditable(this.previousElementSibling, ${k.id})" title="Редактировать" style="cursor:pointer; opacity:0; transition:opacity 0.2s; font-size:12px; margin-left: 5px; display: inline-block; vertical-align: middle;"><i class="fas fa-pencil-alt"></i></span>
                         </span>
                     </span>
                 </div>
-            `).join('') || '<div class="empty-state">Р’СЃРµ СЃР»РѕРІР° РєР»Р°СЃС‚РµСЂРёР·РѕРІР°РЅС‹</div>';
+            `).join('') || '<div class="empty-state">Все слова кластеризованы</div>';
 
             updateSidebarClusterList();
             filterClustersByKeywords();
@@ -599,7 +599,7 @@
         }
 
         async function runClustering() {
-            if (!currentDomain) return showStatus('Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚', 'error');
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
             
             const btn = document.getElementById('btnRunCluster');
             const banner = document.getElementById('wmStatusBanner');
@@ -607,11 +607,11 @@
             
             btn.classList.add('btn-loading');
             if (banner) {
-                bannerText.innerText = 'Р’С‹РїРѕР»РЅСЏРµС‚СЃСЏ РєР»Р°СЃС‚РµСЂРёР·Р°С†РёСЏ Р·Р°РїСЂРѕСЃРѕРІ...';
+                bannerText.innerText = 'Выполняется кластеризация запросов...';
                 banner.style.display = 'flex';
             }
             
-            showStatus('РљР»Р°СЃС‚РµСЂРёР·Р°С†РёСЏ Р·Р°РїСѓС‰РµРЅР°...', 'success');
+            showStatus('Кластеризация запущена...', 'success');
             
             try {
                 const session = localStorage.getItem('session');
@@ -623,7 +623,7 @@
                 if (!response.ok) {
                     if (response.status === 402) {
                         const data = await response.json();
-                        return showStatus(`РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЃСЂРµРґСЃС‚РІ. РќРµРѕР±С…РѕРґРёРјРѕ: ${data.required} СЂСѓР±.`, 'error');
+                        return showStatus(`Недостаточно средств. Необходимо: ${data.required} руб.`, 'error');
                     }
                     throw new Error(`HTTP Error: ${response.status}`);
                 }
@@ -647,21 +647,21 @@
                                 if (data.type === 'progress') {
                                     const match = data.message.match(/PROGRESS:\s*(\d+)/);
                                     if (match) {
-                                        showStatus(`РљР»Р°СЃС‚РµСЂРёР·Р°С†РёСЏ РІС‹РїРѕР»РЅСЏРµС‚СЃСЏ... ${match[1]}%`, 'success');
-                                        if (banner) bannerText.innerText = `Р’С‹РїРѕР»РЅСЏРµС‚СЃСЏ РєР»Р°СЃС‚РµСЂРёР·Р°С†РёСЏ... ${match[1]}%`;
+                                        showStatus(`Кластеризация выполняется... ${match[1]}%`, 'success');
+                                        if (banner) bannerText.innerText = `Выполняется кластеризация... ${match[1]}%`;
                                     }
                                 } else if (data.type === 'done') {
                                     if (data.result && data.result.success) {
-                                        showStatus(`Р“РѕС‚РѕРІРѕ: ${data.result.count} РєР»Р°СЃС‚РµСЂРѕРІ`, 'success');
+                                        showStatus(`Готово: ${data.result.count} кластеров`, 'success');
                                         loadClusterData(currentDomain);
                                     } else {
-                                        showStatus(`РћС€РёР±РєР° РєР»Р°СЃС‚РµСЂРёР·Р°С†РёРё: ${data.result ? data.result.error : 'РќРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°'}`, 'error');
+                                        showStatus(`Ошибка кластеризации: ${data.result ? data.result.error : 'Неизвестная ошибка'}`, 'error');
                                     }
                                 } else if (data.type === 'error') {
                                     if (data.error === 'INSUFFICIENT_FUNDS') {
-                                        showStatus(`РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЃСЂРµРґСЃС‚РІ. РќРµРѕР±С…РѕРґРёРјРѕ: ${data.required} СЂСѓР±.`, 'error');
+                                        showStatus(`Недостаточно средств. Необходимо: ${data.required} руб.`, 'error');
                                     } else {
-                                        showStatus(`РћС€РёР±РєР°: ${data.message}`, 'error');
+                                        showStatus(`Ошибка: ${data.message}`, 'error');
                                     }
                                 }
                             } catch (e) {
@@ -672,18 +672,18 @@
                 }
             } catch (e) {
                 console.error(e);
-                showStatus('РћС€РёР±РєР° СЃРѕРµРґРёРЅРµРЅРёСЏ СЃ СЃРµСЂРІРµСЂРѕРј', 'error');
+                showStatus('Ошибка соединения с сервером', 'error');
             } finally {
                 btn.classList.remove('btn-loading');
                 if (banner) {
                     banner.style.display = 'none';
-                    bannerText.innerText = 'Р—Р°РіСЂСѓР·РєР° Р·Р°РїСЂРѕСЃРѕРІ РёР· РЇРЅРґРµРєСЃ Р’РµР±РјР°СЃС‚РµСЂР°...'; // Reset
+                    bannerText.innerText = 'Загрузка запросов из Яндекс Вебмастера...'; // Reset
                 }
             }
         }
 
         async function fetchWMQueries() {
-            if (!currentDomain) return showStatus('Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚', 'error');
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
             
             const btn = document.getElementById('btnFetchWM');
             const banner = document.getElementById('wmStatusBanner');
@@ -691,18 +691,18 @@
             btn.classList.add('btn-loading');
             if (banner) banner.style.display = 'flex';
             
-            showStatus('Р—Р°РіСЂСѓР·РєР° Р·Р°РїСЂРѕСЃРѕРІ РёР· Р’РµР±РјР°СЃС‚РµСЂР°...', 'success');
+            showStatus('Загрузка запросов из Вебмастера...', 'success');
             try {
                 const res = await authFetch(`/api/fetch-wm-queries?domain=${encodeURIComponent(currentDomain)}`);
                 const data = await res.json();
                 if (data.success) {
-                    showStatus(`Р—Р°РіСЂСѓР¶РµРЅРѕ РЅРѕРІС‹С…: ${data.added || 0} Р·Р°РїСЂРѕСЃРѕРІ`, 'success');
+                    showStatus(`Загружено новых: ${data.added || 0} запросов`, 'success');
                     loadClusterData(currentDomain);
                 } else {
-                    showStatus(`РћС€РёР±РєР°: ${data.error}`, 'error');
+                    showStatus(`Ошибка: ${data.error}`, 'error');
                 }
             } catch (e) {
-                showStatus('РћС€РёР±РєР° СЃРѕРµРґРёРЅРµРЅРёСЏ СЃ СЃРµСЂРІРµСЂРѕРј', 'error');
+                showStatus('Ошибка соединения с сервером', 'error');
             } finally {
                 btn.classList.remove('btn-loading');
                 if (banner) banner.style.display = 'none';
@@ -710,11 +710,11 @@
         }
 
         async function runMapping() {
-            if (!currentDomain) return showStatus('Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚', 'error');
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
             
             const btn = document.querySelector('button[onclick="runMapping()"]');
             if (btn) btn.classList.add('btn-loading');
-            showStatus('РњР°РїРїРёРЅРі Р·Р°РїСѓС‰РµРЅ. РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РїРѕРґРѕР¶РґРёС‚Рµ...', 'success');
+            showStatus('Маппинг запущен. Пожалуйста, подождите...', 'success');
 
             try {
                 const session = localStorage.getItem('session');
@@ -746,17 +746,17 @@
                                 if (data.type === 'progress') {
                                     const match = data.message.match(/PROGRESS:\s*(\d+)/);
                                     if (match) {
-                                        showStatus(`РњР°РїРїРёРЅРі РІС‹РїРѕР»РЅСЏРµС‚СЃСЏ... ${match[1]}%`, 'success');
+                                        showStatus(`Маппинг выполняется... ${match[1]}%`, 'success');
                                     }
                                 } else if (data.type === 'done') {
                                     if (data.result && data.result.success) {
-                                        showStatus('РњР°РїРїРёРЅРі СѓСЃРїРµС€РЅРѕ Р·Р°РІРµСЂС€РµРЅ', 'success');
+                                        showStatus('Маппинг успешно завершен', 'success');
                                         loadMappings(currentDomain);
                                     } else {
-                                        showStatus(`РћС€РёР±РєР° РјР°РїРїРёРЅРіР°: ${data.result ? data.result.error : 'РќРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°'}`, 'error');
+                                        showStatus(`Ошибка маппинга: ${data.result ? data.result.error : 'Неизвестная ошибка'}`, 'error');
                                     }
                                 } else if (data.type === 'error') {
-                                    showStatus(`РћС€РёР±РєР° РјР°РїРїРёРЅРіР°: ${data.message}`, 'error');
+                                    showStatus(`Ошибка маппинга: ${data.message}`, 'error');
                                 }
                             } catch (e) {
                                 console.error('Error parsing SSE chunk:', e);
@@ -766,26 +766,26 @@
                 }
             } catch (e) {
                 console.error(e);
-                showStatus('РћС€РёР±РєР° СЃРѕРµРґРёРЅРµРЅРёСЏ СЃ СЃРµСЂРІРµСЂРѕРј', 'error');
+                showStatus('Ошибка соединения с сервером', 'error');
             } finally {
                 if (btn) btn.classList.remove('btn-loading');
             }
         }
 
         async function runSEOAnalysis() {
-            if (!currentDomain) return showStatus('Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚', 'error');
-            showStatus('SEO Р°РЅР°Р»РёР· Р·Р°РїСѓС‰РµРЅ...', 'success');
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
+            showStatus('SEO анализ запущен...', 'success');
             try {
                 authFetch(`/api/run-competitor-analysis-stream?domain=${encodeURIComponent(currentDomain)}`);
                 setTimeout(checkAnalysisStatus, 1000);
-                showStatus('РђРЅР°Р»РёР· РІС‹РїРѕР»РЅСЏРµС‚СЃСЏ РІ С„РѕРЅРѕРІРѕРј СЂРµР¶РёРјРµ', 'success');
+                showStatus('Анализ выполняется в фоновом режиме', 'success');
             } catch (e) {
-                showStatus('РћС€РёР±РєР° Р·Р°РїСѓСЃРєР° Р°РЅР°Р»РёР·Р°', 'error');
+                showStatus('Ошибка запуска анализа', 'error');
             }
         }
 
         async function disbandCluster(id) {
-            if (!confirm('Р Р°СЃС„РѕСЂРјРёСЂРѕРІР°С‚СЊ РєР»Р°СЃС‚РµСЂ?')) return;
+            if (!confirm('Расформировать кластер?')) return;
             await authFetch('/api/disband-cluster', {
                 method: 'POST',
                 body: JSON.stringify({ domain: currentDomain, clusterId: id })
@@ -817,7 +817,7 @@
 
             const clusterIds = Object.keys(clusters);
             if (clusterIds.length === 0) {
-                list.innerHTML = '<div class="empty-state">РљР»Р°СЃС‚РµСЂС‹ РЅРµ РЅР°Р№РґРµРЅС‹</div>';
+                list.innerHTML = '<div class="empty-state">Кластеры не найдены</div>';
                 return;
             }
 
@@ -838,9 +838,9 @@
             });
 
             if (matchCount === 0 && search) {
-                list.innerHTML = `<div class="empty-state">РџРѕ Р·Р°РїСЂРѕСЃСѓ "${escapeHtml(search)}" РЅРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ.<br><button class="btn btn-secondary" style="margin-top:10px; padding: 4px 8px; font-size:12px;" onclick="document.getElementById('sidebarSearch').value=''; updateSidebarClusterList();">РћС‡РёСЃС‚РёС‚СЊ РїРѕРёСЃРє</button></div>`;
+                list.innerHTML = `<div class="empty-state">По запросу "${escapeHtml(search)}" ничего не найдено.<br><button class="btn btn-secondary" style="margin-top:10px; padding: 4px 8px; font-size:12px;" onclick="document.getElementById('sidebarSearch').value=''; updateSidebarClusterList();">Очистить поиск</button></div>`;
             } else {
-                list.innerHTML = html || '<div class="empty-state">РќРµС‚ РґР°РЅРЅС‹С…</div>';
+                list.innerHTML = html || '<div class="empty-state">Нет данных</div>';
             }
         }
 
@@ -864,7 +864,7 @@
 
         async function performMove(target) {
             const selected = [...document.querySelectorAll('.kw-checkbox:checked')].map(cb => cb.dataset.kw);
-            if (selected.length === 0) return showStatus('Р’С‹Р±РµСЂРёС‚Рµ РєР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР°', 'error');
+            if (selected.length === 0) return showStatus('Выберите ключевые слова', 'error');
 
             const url = target === 'minus' ? '/api/minus-words' : '/api/move-keywords';
             const body = { domain: currentDomain, keywords: selected, target };
@@ -881,13 +881,13 @@
                 if (data.success) {
                     loadClusterData(currentDomain);
                     updateSidebarVisibility();
-                    showStatus('РџРµСЂРµРЅРѕСЃ СѓСЃРїРµС€РЅРѕ РІС‹РїРѕР»РЅРµРЅ', 'success');
+                    showStatus('Перенос успешно выполнен', 'success');
                 } else {
-                    showStatus(`РћС€РёР±РєР° РїРµСЂРµРЅРѕСЃР°: ${data.error || 'РЅРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°'}`, 'error');
+                    showStatus(`Ошибка переноса: ${data.error || 'неизвестная ошибка'}`, 'error');
                 }
             } catch (e) {
                 console.error('Move error:', e);
-                showStatus('РћС€РёР±РєР° СЃРѕРµРґРёРЅРµРЅРёСЏ СЃ СЃРµСЂРІРµСЂРѕРј. РџСЂРѕРІРµСЂСЊС‚Рµ, Р·Р°РїСѓС‰РµРЅ Р»Рё Р±СЌРєРµРЅРґ.', 'error');
+                showStatus('Ошибка соединения с сервером. Проверьте, запущен ли бэкенд.', 'error');
             }
         }
 
@@ -911,7 +911,7 @@
                         clearInterval(statusInterval);
                         statusInterval = null;
                         loadClusterData(currentDomain);
-                        showStatus('SEO Р°РЅР°Р»РёР· Р·Р°РІРµСЂС€РµРЅ', 'success');
+                        showStatus('SEO анализ завершен', 'success');
                     }
                 }
             } catch (e) {
@@ -1004,7 +1004,7 @@
                 
                 const newText = input.value.trim();
                 if (!newText) {
-                    showStatus('РљР»СЋС‡РµРІРѕРµ СЃР»РѕРІРѕ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСѓСЃС‚С‹Рј', 'error');
+                    showStatus('Ключевое слово не может быть пустым', 'error');
                     spanEl.innerText = rawText;
                     return;
                 }
@@ -1021,15 +1021,15 @@
                     });
                     const data = await res.json();
                     if (res.ok && data.success) {
-                        showStatus('РљР»СЋС‡РµРІРѕРµ СЃР»РѕРІРѕ СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅРѕ', 'success');
+                        showStatus('Ключевое слово успешно обновлено', 'success');
                         loadClusterData(currentDomain);
                     } else {
-                        showStatus('РћС€РёР±РєР° РїСЂРё РѕР±РЅРѕРІР»РµРЅРёРё: ' + (data.error || 'РЅРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°'), 'error');
+                        showStatus('Ошибка при обновлении: ' + (data.error || 'неизвестная ошибка'), 'error');
                         spanEl.innerText = rawText;
                     }
                 } catch (e) {
                     console.error(e);
-                    showStatus('РћС€РёР±РєР° СЃРµС‚Рё РїСЂРё РѕР±РЅРѕРІР»РµРЅРёРё РєР»СЋС‡РµРІРѕРіРѕ СЃР»РѕРІР°', 'error');
+                    showStatus('Ошибка сети при обновлении ключевого слова', 'error');
                     spanEl.innerText = rawText;
                 }
             };
@@ -1104,7 +1104,7 @@
             container.innerHTML = '';
 
             if (frequencyPresets.length === 0) {
-                container.innerHTML = '<div style="color:#999;font-size:13px;">РќРµС‚ СЃРѕС…СЂР°РЅС‘РЅРЅС‹С… С„РёР»СЊС‚СЂРѕРІ</div>';
+                container.innerHTML = '<div style="color:#999;font-size:13px;">Нет сохранённых фильтров</div>';
                 return;
             }
 
@@ -1112,11 +1112,11 @@
                 const isSelected = selectedPresetId === preset.id;
 
                 const deviceParts = (preset.device || '').split(',').filter(Boolean);
-                const deviceMap = { desktop: '<i class="fas fa-desktop"></i> Р”РµСЃРєС‚РѕРї', phone: '<i class="fas fa-mobile-alt"></i> РЎРјР°СЂС‚С„РѕРЅС‹', tablet: '<i class="fas fa-clipboard"></i> РџР»Р°РЅС€РµС‚С‹' };
+                const deviceMap = { desktop: '<i class="fas fa-desktop"></i> Десктоп', phone: '<i class="fas fa-mobile-alt"></i> Смартфоны', tablet: '<i class="fas fa-clipboard"></i> Планшеты' };
                 const deviceLabel = deviceParts.length > 0
                     ? deviceParts.map(d => deviceMap[d.trim()] || d).join(' + ')
-                    : '<i class="fas fa-mobile-alt"></i> Р’СЃРµ СѓСЃС‚СЂРѕР№СЃС‚РІР°';
-                const regionLabel = '<i class="fas fa-map-marker-alt"></i> ' + (preset.region_name || 'Р’СЃРµ СЂРµРіРёРѕРЅС‹');
+                    : '<i class="fas fa-mobile-alt"></i> Все устройства';
+                const regionLabel = '<i class="fas fa-map-marker-alt"></i> ' + (preset.region_name || 'Все регионы');
 
                 const div = document.createElement('label');
                 div.style.cssText = [
@@ -1143,7 +1143,7 @@
                         ${!preset.is_default ? `
                         <button onclick="deletePreset(${preset.id},event)"
                             style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;color:#ccc;cursor:pointer;font-size:16px;padding:4px;line-height:1;"
-                            title="РЈРґР°Р»РёС‚СЊ"><i class="fas fa-times"></i></button>` : ''}
+                            title="Удалить"><i class="fas fa-times"></i></button>` : ''}
                     </div>
                 `;
                 container.appendChild(div);
@@ -1158,7 +1158,7 @@
 
         async function deletePreset(id, event) {
             event.stopPropagation();
-            if (!confirm('РЈРґР°Р»РёС‚СЊ СЌС‚РѕС‚ С„РёР»СЊС‚СЂ?')) return;
+            if (!confirm('Удалить этот фильтр?')) return;
             await authFetch(`/api/wordstat-settings/${id}`, { method: 'DELETE' });
             if (selectedPresetId === id) selectedPresetId = null;
             await loadFrequencyPresets();
@@ -1166,17 +1166,17 @@
 
         async function saveNewFilter() {
             const name = document.getElementById('newFilterName').value.trim();
-            if (!name) { alert('Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ С„РёР»СЊС‚СЂР°'); return; }
+            if (!name) { alert('Введите название фильтра'); return; }
 
             const devices = [];
             if (document.getElementById('devDesktop').checked) devices.push('desktop');
             if (document.getElementById('devPhone').checked) devices.push('phone');
             if (document.getElementById('devTablet').checked) devices.push('tablet');
-            if (devices.length === 0) { alert('Р’С‹Р±РµСЂРёС‚Рµ С…РѕС‚СЏ Р±С‹ РѕРґРЅРѕ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ'); return; }
+            if (devices.length === 0) { alert('Выберите хотя бы одно устройство'); return; }
 
             const device = devices.join(',');
             const region = document.getElementById('newFilterRegionId').value || '';
-            const region_name = document.getElementById('newFilterRegionName').value || 'Р’СЃРµ СЂРµРіРёРѕРЅС‹';
+            const region_name = document.getElementById('newFilterRegionName').value || 'Все регионы';
         
             const res = await authFetch('/api/wordstat-settings', {
                 method: 'POST',
@@ -1198,7 +1198,7 @@
             modal.style.display = 'flex';
 
             if (geoRegions.length === 0) {
-                document.getElementById('geoTree').innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Р—Р°РіСЂСѓР·РєР°...</div>';
+                document.getElementById('geoTree').innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Загрузка...</div>';
                 try {
                     const res = await authFetch('/api/geo-regions');
                     const data = await res.json();
@@ -1259,7 +1259,7 @@
 
         function applyGeoSelection() {
             document.getElementById('newFilterRegionId').value = selectedGeoId;
-            document.getElementById('newFilterRegionName').value = selectedGeoName || 'Р’СЃРµ СЂРµРіРёРѕРЅС‹';
+            document.getElementById('newFilterRegionName').value = selectedGeoName || 'Все регионы';
             closeGeoModal();
         }
 
@@ -1280,10 +1280,10 @@
            FREQUENCY COLLECTION
         ============================================================ */
         async function startFrequency() {
-            if (!currentDomain) { alert('Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚'); return; }
+            if (!currentDomain) { alert('Выберите сайт'); return; }
 
             const preset = frequencyPresets.find(p => p.id === selectedPresetId);
-            if (!preset) { alert('Р’С‹Р±РµСЂРёС‚Рµ РЅР°СЃС‚СЂРѕР№РєРё СЃР±РѕСЂР° С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚Рё'); return; }
+            if (!preset) { alert('Выберите настройки сбора частотности'); return; }
 
             const modeEl = document.querySelector('input[name="freqMode"]:checked');
             const mode = modeEl ? modeEl.value : 'all';
@@ -1292,13 +1292,13 @@
 
             const banner = document.getElementById('frequencyProgressBanner');
             banner.style.display = 'block';
-            const modeLabel = mode === 'missing' ? 'Р”РѕСЃРѕР±РѕСЂ С‡Р°СЃС‚РѕС‚С‹...' : 'РџРµСЂРµСЃР±РѕСЂ С‡Р°СЃС‚РѕС‚С‹...';
+            const modeLabel = mode === 'missing' ? 'Дособор частоты...' : 'Пересбор частоты...';
             document.getElementById('frequencyProgressText').textContent = modeLabel;
             document.getElementById('frequencyProgressBar').style.width = '0%';
             document.getElementById('frequencyProgressCount').textContent = '';
 
             const btn = document.getElementById('btnFrequency');
-            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-hourglass-half"></i> РЎР±РѕСЂ...'; }
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-hourglass-half"></i> Сбор...'; }
 
             const minFreq = document.getElementById('minFreqInput').value || '10';
             
@@ -1327,7 +1327,7 @@
                     const task = await statusResp.json();
                     
                     if (task.status === 'completed') {
-                        document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-check-circle"></i> РЎР±РѕСЂ Р·Р°РІРµСЂС€РµРЅ!';
+                        document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-check-circle"></i> Сбор завершен!';
                         document.getElementById('frequencyProgressBar').style.width = '100%';
                         setTimeout(() => {
                             banner.style.display = 'none';
@@ -1335,7 +1335,7 @@
                         }, 3000);
                         break;
                     } else if (task.status === 'failed') {
-                        document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-times-circle"></i> РћС€РёР±РєР°: ' + task.error;
+                        document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-times-circle"></i> Ошибка: ' + task.error;
                         break;
                     } else {
                         // Update progress bar
@@ -1354,23 +1354,23 @@
                         }
 
                         if (task.status === 'running') {
-                            document.getElementById('frequencyProgressText').textContent = 'Р’С‹РїРѕР»РЅСЏРµС‚СЃСЏ... ' + pct + '%';
+                            document.getElementById('frequencyProgressText').textContent = 'Выполняется... ' + pct + '%';
                         } else {
-                            document.getElementById('frequencyProgressText').textContent = 'Р’ РѕС‡РµСЂРµРґРё...';
+                            document.getElementById('frequencyProgressText').textContent = 'В очереди...';
                         }
                     }
                     
                     await new Promise(r => setTimeout(r, 2000));
                 }
             } catch (e) {
-                document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-times-circle"></i> РћС€РёР±РєР°: ' + e.message;
+                document.getElementById('frequencyProgressText').innerHTML = '<i class="fas fa-times-circle"></i> Ошибка: ' + e.message;
             } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-chart-line"></i> РџРѕР»СѓС‡РёС‚СЊ С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚СЊ'; }
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-chart-line"></i> Получить частотность'; }
             }
         }
         // --- Create Cluster by URL ---
         function showCreateClusterByUrlModal() {
-            if (!currentDomain) return showStatus('Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚', 'error');
+            if (!currentDomain) return showStatus('Выберите сайт', 'error');
             document.getElementById('createClusterUrlInput').value = '';
             document.getElementById('createClusterByUrlModal').style.display = 'flex';
         }
@@ -1382,7 +1382,7 @@
         async function createClusterByUrl() {
             const urlInput = document.getElementById('createClusterUrlInput').value.trim();
             if (!urlInput) {
-                return showStatus('Р’РІРµРґРёС‚Рµ URL', 'error');
+                return showStatus('Введите URL', 'error');
             }
 
             // Hide the modal immediately
@@ -1390,8 +1390,8 @@
 
             const btn = document.getElementById('btnSaveClusterByUrl');
             btn.disabled = true;
-            btn.innerText = 'РЎРѕР·РґР°РЅРёРµ...';
-            showStatus('Р—Р°РїСѓС‰РµРЅ СЃР±РѕСЂ РєР»СЋС‡РµР№ РёР· Wordstat Рё РєР»Р°СЃС‚РµСЂРёР·Р°С†РёСЏ... РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РїРѕРґРѕР¶РґРёС‚Рµ.', 'success');
+            btn.innerText = 'Создание...';
+            showStatus('Запущен сбор ключей из Wordstat и кластеризация... Пожалуйста, подождите.', 'success');
 
             try {
                 const res = await authFetch('/api/create-cluster-by-url', {
@@ -1401,17 +1401,17 @@
                 
                 const data = await res.json();
                 if (res.ok && data.success) {
-                    showStatus(`РљР»Р°СЃС‚РµСЂ СѓСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅ! Р”РѕР±Р°РІР»РµРЅРѕ РєР»СЋС‡РµР№: ${data.added || 0}`, 'success');
+                    showStatus(`Кластер успешно создан! Добавлено ключей: ${data.added || 0}`, 'success');
                     loadClusterData(currentDomain);
                 } else {
-                    showStatus(`РћС€РёР±РєР°: ${data.error || 'РќРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°'}`, 'error');
+                    showStatus(`Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
                 }
             } catch (e) {
                 console.error(e);
-                showStatus('РћС€РёР±РєР° СЃРµС‚Рё РїСЂРё СЃРѕР·РґР°РЅРёРё РєР»Р°СЃС‚РµСЂР°', 'error');
+                showStatus('Ошибка сети при создании кластера', 'error');
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'РЎРѕС…СЂР°РЅРёС‚СЊ';
+                btn.innerText = 'Сохранить';
             }
         }
     </script>
