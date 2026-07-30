@@ -180,9 +180,13 @@
             return params.get('site') || params.get('domain') || '';
         }
 
+        window.onSiteSelected = async function(domain) {
+            currentDomain = domain;
+            await loadTree();
+        };
+
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-            // Ensure currentDomain is set from URL if app.js hasn't resolved yet
             if (!currentDomain) {
                 currentDomain = getDomainFromUrl();
             }
@@ -307,8 +311,16 @@
                 const res = await authFetch(`/api/site-structure?site_url=${encodeURIComponent(currentDomain)}`);
                 document.getElementById('treeLoading').style.display = 'none';
                 
-                if (res && res.exists && res.structure && res.structure.length > 0) {
-                    currentTreeData = res.structure;
+                let struct = res ? res.structure : null;
+                if (typeof struct === 'string') {
+                    try { struct = JSON.parse(struct); } catch(e) {}
+                }
+                if (struct && !Array.isArray(struct)) {
+                    struct = [struct];
+                }
+
+                if (res && res.exists && struct && struct.length > 0) {
+                    currentTreeData = struct;
                     renderTree();
                 } else {
                     currentTreeData = [];
@@ -678,12 +690,19 @@
                 statusBox.style.display = 'none';
                 closeGenerateModal();
 
-                if (res && res.structure) {
-                    currentTreeData = res.structure;
+                let struct = res ? res.structure : null;
+                if (typeof struct === 'string') {
+                    try { struct = JSON.parse(struct); } catch(e) {}
+                }
+                if (struct && !Array.isArray(struct)) {
+                    struct = [struct];
+                }
+
+                if (struct && struct.length > 0) {
+                    currentTreeData = struct;
                     renderTree();
                     showStatus('Структура сайта успешно сгенерирована ИИ!', 'success');
                 } else {
-                    // Structure was saved, reload from server to display it
                     await loadTree();
                     showStatus('Структура сайта успешно сгенерирована ИИ!', 'success');
                 }

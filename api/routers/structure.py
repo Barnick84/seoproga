@@ -210,9 +210,25 @@ async def generate_site_structure(
             cleaned = cleaned[:-3].strip()
 
         data = json.loads(cleaned)
-        struct_res = data.get("structure") or data.get("tree") or [data]
-        if isinstance(struct_res, dict):
-            struct_res = [struct_res]
+        if isinstance(data, list):
+            struct_res = data
+        elif isinstance(data, dict):
+            if "structure" in data and isinstance(data["structure"], list):
+                struct_res = data["structure"]
+            elif "tree" in data and isinstance(data["tree"], list):
+                struct_res = data["tree"]
+            elif "nodes" in data and isinstance(data["nodes"], list):
+                struct_res = data["nodes"]
+            elif "site_structure" in data and isinstance(data["site_structure"], list):
+                struct_res = data["site_structure"]
+            elif "children" in data or "id" in data or "title" in data:
+                struct_res = [data]
+            else:
+                lists = [v for v in data.values() if isinstance(v, list)]
+                struct_res = lists[0] if lists else [data]
+        else:
+            struct_res = []
+
 
         # Save generated structure
         json_str = json.dumps(struct_res, ensure_ascii=False)
