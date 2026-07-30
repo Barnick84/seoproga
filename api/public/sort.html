@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сортировка - SEO Keyword Manager</title>
+    <title>РЎРѕСЂС‚РёСЂРѕРІРєР° - SEO Keyword Manager</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%232196F3%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22white%22/><circle cx=%2280%22 cy=%2230%22 r=%2215%22 fill=%22%2300BCD4%22/><circle cx=%2220%22 cy=%2270%22 r=%2215%22 fill=%22%234CAF50%22/><path d=%22M20 70 L50 50 L80 30%22 stroke=%22white%22 stroke-width=%225%22/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4.0">
+    <link rel="stylesheet" href="style.css?v=4.1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         .firstlogin-overlay {
@@ -203,26 +203,26 @@
             <div class="logo">SEO Auto Cluster</div>
             <div class="menu-tabs">
                 <a href="dashboard.html" class="menu-tab">Dashboard</a>
-                <a href="sort.html" class="menu-tab active">Сортировка</a>
-                <a href="cluster.html" class="menu-tab">Кластер</a>
-                <a href="positions.html" class="menu-tab">Позиции</a>
-                <a href="cabinet.html" class="menu-tab">Кабинет</a>
+                <a href="sort.html" class="menu-tab active">РЎРѕСЂС‚РёСЂРѕРІРєР°</a>
+                <a href="cluster.html" class="menu-tab">РљР»Р°СЃС‚РµСЂ</a>
+                <a href="positions.html" class="menu-tab">РџРѕР·РёС†РёРё</a>
+                <a href="cabinet.html" class="menu-tab">РљР°Р±РёРЅРµС‚</a>
             </div>
         </aside>
 
         <main class="main-content">
             <header class="top-bar" id="topBar">
                 <div class="balance-display">
-                    <span class="balance-label">Баланс:</span>
-                    <span class="balance-value">0.00 ₽</span>
-                    <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
+                    <span class="balance-label">Р‘Р°Р»Р°РЅСЃ:</span>
+                    <span class="balance-value">0.00 в‚Ѕ</span>
+                    <button class="btn-topup-icon" onclick="showTopupModal()" title="РџРѕРїРѕР»РЅРёС‚СЊ Р±Р°Р»Р°РЅСЃ">+</button>
                 </div>
                 <div class="site-selector">
                     <select id="siteSelect" onchange="selectSite()">
-                        <option value="">-- Выберите сайт --</option>
+                        <option value="">-- Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ --</option>
                     </select>
-                    <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
-                    <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
+                    <button class="btn-add" onclick="showAddSiteModal()">+ Р”РѕР±Р°РІРёС‚СЊ СЃР°Р№С‚</button>
+                    <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Р’С‹Р№С‚Рё</button>
                 </div>
             </header>
 
@@ -232,60 +232,60 @@
         <div id="sitesContent">
             <div id="wmStatusBanner" class="analysis-status-banner">
                 <div class="loader-mini"></div>
-                <div id="wmStatusText">Загрузка запросов из Яндекс Вебмастера...</div>
+                <div id="wmStatusText">Р—Р°РіСЂСѓР·РєР° Р·Р°РїСЂРѕСЃРѕРІ РёР· РЇРЅРґРµРєСЃ Р’РµР±РјР°СЃС‚РµСЂР°...</div>
             </div>
 
             <div class="card">
                 <div class="filter-bar">
                     <div class="filter-input-wrapper">
-                        <input type="text" id="filter" placeholder="Фильтр по словам..." oninput="filterKeywords()">
-                        <span class="clear-filter" onclick="clearFilter()">×</span>
+                        <input type="text" id="filter" placeholder="Р¤РёР»СЊС‚СЂ РїРѕ СЃР»РѕРІР°Рј..." oninput="filterKeywords()">
+                        <span class="clear-filter" onclick="clearFilter()">Г—</span>
                     </div>
                     <div class="checkbox-filter" onclick="document.getElementById('showNonClustered').click()">
                         <input type="checkbox" id="showNonClustered" onchange="filterKeywords()">
                         <span class="checkmark"></span>
-                        <label for="showNonClustered">Только некластеризованные</label>
+                        <label for="showNonClustered">РўРѕР»СЊРєРѕ РЅРµРєР»Р°СЃС‚РµСЂРёР·РѕРІР°РЅРЅС‹Рµ</label>
                     </div>
                     <div class="freq-filter">
-                        <input type="number" id="minFreq" placeholder="Частота от..." oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                        <button class="btn btn-secondary btn-sm" onclick="filterKeywords()">Фильтровать</button>
+                        <input type="number" id="minFreq" placeholder="Р§Р°СЃС‚РѕС‚Р° РѕС‚..." oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        <button class="btn btn-secondary btn-sm" onclick="filterKeywords()">Р¤РёР»СЊС‚СЂРѕРІР°С‚СЊ</button>
                     </div>
                     <div style="margin-left: auto;">
-                        <button id="btnFetchWM" class="btn btn-primary btn-sm" onclick="fetchFromWM()">Загрузить из Вебмастера</button>
+                        <button id="btnFetchWM" class="btn btn-primary btn-sm" onclick="fetchFromWM()">Р—Р°РіСЂСѓР·РёС‚СЊ РёР· Р’РµР±РјР°СЃС‚РµСЂР°</button>
                     </div>
                 </div>
                 
                 <div class="stats-bar">
                     <div class="stats-info">
-                        <div>Всего: <span id="totalCount">0</span></div>
-                        <div>Некластеризовано: <span id="nonClusteredCount">0</span></div>
-                        <div>Выбрано: <span id="selectedCount">0</span></div>
+                        <div>Р’СЃРµРіРѕ: <span id="totalCount">0</span></div>
+                        <div>РќРµРєР»Р°СЃС‚РµСЂРёР·РѕРІР°РЅРѕ: <span id="nonClusteredCount">0</span></div>
+                        <div>Р’С‹Р±СЂР°РЅРѕ: <span id="selectedCount">0</span></div>
                     </div>
                     <div class="stats-actions">
-                        <button class="btn btn-blue btn-sm" onclick="selectAll()">Выбрать все</button>
-                        <button class="btn btn-gray btn-sm" onclick="deselectAll()">Снять выбор</button>
-                        <button class="btn btn-orange btn-sm" onclick="addToMinus()">В минус слова</button>
+                        <button class="btn btn-blue btn-sm" onclick="selectAll()">Р’С‹Р±СЂР°С‚СЊ РІСЃРµ</button>
+                        <button class="btn btn-gray btn-sm" onclick="deselectAll()">РЎРЅСЏС‚СЊ РІС‹Р±РѕСЂ</button>
+                        <button class="btn btn-orange btn-sm" onclick="addToMinus()">Р’ РјРёРЅСѓСЃ СЃР»РѕРІР°</button>
                     </div>
                 </div>
                 
                 <div class="two-columns">
                     <div class="keyword-list-wrapper">
-                        <h3>Ключевые слова</h3>
+                        <h3>РљР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР°</h3>
                         <div id="keywordList" class="keyword-list">
-                            <div class="empty-state">Выберите сайт или загрузите ключи</div>
+                            <div class="empty-state">Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ РёР»Рё Р·Р°РіСЂСѓР·РёС‚Рµ РєР»СЋС‡Рё</div>
                         </div>
                     </div>
                     
                     <div class="minus-list-wrapper">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <h3>Минус слова</h3>
+                            <h3>РњРёРЅСѓСЃ СЃР»РѕРІР°</h3>
                             <div style="display:flex; gap:5px;">
-                                <button class="btn btn-primary" style="padding: 4px 10px; font-size:12px; background:#4CAF50;" onclick="restoreFromMinus()">Вернуть ключи</button>
-                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size:12px;" onclick="clearAllMinus()">Очистить всё</button>
+                                <button class="btn btn-primary" style="padding: 4px 10px; font-size:12px; background:#4CAF50;" onclick="restoreFromMinus()">Р’РµСЂРЅСѓС‚СЊ РєР»СЋС‡Рё</button>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size:12px;" onclick="clearAllMinus()">РћС‡РёСЃС‚РёС‚СЊ РІСЃС‘</button>
                             </div>
                         </div>
                         <div id="minusList" class="keyword-list minus-list" style="margin-top:40px;">
-                            <div class="empty-state">Нет минус слов</div>
+                            <div class="empty-state">РќРµС‚ РјРёРЅСѓСЃ СЃР»РѕРІ</div>
                         </div>
                     </div>
                 </div>
@@ -297,45 +297,45 @@
 
     <div id="authSection" class="auth-section" style="display:none;">
         <div class="auth-tabs">
-            <button class="auth-tab active" onclick="showAuthForm('login')">Вход</button>
-            <button class="auth-tab" onclick="showAuthForm('register')">Регистрация</button>
+            <button class="auth-tab active" onclick="showAuthForm('login')">Р’С…РѕРґ</button>
+            <button class="auth-tab" onclick="showAuthForm('register')">Р РµРіРёСЃС‚СЂР°С†РёСЏ</button>
         </div>
         <div id="authError" class="status error" style="display:none; margin-bottom:20px;"></div>
         
         <div id="authForm">
-            <input type="text" id="authUsername" placeholder="Логин">
+            <input type="text" id="authUsername" placeholder="Р›РѕРіРёРЅ">
             <div class="password-wrapper">
-                <input type="password" id="authPassword" placeholder="Пароль">
+                <input type="password" id="authPassword" placeholder="РџР°СЂРѕР»СЊ">
                 <span class="password-toggle" onclick="togglePasswordVisibility('authPassword')"><i class="fas fa-eye"></i></span>
             </div>
-            <button class="btn btn-primary" onclick="submitAuth()">Войти</button>
+            <button class="btn btn-primary" onclick="submitAuth()">Р’РѕР№С‚Рё</button>
         </div>
         
         <div id="registerFields" style="display:none;">
-            <input type="text" id="authUsernameReg" placeholder="Придумайте логин">
+            <input type="text" id="authUsernameReg" placeholder="РџСЂРёРґСѓРјР°Р№С‚Рµ Р»РѕРіРёРЅ">
             <input type="email" id="authEmailReg" placeholder="Email">
             <div class="password-wrapper">
-                <input type="password" id="authPasswordReg" placeholder="Пароль">
+                <input type="password" id="authPasswordReg" placeholder="РџР°СЂРѕР»СЊ">
                 <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordReg')"><i class="fas fa-eye"></i></span>
             </div>
             <div class="password-wrapper">
-                <input type="password" id="authPasswordConfirmReg" placeholder="Подтвердите пароль">
+                <input type="password" id="authPasswordConfirmReg" placeholder="РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїР°СЂРѕР»СЊ">
                 <span class="password-toggle" onclick="togglePasswordVisibility('authPasswordConfirmReg')"><i class="fas fa-eye"></i></span>
             </div>
-            <button class="btn btn-primary" onclick="submitRegister()">Зарегистрироваться</button>
+            <button class="btn btn-primary" onclick="submitRegister()">Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ</button>
         </div>
     </div>
 
     <div id="addSiteModal" class="modal">
         <div class="modal-content">
-            <h2>Добавить новый сайт</h2>
-            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Выберите сайт, подтвержденный в вашем Яндекс Вебмастере:</p>
+            <h2>Р”РѕР±Р°РІРёС‚СЊ РЅРѕРІС‹Р№ СЃР°Р№С‚</h2>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚, РїРѕРґС‚РІРµСЂР¶РґРµРЅРЅС‹Р№ РІ РІР°С€РµРј РЇРЅРґРµРєСЃ Р’РµР±РјР°СЃС‚РµСЂРµ:</p>
             <select id="newSiteDomain" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
-                <option value="">Загрузка списка сайтов...</option>
+                <option value="">Р—Р°РіСЂСѓР·РєР° СЃРїРёСЃРєР° СЃР°Р№С‚РѕРІ...</option>
             </select>
             <div class="buttons">
-                <button class="btn btn-secondary" onclick="hideAddSiteModal()">Отмена</button>
-                <button class="btn btn-primary" onclick="addSite()">Добавить</button>
+                <button class="btn btn-secondary" onclick="hideAddSiteModal()">РћС‚РјРµРЅР°</button>
+                <button class="btn btn-primary" onclick="addSite()">Р”РѕР±Р°РІРёС‚СЊ</button>
             </div>
         </div>
     </div>
@@ -347,28 +347,28 @@
     <div class="firstlogin-overlay" id="siteSelectModal">
         <div class="firstlogin-modal">
             <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; margin-bottom: 8px; color: #fff;">
-                <i class="fas fa-globe" style="color: #0ea5e9; margin-right: 8px;"></i> Выбор сайта
+                <i class="fas fa-globe" style="color: #0ea5e9; margin-right: 8px;"></i> Р’С‹Р±РѕСЂ СЃР°Р№С‚Р°
             </h2>
             <p style="color: #94A3B8; font-size: 15px; margin-bottom: 24px; line-height: 1.5;">
-                Выберите сайт для перехода в панель управления или добавьте новый домен.
+                Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ РґР»СЏ РїРµСЂРµС…РѕРґР° РІ РїР°РЅРµР»СЊ СѓРїСЂР°РІР»РµРЅРёСЏ РёР»Рё РґРѕР±Р°РІСЊС‚Рµ РЅРѕРІС‹Р№ РґРѕРјРµРЅ.
             </p>
             <div class="form-group" style="margin-bottom: 24px;">
-                <label style="font-size: 13px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Ваш сайт</label>
+                <label style="font-size: 13px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Р’Р°С€ СЃР°Р№С‚</label>
                 <select id="modalSiteSelect" class="modal-select" onchange="onModalSiteSelected()" style="width: 100%; padding: 14px 18px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); color: #fff; font-size: 15px; margin-bottom: 24px;">
-                    <option value="">— Выберите сайт —</option>
+                    <option value="">вЂ” Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ вЂ”</option>
                 </select>
             </div>
 
             <button class="btn btn-glow" id="btnGoToDashboard" onclick="goToDashboardWithSite()" style="width: 100%; margin-bottom: 12px; padding: 14px 28px; border-radius: 100px; font-weight: 600; background: linear-gradient(135deg, #0ea5e9, #8b5cf6); color: #fff; border: none; cursor: pointer;" disabled>
-                Перейти в панель управления
+                РџРµСЂРµР№С‚Рё РІ РїР°РЅРµР»СЊ СѓРїСЂР°РІР»РµРЅРёСЏ
             </button>
 
             <button class="btn btn-secondary" onclick="addNewSiteFromLanding()" style="width: 100%; padding: 14px 28px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #fff; cursor: pointer;">
-                + Добавить новый сайт
+                + Р”РѕР±Р°РІРёС‚СЊ РЅРѕРІС‹Р№ СЃР°Р№С‚
             </button>
 
             <button class="btn btn-secondary" onclick="logoutFromLanding()" style="width: 100%; border: none; background: transparent; color: #94A3B8; margin-top: 15px; font-size: 14px; text-decoration: underline; cursor: pointer;">
-                Выйти из аккаунта
+                Р’С‹Р№С‚Рё РёР· Р°РєРєР°СѓРЅС‚Р°
             </button>
         </div>
     </div>
@@ -376,29 +376,29 @@
     <!-- First Login: Site Selection Modal -->
     <div class="firstlogin-overlay" id="firstLoginModal">
         <div class="firstlogin-modal">
-            <h2><i class="fas fa-terminal" style="color:#0ea5e9; margin-right:8px;"></i> Выбор сайта</h2>
-            <p>Выберите сайт для загрузки поисковых запросов из Яндекс.Вебмастера. Система автоматически импортирует семантическое ядро.</p>
-            <label>Ваш сайт</label>
+            <h2><i class="fas fa-terminal" style="color:#0ea5e9; margin-right:8px;"></i> Р’С‹Р±РѕСЂ СЃР°Р№С‚Р°</h2>
+            <p>Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ РґР»СЏ Р·Р°РіСЂСѓР·РєРё РїРѕРёСЃРєРѕРІС‹С… Р·Р°РїСЂРѕСЃРѕРІ РёР· РЇРЅРґРµРєСЃ.Р’РµР±РјР°СЃС‚РµСЂР°. РЎРёСЃС‚РµРјР° Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РёРјРїРѕСЂС‚РёСЂСѓРµС‚ СЃРµРјР°РЅС‚РёС‡РµСЃРєРѕРµ СЏРґСЂРѕ.</p>
+            <label>Р’Р°С€ СЃР°Р№С‚</label>
             <select id="firstLoginSiteSelect">
-                <option value="">— Выберите сайт —</option>
+                <option value="">вЂ” Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ вЂ”</option>
             </select>
             <button class="btn-glow" id="firstLoginStartBtn" onclick="firstLoginStart()">
-                <i class="fas fa-cloud-download-alt"></i> Загрузить ключи
+                <i class="fas fa-cloud-download-alt"></i> Р—Р°РіСЂСѓР·РёС‚СЊ РєР»СЋС‡Рё
             </button>
             <div class="fl-loader" id="flLoader">
                 <div class="spinner"></div>
-                <div class="fl-text">Идёт загрузка поисковых запросов из <strong id="flSiteName">...</strong></div>
+                <div class="fl-text">РРґС‘С‚ Р·Р°РіСЂСѓР·РєР° РїРѕРёСЃРєРѕРІС‹С… Р·Р°РїСЂРѕСЃРѕРІ РёР· <strong id="flSiteName">...</strong></div>
             </div>
             <div class="fl-success" id="flSuccess">
                 <i class="fas fa-check-circle"></i>
-                <span id="flSuccessText">Ключи успешно загружены!</span>
+                <span id="flSuccessText">РљР»СЋС‡Рё СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅС‹!</span>
             </div>
             <div class="fl-error" id="flError">
                 <i class="fas fa-exclamation-circle"></i>
-                <span id="flErrorText">Ошибка загрузки ключей</span>
+                <span id="flErrorText">РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РєР»СЋС‡РµР№</span>
             </div>
             <button class="fl-close-btn" id="flCloseBtn" onclick="closeFirstLoginModal()">
-                <i class="fas fa-arrow-right"></i> Перейти к работе
+                <i class="fas fa-arrow-right"></i> РџРµСЂРµР№С‚Рё Рє СЂР°Р±РѕС‚Рµ
             </button>
         </div>
     </div>
@@ -407,11 +407,11 @@
     <div id="topupModal" class="modal">
         <div class="modal-content topup-modal-content">
             <div class="modal-header">
-                <span class="modal-title">Пополнение баланса</span>
+                <span class="modal-title">РџРѕРїРѕР»РЅРµРЅРёРµ Р±Р°Р»Р°РЅСЃР°</span>
                 <button onclick="closeTopupModal()" class="modal-close">&times;</button>
             </div>
             <div class="topup-input-group">
-                <label for="topupAmount">Сумма пополнения (руб.)</label>
+                <label for="topupAmount">РЎСѓРјРјР° РїРѕРїРѕР»РЅРµРЅРёСЏ (СЂСѓР±.)</label>
                 <input type="number" id="topupAmount" value="500" min="500" step="100">
                 <div class="topup-hints">
                     <button class="btn-hint" onclick="setTopupAmount(500)">500</button>
@@ -420,13 +420,13 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeTopupModal()">Отмена</button>
-                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">Оплатить</button>
+                <button class="btn btn-secondary" onclick="closeTopupModal()">РћС‚РјРµРЅР°</button>
+                <button class="btn btn-primary" id="btnStartPayment" onclick="startPayment()">РћРїР»Р°С‚РёС‚СЊ</button>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=4.1"></script>
     <script>
         // First Login: site selection + WM import
         let firstLoginSites = [];
@@ -452,7 +452,7 @@
             document.body.style.overflow = 'hidden';
 
             const select = document.getElementById('modalSiteSelect');
-            select.innerHTML = '<option value="">— Загрузка сайтов... —</option>';
+            select.innerHTML = '<option value="">вЂ” Р—Р°РіСЂСѓР·РєР° СЃР°Р№С‚РѕРІ... вЂ”</option>';
             select.disabled = true;
 
             try {
@@ -460,11 +460,11 @@
                 const data = await res.json();
                 if (data.sites) {
                     if (data.sites.length === 0) {
-                        select.innerHTML = '<option value="">Сайты не добавлены</option>';
+                        select.innerHTML = '<option value="">РЎР°Р№С‚С‹ РЅРµ РґРѕР±Р°РІР»РµРЅС‹</option>';
                         document.getElementById('btnGoToDashboard').disabled = true;
                     } else {
                         select.disabled = false;
-                        let html = '<option value="">— Выберите сайт —</option>';
+                        let html = '<option value="">вЂ” Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ вЂ”</option>';
                         data.sites.forEach(site => {
                             html += `<option value="${site.domain}">${site.domain}</option>`;
                         });
@@ -476,11 +476,11 @@
                         }
                     }
                 } else {
-                    select.innerHTML = '<option value="">— Ошибка загрузки сайтов —</option>';
+                    select.innerHTML = '<option value="">вЂ” РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃР°Р№С‚РѕРІ вЂ”</option>';
                 }
             } catch (err) {
                 console.error(err);
-                select.innerHTML = '<option value="">— Ошибка загрузки сайтов —</option>';
+                select.innerHTML = '<option value="">вЂ” РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃР°Р№С‚РѕРІ вЂ”</option>';
             }
         }
 
@@ -529,19 +529,19 @@
 
             // Load sites
             const select = document.getElementById('firstLoginSiteSelect');
-            select.innerHTML = '<option value="">Загрузка сайтов...</option>';
+            select.innerHTML = '<option value="">Р—Р°РіСЂСѓР·РєР° СЃР°Р№С‚РѕРІ...</option>';
             select.disabled = true;
             try {
                 const res = await authFetch('/api/sites');
                 const data = await res.json();
                 firstLoginSites = data.sites || [];
-                select.innerHTML = '<option value="">— Выберите сайт —</option>';
+                select.innerHTML = '<option value="">вЂ” Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚ вЂ”</option>';
                 firstLoginSites.forEach(s => {
                     select.innerHTML += `<option value="${s.domain}">${s.domain}</option>`;
                 });
                 select.disabled = false;
             } catch (e) {
-                select.innerHTML = '<option value="">Ошибка загрузки сайтов</option>';
+                select.innerHTML = '<option value="">РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃР°Р№С‚РѕРІ</option>';
             }
         }
 
@@ -549,7 +549,7 @@
             const select = document.getElementById('firstLoginSiteSelect');
             const domain = select.value.trim();
             if (!domain) {
-                alert('Пожалуйста, выберите сайт');
+                alert('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІС‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚');
                 return;
             }
 
@@ -558,7 +558,7 @@
             document.getElementById('flCloseBtn').classList.add('active');
             document.getElementById('flSiteName').textContent = domain;
             document.getElementById('flSuccessText').textContent =
-                'Сайт успешно выбран! Теперь можно перейти к работе с ключевыми словами.';
+                'РЎР°Р№С‚ СѓСЃРїРµС€РЅРѕ РІС‹Р±СЂР°РЅ! РўРµРїРµСЂСЊ РјРѕР¶РЅРѕ РїРµСЂРµР№С‚Рё Рє СЂР°Р±РѕС‚Рµ СЃ РєР»СЋС‡РµРІС‹РјРё СЃР»РѕРІР°РјРё.';
             
             // Set and remember the selected site in the main dropdown
             document.getElementById('siteSelect').value = domain;
@@ -591,7 +591,7 @@
             const list = document.getElementById('keywordList');
             const minusList = document.getElementById('minusList');
             
-            // Сортировка по уменьшению частотности
+            // РЎРѕСЂС‚РёСЂРѕРІРєР° РїРѕ СѓРјРµРЅСЊС€РµРЅРёСЋ С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚Рё
             const sortedKeywords = [...keywords].sort((a, b) => (b.frequency || 0) - (a.frequency || 0));
             
             const normalKeywords = sortedKeywords.filter(k => k && !k.minus_word);
@@ -603,14 +603,14 @@
                     <span class="query">${k.frequency > 0 ? `<span style="color:#4CAF50;font-weight:600;margin-right:4px;">[${k.frequency}]</span>` : ''}${escapeHtml(k.query)}</span>
                     <span class="hits">${k.hits || 0}</span>
                 </div>
-            `).join('') || '<div class="empty-state">Нет ключей</div>';
+            `).join('') || '<div class="empty-state">РќРµС‚ РєР»СЋС‡РµР№</div>';
             
             minusList.innerHTML = minusKeywords.map(k => `
                 <div class="keyword-item in-minus" data-index="${keywords.indexOf(k)}">
                     <input type="checkbox" class="checkbox" data-index="${keywords.indexOf(k)}">
                     <span class="query">${escapeHtml(k.query)}</span>
                 </div>
-            `).join('') || '<div class="empty-state">Нет минус слов</div>';
+            `).join('') || '<div class="empty-state">РќРµС‚ РјРёРЅСѓСЃ СЃР»РѕРІ</div>';
             
             filterKeywords();
         }
@@ -631,7 +631,7 @@
                 const queryMatch = !filter || (kw.query || '').toLowerCase().includes(filter);
                 const clusteredMatch = !showOnlyNonClustered || !isClustered;
                 
-                // Фильтр по частотности: вывести только те, у которых частота <= minFreq
+                // Р¤РёР»СЊС‚СЂ РїРѕ С‡Р°СЃС‚РѕС‚РЅРѕСЃС‚Рё: РІС‹РІРµСЃС‚Рё С‚РѕР»СЊРєРѕ С‚Рµ, Сѓ РєРѕС‚РѕСЂС‹С… С‡Р°СЃС‚РѕС‚Р° <= minFreq
                 const freqMatch = minFreqValue === '' || (kw.frequency || 0) <= (parseInt(minFreqValue) || 0);
                 
                 const visible = queryMatch && clusteredMatch && freqMatch;
@@ -666,7 +666,7 @@
                 .map(cb => keywords[cb.dataset.index].query);
             
             if (selected.length === 0) {
-                showStatus('Выберите ключи', 'error');
+                showStatus('Р’С‹Р±РµСЂРёС‚Рµ РєР»СЋС‡Рё', 'error');
                 return;
             }
             
@@ -677,13 +677,13 @@
                 });
                 const data = await res.json();
                 if (res.ok && data.success) {
-                    showStatus(`Добавлено в минус: ${data.updated || selected.length}`, 'success');
+                    showStatus(`Р”РѕР±Р°РІР»РµРЅРѕ РІ РјРёРЅСѓСЃ: ${data.updated || selected.length}`, 'success');
                     loadKeywords(currentDomain);
                 } else {
-                    showStatus('Ошибка: ' + (data.error || 'Не удалось обновить'), 'error');
+                    showStatus('РћС€РёР±РєР°: ' + (data.error || 'РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ'), 'error');
                 }
             } catch (e) {
-                showStatus('Ошибка: ' + e.message, 'error');
+                showStatus('РћС€РёР±РєР°: ' + e.message, 'error');
             }
         }
 
@@ -692,7 +692,7 @@
                 .map(cb => keywords[cb.dataset.index].query);
             
             if (selected.length === 0) {
-                showStatus('Выберите слова для возврата', 'error');
+                showStatus('Р’С‹Р±РµСЂРёС‚Рµ СЃР»РѕРІР° РґР»СЏ РІРѕР·РІСЂР°С‚Р°', 'error');
                 return;
             }
             
@@ -703,13 +703,13 @@
                 });
                 const data = await res.json();
                 if (res.ok && data.success) {
-                    showStatus(`Восстановлено ключей: ${data.updated || selected.length}`, 'success');
+                    showStatus(`Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРѕ РєР»СЋС‡РµР№: ${data.updated || selected.length}`, 'success');
                     loadKeywords(currentDomain);
                 } else {
-                    showStatus('Ошибка: ' + (data.error || 'Не удалось восстановить'), 'error');
+                    showStatus('РћС€РёР±РєР°: ' + (data.error || 'РќРµ СѓРґР°Р»РѕСЃСЊ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ'), 'error');
                 }
             } catch (e) {
-                showStatus('Ошибка: ' + e.message, 'error');
+                showStatus('РћС€РёР±РєР°: ' + e.message, 'error');
             }
         }
 
@@ -720,10 +720,10 @@
                     method: 'POST',
                     body: JSON.stringify({domain: currentDomain})
                 });
-                showStatus('Минус слова очищены', 'success');
+                showStatus('РњРёРЅСѓСЃ СЃР»РѕРІР° РѕС‡РёС‰РµРЅС‹', 'success');
                 loadKeywords(currentDomain);
             } catch (e) {
-                showStatus('Ошибка: ' + e.message, 'error');
+                showStatus('РћС€РёР±РєР°: ' + e.message, 'error');
             }
         }
 
@@ -735,7 +735,7 @@
         }
 
         async function fetchFromWM() {
-            if (!currentDomain) return showStatus('Выберите сайт', 'error');
+            if (!currentDomain) return showStatus('Р’С‹Р±РµСЂРёС‚Рµ СЃР°Р№С‚', 'error');
             
             const btn = document.getElementById('btnFetchWM');
             const banner = document.getElementById('wmStatusBanner');
@@ -743,18 +743,18 @@
             btn.classList.add('btn-loading');
             if (banner) banner.style.display = 'flex';
             
-            showStatus('Загрузка из Вебмастера...', 'success');
+            showStatus('Р—Р°РіСЂСѓР·РєР° РёР· Р’РµР±РјР°СЃС‚РµСЂР°...', 'success');
             try {
                 const res = await authFetch(`/api/fetch-wm-queries?domain=${encodeURIComponent(currentDomain)}`);
                 const data = await res.json();
                 if (data.success) {
-                    showStatus(`Загружено новых: ${data.added || 0} ключей`, 'success');
+                    showStatus(`Р—Р°РіСЂСѓР¶РµРЅРѕ РЅРѕРІС‹С…: ${data.added || 0} РєР»СЋС‡РµР№`, 'success');
                     loadKeywords(currentDomain);
                 } else {
-                    showStatus('Ошибка: ' + (data.error || 'Не удалось загрузить'), 'error');
+                    showStatus('РћС€РёР±РєР°: ' + (data.error || 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ'), 'error');
                 }
             } catch (e) {
-                showStatus('Ошибка: ' + e.message, 'error');
+                showStatus('РћС€РёР±РєР°: ' + e.message, 'error');
             } finally {
                 btn.classList.remove('btn-loading');
                 if (banner) banner.style.display = 'none';
