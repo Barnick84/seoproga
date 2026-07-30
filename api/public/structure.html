@@ -174,11 +174,23 @@
         let selectedNodeId = null;
         let draggedNodeId = null;
 
+        // Get domain from URL param immediately, don't wait for async currentDomain
+        function getDomainFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('site') || params.get('domain') || '';
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
+            // Ensure currentDomain is set from URL if app.js hasn't resolved yet
+            if (!currentDomain) {
+                currentDomain = getDomainFromUrl();
+            }
             await loadPageTypes();
             if (currentDomain) {
                 await loadTree();
+            } else {
+                document.getElementById('treeEmpty').style.display = 'block';
             }
         });
 
@@ -669,6 +681,10 @@
                 if (res && res.structure) {
                     currentTreeData = res.structure;
                     renderTree();
+                    showStatus('Структура сайта успешно сгенерирована ИИ!', 'success');
+                } else {
+                    // Structure was saved, reload from server to display it
+                    await loadTree();
                     showStatus('Структура сайта успешно сгенерирована ИИ!', 'success');
                 }
             } catch (err) {
