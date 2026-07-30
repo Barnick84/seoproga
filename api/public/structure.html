@@ -190,7 +190,7 @@
 
         async function loadPageTypes() {
             try {
-                const res = await apiRequest('/api/page-types');
+                const res = await authFetch('/api/page-types');
                 if (res && res.types) {
                     pageTypes = res.types;
                     renderPageTypesList();
@@ -263,9 +263,9 @@
 
             try {
                 if (id) {
-                    await apiRequest(`/api/page-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    await authFetch(`/api/page-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
                 } else {
-                    await apiRequest('/api/page-types', { method: 'POST', body: JSON.stringify(payload) });
+                    await authFetch('/api/page-types', { method: 'POST', body: JSON.stringify(payload) });
                 }
                 await loadPageTypes();
                 resetPageTypeForm();
@@ -277,7 +277,7 @@
         async function deletePageType(id) {
             if (!confirm('Удалить этот тип страницы?')) return;
             try {
-                await apiRequest(`/api/page-types/${id}`, { method: 'DELETE' });
+                await authFetch(`/api/page-types/${id}`, { method: 'DELETE' });
                 await loadPageTypes();
             } catch (err) {
                 showStatus('Ошибка при удалении типа страницы: ' + err.message, 'error');
@@ -292,7 +292,7 @@
             document.getElementById('treeRoot').innerHTML = '';
 
             try {
-                const res = await apiRequest(`/api/site-structure?site_url=${encodeURIComponent(currentDomain)}`);
+                const res = await authFetch(`/api/site-structure?site_url=${encodeURIComponent(currentDomain)}`);
                 document.getElementById('treeLoading').style.display = 'none';
                 
                 if (res && res.exists && res.structure && res.structure.length > 0) {
@@ -622,7 +622,7 @@
             }
 
             try {
-                await apiRequest('/api/site-structure/save', {
+                await authFetch('/api/site-structure/save', {
                     method: 'POST',
                     body: JSON.stringify({
                         site_url: currentDomain,
@@ -655,7 +655,7 @@
             statusBox.style.display = 'block';
 
             try {
-                const res = await apiRequest('/api/site-structure/generate', {
+                const res = await authFetch('/api/site-structure/generate', {
                     method: 'POST',
                     body: JSON.stringify({
                         site_url: currentDomain,
