@@ -43,7 +43,7 @@ body {
 }
 
 /* Left Sidebar */
-.sidebar {
+.main-sidebar {
     width: 260px;
     background: #0f172a;
     flex-shrink: 0;
@@ -54,7 +54,7 @@ body {
     z-index: 100;
 }
 
-.sidebar .logo {
+.main-sidebar .logo {
     font-family: 'Space Grotesk', sans-serif;
     color: #ffffff;
     font-size: 20px;
@@ -63,14 +63,14 @@ body {
     padding: 0 24px 30px;
 }
 
-.sidebar .menu-tabs {
+.main-sidebar .menu-tabs {
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding: 0 12px;
 }
 
-.sidebar .menu-tab {
+.main-sidebar .menu-tab {
     color: #94a3b8;
     text-decoration: none;
     font-size: 15px;
@@ -83,19 +83,19 @@ body {
     align-items: center;
 }
 
-.sidebar .menu-tab:hover {
+.main-sidebar .menu-tab:hover {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.05);
 }
 
-.sidebar .menu-tab.active {
+.main-sidebar .menu-tab.active {
     color: #ffffff;
     font-weight: 600;
     background: rgba(14, 165, 233, 0.1);
     position: relative;
 }
 
-.sidebar .menu-tab.active::before {
+.main-sidebar .menu-tab.active::before {
     content: '';
     position: absolute;
     left: 0;

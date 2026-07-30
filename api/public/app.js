@@ -154,15 +154,6 @@ function showAuthSection(show) {
 function showMainApp() {
     showAuthSection(false);
     loadSites();
-    
-    // Adjust "Add Site" button based on page
-    const isIndexPage = window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/index.html';
-    if (!isIndexPage) {
-        const btnAdd = document.querySelector('.btn-add[onclick="showAddSiteModal()"]');
-        if (btnAdd) {
-            btnAdd.outerHTML = `<a href="dashboard.html?action=add-site" class="btn-add" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">+ Добавить сайт</a>`;
-        }
-    }
 }
 
 async function loadSites() {
