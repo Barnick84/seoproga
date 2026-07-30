@@ -489,5 +489,32 @@ async function authFetch(url, options = {}) {
 
 // Initialization on load
 document.addEventListener('DOMContentLoaded', () => {
+    renderSidebar();
     checkSession();
 });
+
+// Sidebar Rendering (Dynamic Chunk)
+function renderSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    
+    // Determine active page
+    const path = window.location.pathname;
+    let currentPage = path.split('/').pop();
+    if (!currentPage || currentPage === '') currentPage = 'index.html';
+    
+    sidebar.innerHTML = `
+        <div class="logo">SEO Auto Cluster</div>
+        <div class="menu-tabs">
+            <a href="dashboard.html" class="menu-tab ${currentPage === 'dashboard.html' ? 'active' : ''}">Dashboard</a>
+            <a href="sort.html" class="menu-tab ${currentPage === 'sort.html' ? 'active' : ''}">Сортировка</a>
+            <a href="cluster.html" class="menu-tab ${currentPage === 'cluster.html' ? 'active' : ''}">Кластер</a>
+            <a href="structure.html" class="menu-tab ${currentPage === 'structure.html' ? 'active' : ''}">Структура сайта</a>
+            <a href="positions.html" class="menu-tab ${currentPage === 'positions.html' ? 'active' : ''}">Позиции</a>
+            <a href="analysis.html" class="menu-tab ${currentPage === 'analysis.html' ? 'active' : ''}">Анализ</a>
+        </div>
+        <div class="menu-bottom">
+            <a href="cabinet.html" class="menu-tab ${currentPage === 'cabinet.html' ? 'active' : ''}">Кабинет</a>
+        </div>
+    `;
+}
