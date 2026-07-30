@@ -2059,126 +2059,381 @@ a.menu-tab[href^="/dashboard.html"] {
     color: white;
     font-size: 14px;
 }
- / *   - - -   S t r u c t u r e   M o d u l e   &   G l o b a l   M o d a l s   - - -   * / 
- . m o d a l - o v e r l a y   { 
-         p o s i t i o n :   f i x e d ; 
-         t o p :   0 ; 
-         l e f t :   0 ; 
-         w i d t h :   1 0 0 v w ; 
-         h e i g h t :   1 0 0 v h ; 
-         b a c k g r o u n d :   r g b a ( 1 5 ,   2 3 ,   4 2 ,   0 . 6 ) ; 
-         b a c k d r o p - f i l t e r :   b l u r ( 4 p x ) ; 
-         - w e b k i t - b a c k d r o p - f i l t e r :   b l u r ( 4 p x ) ; 
-         z - i n d e x :   1 0 0 0 ; 
-         d i s p l a y :   f l e x ; 
-         a l i g n - i t e m s :   c e n t e r ; 
-         j u s t i f y - c o n t e n t :   c e n t e r ; 
-         o p a c i t y :   1 ; 
-         t r a n s i t i o n :   o p a c i t y   0 . 3 s   e a s e ; 
- } 
- 
- . m o d a l - c a r d   { 
-         b a c k g r o u n d :   # f f f f f f ; 
-         b o r d e r - r a d i u s :   1 2 p x ; 
-         w i d t h :   1 0 0 % ; 
-         m a x - w i d t h :   5 0 0 p x ; 
-         b o x - s h a d o w :   0   2 0 p x   2 5 p x   - 5 p x   r g b a ( 0 ,   0 ,   0 ,   0 . 1 ) ,   0   8 p x   1 0 p x   - 6 p x   r g b a ( 0 ,   0 ,   0 ,   0 . 1 ) ; 
-         d i s p l a y :   f l e x ; 
-         f l e x - d i r e c t i o n :   c o l u m n ; 
-         o v e r f l o w :   h i d d e n ; 
-         t r a n s f o r m :   t r a n s l a t e Y ( 0 ) ; 
-         t r a n s i t i o n :   t r a n s f o r m   0 . 3 s   e a s e ; 
- } 
- 
- . m o d a l - h e a d e r   { 
-         p a d d i n g :   1 6 p x   2 4 p x ; 
-         b o r d e r - b o t t o m :   1 p x   s o l i d   # e 2 e 8 f 0 ; 
-         d i s p l a y :   f l e x ; 
-         a l i g n - i t e m s :   c e n t e r ; 
-         j u s t i f y - c o n t e n t :   s p a c e - b e t w e e n ; 
-         b a c k g r o u n d :   # f 8 f a f c ; 
- } 
- 
- . m o d a l - h e a d e r   h 3   { 
-         m a r g i n :   0 ; 
-         f o n t - s i z e :   1 8 p x ; 
-         c o l o r :   # 1 e 2 9 3 b ; 
-         f o n t - w e i g h t :   6 0 0 ; 
- } 
- 
- . m o d a l - c l o s e   { 
-         b a c k g r o u n d :   n o n e ; 
-         b o r d e r :   n o n e ; 
-         f o n t - s i z e :   2 4 p x ; 
-         c o l o r :   # 9 4 a 3 b 8 ; 
-         c u r s o r :   p o i n t e r ; 
-         l i n e - h e i g h t :   1 ; 
-         t r a n s i t i o n :   c o l o r   0 . 2 s ; 
- } 
- 
- . m o d a l - c l o s e : h o v e r   { 
-         c o l o r :   # 0 f 1 7 2 a ; 
- } 
- 
- . m o d a l - b o d y   { 
-         p a d d i n g :   2 4 p x ; 
-         o v e r f l o w - y :   a u t o ; 
-         m a x - h e i g h t :   7 0 v h ; 
- } 
- 
- . m o d a l - f o o t e r   { 
-         p a d d i n g :   1 6 p x   2 4 p x ; 
-         b o r d e r - t o p :   1 p x   s o l i d   # e 2 e 8 f 0 ; 
-         d i s p l a y :   f l e x ; 
-         a l i g n - i t e m s :   c e n t e r ; 
-         j u s t i f y - c o n t e n t :   f l e x - e n d ; 
-         g a p :   1 2 p x ; 
-         b a c k g r o u n d :   # f 8 f a f c ; 
- } 
- 
- . b t n - a c t i o n ,   . b t n - p r i m a r y ,   . b t n - s e c o n d a r y   { 
-         d i s p l a y :   i n l i n e - f l e x ; 
-         a l i g n - i t e m s :   c e n t e r ; 
-         j u s t i f y - c o n t e n t :   c e n t e r ; 
-         g a p :   8 p x ; 
-         p a d d i n g :   8 p x   1 6 p x ; 
-         b o r d e r - r a d i u s :   8 p x ; 
-         f o n t - s i z e :   1 4 p x ; 
-         f o n t - w e i g h t :   5 0 0 ; 
-         c u r s o r :   p o i n t e r ; 
-         b o r d e r :   n o n e ; 
-         t r a n s i t i o n :   a l l   0 . 2 s   e a s e ; 
- } 
- 
- . b t n - a c t i o n . p r i m a r y ,   . b t n - p r i m a r y   { 
-         b a c k g r o u n d :   # 3 b 8 2 f 6 ; 
-         c o l o r :   w h i t e ; 
-         b o x - s h a d o w :   0   1 p x   2 p x   r g b a ( 5 9 ,   1 3 0 ,   2 4 6 ,   0 . 3 ) ; 
- } 
- 
- . b t n - a c t i o n . p r i m a r y : h o v e r ,   . b t n - p r i m a r y : h o v e r   { 
-         b a c k g r o u n d :   # 2 5 6 3 e b ; 
-         b o x - s h a d o w :   0   4 p x   6 p x   r g b a ( 5 9 ,   1 3 0 ,   2 4 6 ,   0 . 2 5 ) ; 
-         t r a n s f o r m :   t r a n s l a t e Y ( - 1 p x ) ; 
- } 
- 
- . b t n - a c t i o n . s e c o n d a r y ,   . b t n - s e c o n d a r y   { 
-         b a c k g r o u n d :   # f 1 f 5 f 9 ; 
-         c o l o r :   # 4 7 5 5 6 9 ; 
-         b o r d e r :   1 p x   s o l i d   # c b d 5 e 1 ; 
- } 
- 
- . b t n - a c t i o n . s e c o n d a r y : h o v e r ,   . b t n - s e c o n d a r y : h o v e r   { 
-         b a c k g r o u n d :   # e 2 e 8 f 0 ; 
-         c o l o r :   # 0 f 1 7 2 a ; 
- } 
- 
- . b t n - a c t i o n   { 
-         b a c k g r o u n d :   # f 1 f 5 f 9 ; 
-         c o l o r :   # 4 7 5 5 6 9 ; 
- } 
- . b t n - a c t i o n : h o v e r   { 
-         b a c k g r o u n d :   # e 2 e 8 f 0 ; 
- } 
-  
- 
+/* --- Structure Module & Global Modals --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal-card {
+    background: #ffffff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
+.modal-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #0f172a;
+}
+
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    background: #f8fafc;
+}
+
+.btn-action, .btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-action.primary, .btn-primary {
+    background: #3b82f6;
+    color: white;
+    box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
+}
+
+.btn-action.primary:hover, .btn-primary:hover {
+    background: #2563eb;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-action.secondary, .btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-action.secondary:hover, .btn-secondary:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.btn-action {
+    background: #f1f5f9;
+    color: #475569;
+}
+.btn-action:hover {
+    background: #e2e8f0;
+}
+
+/* ==============================================================
+   Site Structure Module (Tree View)
+   ============================================================== */
+.tree-container {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
+    padding: 24px;
+    margin-top: 24px;
+    min-height: 500px;
+}
+
+.tree-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.tree-toolbar-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.tree-root {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tree-node {
+    margin-bottom: 8px;
+}
+
+.tree-node-content {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    gap: 12px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.tree-node-content:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.tree-node-content.drag-over {
+    border: 2px dashed #3b82f6;
+    background: #eff6ff;
+}
+
+.tree-node-content.dragging {
+    opacity: 0.5;
+}
+
+.tree-toggle {
+    cursor: pointer;
+    color: #64748b;
+    width: 20px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.tree-toggle.collapsed {
+    transform: rotate(-90deg);
+}
+
+.tree-node-icon {
+    font-size: 16px;
+}
+
+.tree-node-title {
+    font-weight: 500;
+    color: #1e293b;
+    cursor: pointer;
+    flex-grow: 1;
+}
+
+.tree-node-cluster {
+    font-size: 11px;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 3px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.tree-node-type-badge {
+    font-size: 11px;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.tree-node-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.tree-node-content:hover .tree-node-actions {
+    opacity: 1;
+}
+
+.tree-action-btn {
+    background: white;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tree-action-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.tree-action-btn.danger:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fca5a5;
+}
+
+.tree-node > ul {
+    list-style: none;
+    padding-left: 28px;
+    margin-top: 8px;
+    position: relative;
+}
+
+/* Connective lines for tree */
+.tree-node > ul::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 14px;
+    width: 1px;
+    background: #e2e8f0;
+}
+
+.tree-node > ul > li {
+    position: relative;
+}
+
+.tree-node > ul > li::before {
+    content: '';
+    position: absolute;
+    top: 22px;
+    left: -14px;
+    width: 12px;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+/* Page Types Grid */
+.page-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.page-type-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.page-type-card-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-type-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+}
+
+/* Context Menu */
+.tree-context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding: 6px 0;
+    min-width: 180px;
+    z-index: 9999;
+}
+
+.tree-context-item {
+    padding: 8px 16px;
+    font-size: 13px;
+    color: #334155;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.tree-context-item:hover {
+    background: #f1f5f9;
+}
+
+.tree-context-item.danger {
+    color: #ef4444;
+}
+
+.tree-context-item.danger:hover {
+    background: #fee2e2;
+}
+
+.tree-context-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 4px 0;
+}
+
