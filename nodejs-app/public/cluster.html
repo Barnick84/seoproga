@@ -12,14 +12,9 @@
 </head>
 
 <body>
-    <div class="top-menu" id="topMenu" style="display:none;">
-        <div class="user-info">
+    <div class="layout-wrapper" id="mainLayout" style="display:none;">
+        <aside class="sidebar" id="sidebar">
             <div class="logo">SEO Auto Cluster</div>
-            <div class="balance-display">
-                <span class="balance-label">Баланс:</span>
-                <span class="balance-value">0.00 ₽</span>
-                <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
-            </div>
             <div class="menu-tabs">
                 <a href="dashboard.html" class="menu-tab">Dashboard</a>
                 <a href="sort.html" class="menu-tab">Сортировка</a>
@@ -27,17 +22,25 @@
                 <a href="positions.html" class="menu-tab">Позиции</a>
                 <a href="cabinet.html" class="menu-tab">Кабинет</a>
             </div>
-        </div>
-        <div class="site-selector">
-            <select id="siteSelect" onchange="selectSite()">
-                <option value="">-- Выберите сайт --</option>
-            </select>
-            <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
-            <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
-        </div>
-    </div>
+        </aside>
 
-    <div class="container" id="mainApp" style="display:none;">
+        <main class="main-content">
+            <header class="top-bar" id="topBar">
+                <div class="balance-display">
+                    <span class="balance-label">Баланс:</span>
+                    <span class="balance-value">0.00 ₽</span>
+                    <button class="btn-topup-icon" onclick="showTopupModal()" title="Пополнить баланс">+</button>
+                </div>
+                <div class="site-selector">
+                    <select id="siteSelect" onchange="selectSite()">
+                        <option value="">-- Выберите сайт --</option>
+                    </select>
+                    <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
+                    <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
+                </div>
+            </header>
+
+            <div class="container" id="mainApp">
         <div id="status" class="status"></div>
 
         <div id="sitesContent">
@@ -267,6 +270,9 @@
         </div>
     </div>
 
+        </div>
+    </div>
+
     <div id="authSection" class="auth-section" style="display:none;">
         <div class="auth-tabs">
             <button class="auth-tab active" onclick="showAuthForm('login')">Вход</button>
@@ -291,9 +297,6 @@
                 <button class="btn btn-secondary" onclick="hideAddSiteModal()">Отмена</button>
                 <button class="btn btn-primary" onclick="addSite()">Добавить</button>
             </div>
-        </div>
-    </div>
-
         </div>
     </div>
 

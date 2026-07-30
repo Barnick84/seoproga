@@ -451,11 +451,7 @@
             document.getElementById('activeTabTitle').textContent = titles[tabName] || tabName;
 
             const content = document.getElementById('tabContent');
-            content.textContent = '';
-            const loading = document.createElement('div');
-            loading.className = 'card';
-            loading.textContent = 'Загрузка данных...';
-            content.appendChild(loading);
+            content.innerHTML = '<div class="card">Загрузка данных...</div>';
             
             try {
                 const res = await fetch(`/api/admin/${tabName}`, {
@@ -466,200 +462,125 @@
                 const data = await res.json();
                 renderTab(tabName, data);
             } catch (e) {
-                content.textContent = '';
-                const err = document.createElement('div');
-                err.className = 'card';
-                err.style.color = '#ef4444';
-                err.textContent = 'Ошибка загрузки данных. Проверьте соединение.';
-                content.appendChild(err);
+                content.innerHTML = '<div class="card" style="color: #ef4444;">Ошибка загрузки данных. Проверьте соединение.</div>';
             }
-        }
-
-        function createEl(tag, className, text) {
-            const el = document.createElement(tag);
-            if (className) el.className = className;
-            if (text !== undefined) el.textContent = text;
-            return el;
         }
 
         function renderTab(tab, data) {
             const content = document.getElementById('tabContent');
-            content.textContent = '';
             
             if (tab === 'tariffs') {
-                const card = createEl('div', 'card');
-                
-                const createInputGroup = (labelText, id, value) => {
-                    const group = createEl('div', 'input-group');
-                    group.appendChild(createEl('label', '', labelText));
-                    const input = createEl('input', 'input-field');
-                    input.type = 'number';
-                    input.id = id;
-                    input.step = '0.01';
-                    input.value = value;
-                    group.appendChild(input);
-                    return group;
-                };
-                
-                card.appendChild(createInputGroup('Кластеризация (за 1 запрос, ₽)', 'rate_clustering', data.clustering_rate || 0.10));
-                card.appendChild(createInputGroup('Съем частоты (за 1 запрос, ₽)', 'rate_frequency', data.frequency_rate || 0.20));
-                card.appendChild(createInputGroup('Съем позиции (новый запрос, ₽)', 'rate_pos_new', data.position_new_rate || 0.25));
-                card.appendChild(createInputGroup('Съем позиции (шаг 10 поз., ₽)', 'rate_pos_step', data.position_step_rate || 0.05));
-                
-                const btn = createEl('button', 'btn-full', 'Применить новые тарифы');
-                btn.onclick = saveTariffs;
-                card.appendChild(btn);
-                
-                content.appendChild(card);
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="input-group">
+                            <label>Кластеризация (за 1 запрос, ₽)</label>
+                            <input type="number" id="rate_clustering" class="input-field" value="${data.clustering}" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>Съем частоты (за 1 запрос, ₽)</label>
+                            <input type="number" id="rate_frequency" class="input-field" value="${data.frequency}" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>Съем позиции (новый запрос, ₽)</label>
+                            <input type="number" id="rate_pos_new" class="input-field" value="${data.position_new}" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>Съем позиции (шаг 10 поз., ₽)</label>
+                            <input type="number" id="rate_pos_step" class="input-field" value="${data.position_step}" step="0.01">
+                        </div>
+                        <button class="btn-full" onclick="saveTariffs()">Применить новые тарифы</button>
+                    </div>
+                `;
             } else if (tab === 'users') {
-                const card = createEl('div', 'card table-container');
-                const table = createEl('table');
-                const thead = createEl('thead');
-                const hTr = createEl('tr');
-                ['User', 'Баланс', 'Токен', 'Статус', 'Действия'].forEach(h => hTr.appendChild(createEl('th', '', h)));
-                thead.appendChild(hTr);
-                table.appendChild(thead);
-                
-                const tbody = createEl('tbody');
-                (data.users || []).forEach(u => {
-                    const tr = createEl('tr');
-                    
-                    const tdUser = createEl('td');
-                    const divEmail = createEl('div');
-                    divEmail.style.fontWeight = '600';
-                    divEmail.textContent = u.email || u.username || 'No email';
-                    const divId = createEl('div');
-                    divId.style.color = 'var(--text-muted)';
-                    divId.style.fontSize = '12px';
-                    divId.textContent = 'ID: ' + u.id;
-                    tdUser.appendChild(divEmail);
-                    tdUser.appendChild(divId);
-                    tr.appendChild(tdUser);
-                    
-                    const tdBal = createEl('td');
-                    const inBal = createEl('input', 'inline-input');
-                    inBal.type = 'number';
-                    inBal.id = 'balance_' + u.id;
-                    inBal.step = '0.01';
-                    inBal.style.width = '100px';
-                    inBal.value = parseFloat(u.balance || 0).toFixed(2);
-                    tdBal.appendChild(inBal);
-                    tr.appendChild(tdBal);
-                    
-                    const tdTok = createEl('td');
-                    const inTok = createEl('input', 'inline-input');
-                    inTok.type = 'text';
-                    inTok.id = 'token_' + u.id;
-                    inTok.style.width = '140px';
-                    inTok.placeholder = '—';
-                    inTok.value = u.yandex_token || '';
-                    tdTok.appendChild(inTok);
-                    tr.appendChild(tdTok);
-                    
-                    const tdStat = createEl('td');
-                    const spanStat = createEl('span', 'badge ' + (u.is_blocked ? 'badge-error' : 'badge-success'), u.is_blocked ? 'Blocked' : 'Active');
-                    tdStat.appendChild(spanStat);
-                    tr.appendChild(tdStat);
-                    
-                    const tdAct = createEl('td');
-                    tdAct.style.display = 'flex';
-                    tdAct.style.gap = '8px';
-                    
-                    const btnSave = createEl('button', 'btn btn-primary', 'Save');
-                    btnSave.onclick = () => saveUser(u.id);
-                    
-                    const btnBlock = createEl('button', 'btn ' + (u.is_blocked ? 'btn-success' : 'btn-danger'), u.is_blocked ? 'Unlock' : 'Block');
-                    btnBlock.onclick = () => toggleBlock(u.id, u.is_blocked);
-                    
-                    tdAct.appendChild(btnSave);
-                    tdAct.appendChild(btnBlock);
-                    tr.appendChild(tdAct);
-                    
-                    tbody.appendChild(tr);
-                });
-                table.appendChild(tbody);
-                card.appendChild(table);
-                content.appendChild(card);
+                content.innerHTML = `
+                    <div class="card table-container">
+                        <table>
+                            <thead>
+                                <tr><th>User</th><th>Баланс</th><th>Токен</th><th>Статус</th><th>Действия</th></tr>
+                            </thead>
+                            <tbody>
+                                ${data.users.map(u => `
+                                    <tr>
+                                        <td>
+                                            <div style="font-weight:600;">${u.email || 'No email'}</div>
+                                            <div style="color:var(--text-muted); font-size:12px;">ID: ${u.id}</div>
+                                        </td>
+                                        <td>
+                                            <input type="number" id="balance_${u.id}" class="inline-input" value="${parseFloat(u.balance).toFixed(2)}" step="0.01" style="width: 100px;">
+                                        </td>
+                                        <td>
+                                            <input type="text" id="token_${u.id}" class="inline-input" value="${u.yandex_token || ''}" placeholder="—" style="width: 140px;">
+                                        </td>
+                                        <td>
+                                            <span class="badge ${u.is_blocked ? 'badge-error' : 'badge-success'}">
+                                                ${u.is_blocked ? 'Blocked' : 'Active'}
+                                            </span>
+                                        </td>
+                                        <td style="display:flex; gap:8px;">
+                                            <button class="btn btn-primary" onclick="saveUser(${u.id})">Save</button>
+                                            <button class="btn ${u.is_blocked ? 'btn-success' : 'btn-danger'}" onclick="toggleBlock(${u.id}, ${u.is_blocked})">
+                                                ${u.is_blocked ? 'Unlock' : 'Block'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
             } else if (tab === 'sites') {
-                const card = createEl('div', 'card table-container');
-                const table = createEl('table');
-                const thead = createEl('thead');
-                const hTr = createEl('tr');
-                ['Owner ID', 'Domain', 'Keywords'].forEach(h => hTr.appendChild(createEl('th', '', h)));
-                thead.appendChild(hTr);
-                table.appendChild(thead);
-                
-                const tbody = createEl('tbody');
-                (data.sites || []).forEach(s => {
-                    const tr = createEl('tr');
-                    
-                    const tdOwner = createEl('td');
-                    const spanOwner = createEl('span', 'badge', 'UID: ' + s.user_id);
-                    spanOwner.style.background = '#f1f5f9';
-                    tdOwner.appendChild(spanOwner);
-                    tr.appendChild(tdOwner);
-                    
-                    const tdDomain = createEl('td');
-                    tdDomain.style.fontWeight = '500';
-                    tdDomain.textContent = s.domain;
-                    tr.appendChild(tdDomain);
-                    
-                    const tdKeys = createEl('td');
-                    tdKeys.appendChild(createEl('span', 'badge badge-success', s.query_count || 0));
-                    tr.appendChild(tdKeys);
-                    
-                    tbody.appendChild(tr);
-                });
-                table.appendChild(tbody);
-                card.appendChild(table);
-                content.appendChild(card);
+                content.innerHTML = `
+                    <div class="card table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Owner ID</th><th>Domain</th><th>Keywords</th></tr>
+                            </thead>
+                            <tbody>
+                                ${data.sites.map(s => `
+                                    <tr>
+                                        <td><span class="badge" style="background:#f1f5f9;">UID: ${s.user_id}</span></td>
+                                        <td style="font-weight:500;">${s.domain}</td>
+                                        <td><span class="badge badge-success">${s.query_count || 0}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
             } else if (tab === 'payments') {
-                const card = createEl('div', 'card table-container');
-                const table = createEl('table');
-                const thead = createEl('thead');
-                const hTr = createEl('tr');
-                ['User', 'Amount', 'Type', 'Description', 'Date'].forEach(h => hTr.appendChild(createEl('th', '', h)));
-                thead.appendChild(hTr);
-                table.appendChild(thead);
-                
-                const tbody = createEl('tbody');
-                (data.payments || []).forEach(p => {
-                    const tr = createEl('tr');
-                    
-                    tr.appendChild(createEl('td', '', p.email || 'ID: ' + p.user_id));
-                    
-                    const tdAmt = createEl('td');
-                    tdAmt.style.fontWeight = '700';
-                    tdAmt.style.color = p.type === 'deposit' ? '#166534' : '#991b1b';
-                    tdAmt.textContent = (p.type === 'deposit' ? '+' : '-') + parseFloat(p.amount).toFixed(2) + ' ₽';
-                    tr.appendChild(tdAmt);
-                    
-                    const tdType = createEl('td');
-                    const spanType = createEl('span', 'badge', p.type);
-                    spanType.style.background = '#f1f5f9';
-                    tdType.appendChild(spanType);
-                    tr.appendChild(tdType);
-                    
-                    const tdDesc = createEl('td');
-                    tdDesc.style.color = 'var(--text-muted)';
-                    tdDesc.style.fontSize = '13px';
-                    tdDesc.textContent = p.description;
-                    tr.appendChild(tdDesc);
-                    
-                    const tdDate = createEl('td');
-                    tdDate.style.fontSize = '12px';
-                    tdDate.textContent = new Date(p.created_at).toLocaleString();
-                    tr.appendChild(tdDate);
-                    
-                    tbody.appendChild(tr);
-                });
-                table.appendChild(tbody);
-                card.appendChild(table);
-                content.appendChild(card);
+                content.innerHTML = `
+                    <div class="card table-container">
+                        <table>
+                            <thead>
+                                <tr><th>User</th><th>Amount</th><th>Type</th><th>Description</th><th>Date</th></tr>
+                            </thead>
+                            <tbody>
+                                ${data.payments.map(p => `
+                                    <tr>
+                                        <td>${p.email || 'ID: '+p.user_id}</td>
+                                        <td style="font-weight:700; color:${p.type === 'deposit' ? '#166534' : '#991b1b'}">
+                                            ${p.type === 'deposit' ? '+' : '-'}${parseFloat(p.amount).toFixed(2)} ₽
+                                        </td>
+                                        <td><span class="badge" style="background:#f1f5f9;">${p.type}</span></td>
+                                        <td style="color:var(--text-muted); font-size:13px;">${p.description}</td>
+                                        <td style="font-size:12px;">${new Date(p.created_at).toLocaleString()}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
             } else if (tab === 'logs') {
-                const logsWindow = createEl('div', 'logs-window');
-                logsWindow.textContent = (data.logs && typeof data.logs === 'string') ? data.logs : 'Нет ошибок в логах.';
-                content.appendChild(logsWindow);
+                content.innerHTML = `
+                    <div class="logs-window">
+                        ${data.logs.map(log => `
+                            <div class="log-entry">
+                                <span class="log-time">[${log.time}]</span>
+                                <span class="log-msg">${log.message}</span>
+                            </div>
+                        `).join('') || 'Нет ошибок в логах.'}
+                    </div>
+                `;
             }
         }
 

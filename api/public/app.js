@@ -137,11 +137,18 @@ async function startPayment() {
 
 function showAuthSection(show) {
     const auth = document.getElementById('authSection');
+    const layout = document.getElementById('mainLayout');
     const app = document.getElementById('mainApp');
     const menu = document.getElementById('topMenu');
+    
     if (auth) auth.style.display = show ? 'block' : 'none';
-    if (app) app.style.display = show ? 'none' : 'block';
-    if (menu) menu.style.display = show ? 'none' : 'flex';
+    
+    if (layout) {
+        layout.style.display = show ? 'none' : 'flex';
+    } else {
+        if (menu) menu.style.display = show ? 'none' : 'flex';
+        if (app) app.style.display = show ? 'none' : 'block';
+    }
 }
 
 function showMainApp() {
