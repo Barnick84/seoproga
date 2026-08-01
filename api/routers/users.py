@@ -116,7 +116,7 @@ async def login(req: LoginRequest, request: Request):
 
 @router.get("/api/auth/session")
 @limiter.limit("30/minute")
-async def get_session(current_user: TokenData = Depends(get_current_user)):
+async def get_session(request: Request, current_user: TokenData = Depends(get_current_user)):
     return {
         "success": True,
         "authenticated": True,
