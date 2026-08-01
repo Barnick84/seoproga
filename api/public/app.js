@@ -300,7 +300,8 @@ async function submitAuth() {
         const data = await res.json();
         if (data.success) {
             localStorage.setItem('session', data.session);
-            location.reload();
+            sessionStorage.setItem('justLoggedIn', 'true');
+            window.location.href = '/dashboard.html';
         } else {
             const err = document.getElementById('authError');
             if (err) {
@@ -334,7 +335,8 @@ async function submitRegister() {
         const data = await res.json();
         if (data.success) {
             localStorage.setItem('session', data.session);
-            location.reload();
+            sessionStorage.setItem('justLoggedIn', 'true');
+            window.location.href = '/dashboard.html';
         } else {
             alert(data.error);
         }

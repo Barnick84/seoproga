@@ -1416,7 +1416,7 @@
                 if (data.success) {
                     localStorage.setItem('session', data.session);
                     sessionStorage.setItem('justLoggedIn', 'true');
-                    window.location.href = '/sort.html';
+                    window.location.href = '/dashboard.html';
                 } else {
                     showAuthError(data.error || 'Ошибка входа');
                 }
@@ -1456,7 +1456,7 @@
                 if (data.success) {
                     localStorage.setItem('session', data.session);
                     sessionStorage.setItem('justLoggedIn', 'true');
-                    window.location.href = '/sort.html';
+                    window.location.href = '/dashboard.html';
                 } else {
                     showAuthError(data.error || 'Ошибка регистрации');
                 }
@@ -1471,7 +1471,7 @@
             closeModal();
         }
 
-        // Check if user is already authorized — redirect to sort.html
+        // Check if user is already authorized — redirect to dashboard.html
         document.addEventListener('DOMContentLoaded', async function() {
             const session = localStorage.getItem('session');
             if (session) {
@@ -1481,7 +1481,7 @@
                     });
                     const data = await res.json();
                     if (data.authenticated) {
-                        window.location.href = '/sort.html';
+                        window.location.href = '/dashboard.html';
                         return;
                     }
                 } catch (e) {}

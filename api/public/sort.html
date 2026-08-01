@@ -484,10 +484,7 @@
         function goToDashboardWithSite() {
             const select = document.getElementById('modalSiteSelect');
             if (select.value) {
-                const mainSelect = document.getElementById('siteSelect');
-                mainSelect.value = select.value;
-                selectSite();
-                closeSiteSelectModal();
+                window.location.href = '/dashboard.html?site=' + encodeURIComponent(select.value);
             }
         }
 
