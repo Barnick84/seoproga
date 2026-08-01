@@ -5,10 +5,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import jwt
+from dotenv import load_dotenv
 from fastapi import Depends, Header, HTTPException
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
