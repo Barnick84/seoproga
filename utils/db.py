@@ -6,6 +6,22 @@ from config import Config
 logger = logging.getLogger(__name__)
 
 
+def _make_cursor(conn, dictionary: bool):
+    if Config.DB_TYPE == "postgresql":
+        import psycopg2.extras
+
+        if dictionary:
+            return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        return conn.cursor()
+    if Config.DB_TYPE == "mysql":
+        import pymysql.cursors
+
+        if dictionary:
+            return conn.cursor(pymysql.cursors.DictCursor)
+        return conn.cursor(pymysql.cursors.Cursor)
+    return conn.cursor()
+
+
 @contextmanager
 def get_db_cursor(dictionary=True, commit=False):
     """
@@ -17,30 +33,13 @@ def get_db_cursor(dictionary=True, commit=False):
     conn = Config.get_conn()
     cur = None
     try:
-        if Config.DB_TYPE == "postgresql":
-            if dictionary:
-                import psycopg2.extras
-
-                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            else:
-                cur = conn.cursor()
-        elif Config.DB_TYPE == "mysql":
-            if dictionary:
-                import pymysql.cursors
-
-                cur = conn.cursor(pymysql.cursors.DictCursor)
-            else:
-                import pymysql.cursors
-
-                cur = conn.cursor(pymysql.cursors.Cursor)
-        else:
-            cur = conn.cursor()
+        cur = _make_cursor(conn, dictionary)
         yield conn, cur
         if commit:
             conn.commit()
     except Exception as e:
         conn.rollback()
-        logger.error(f"Database transaction error: {e}")
+        logger.error("Database transaction error: %s", e)
         raise
     finally:
         if cur:

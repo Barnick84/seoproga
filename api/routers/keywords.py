@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,6 +7,8 @@ from pydantic import BaseModel
 from api.dependencies import TokenData, get_current_user
 from utils.db import get_db_cursor
 from utils.helpers import extract_domain
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Keywords"])
 
@@ -111,7 +114,8 @@ async def get_keywords(
                 minus_words=minus_words,
             )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch keywords: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/minus-words")
@@ -124,17 +128,15 @@ async def update_minus_words(
 
     try:
         with get_db_cursor(dictionary=True, commit=True) as (conn, cur):
-            updated = 0
-            for kw in req.keywords:
-                cur.execute(
-                    "UPDATE yandex_queries SET minus_word = 1 WHERE user_id = %s AND site_url = %s AND query = %s",
-                    (current_user.user_id, domain, kw),
-                )
-                updated += cur.rowcount
-
-            return {"success": True, "updated": updated}
+            placeholders = ",".join(["%s"] * len(req.keywords))
+            cur.execute(
+                f"UPDATE yandex_queries SET minus_word = 1 WHERE user_id = %s AND site_url = %s AND query IN ({placeholders})",
+                (current_user.user_id, domain, *req.keywords),
+            )
+            return {"success": True, "updated": cur.rowcount}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to update minus words: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/restore-minus")
@@ -147,17 +149,15 @@ async def restore_minus_words(
 
     try:
         with get_db_cursor(dictionary=True, commit=True) as (conn, cur):
-            updated = 0
-            for kw in req.keywords:
-                cur.execute(
-                    "UPDATE yandex_queries SET minus_word = 0 WHERE user_id = %s AND site_url = %s AND query = %s",
-                    (current_user.user_id, domain, kw),
-                )
-                updated += cur.rowcount
-
-            return {"success": True, "updated": updated}
+            placeholders = ",".join(["%s"] * len(req.keywords))
+            cur.execute(
+                f"UPDATE yandex_queries SET minus_word = 0 WHERE user_id = %s AND site_url = %s AND query IN ({placeholders})",
+                (current_user.user_id, domain, *req.keywords),
+            )
+            return {"success": True, "updated": cur.rowcount}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to restore minus words: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/clear-minus")
@@ -174,4 +174,5 @@ async def clear_minus_words(
             updated = cur.rowcount
             return {"success": True, "updated": updated}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to clear minus words: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -46,8 +46,10 @@ def run_mapping_task(
         cluster_ids = [r["clustered"] for r in cur.fetchall()]
 
         if not cluster_ids:
+            result = {"success": True, "message": "No clusters to map"}
+            tm.set_result(result)
             tm.set_status("completed")
-            return {"success": True, "message": "No clusters to map"}
+            return result
 
         tm.update_progress(10)
 
@@ -108,8 +110,10 @@ def run_mapping_task(
             )
 
         conn.commit()
+        result = {"success": True, "count": len(mappings)}
+        tm.set_result(result)
         tm.set_status("completed")
-        return {"success": True, "count": len(mappings)}
+        return result
 
     except Exception as e:
         tm.set_status("failed", str(e))

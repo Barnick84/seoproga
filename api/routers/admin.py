@@ -1,12 +1,20 @@
+import logging
 import os
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from api.dependencies import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, verify_admin_token
-from api.main import limiter
+from api.dependencies import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    create_access_token,
+    limiter,
+    verify_admin_token,
+)
+from services.auth import AuthService
 from utils.db import get_db_cursor
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Admin"])
 
@@ -18,8 +26,12 @@ class AdminLoginRequest(BaseModel):
 @router.post("/api/admin/login")
 @limiter.limit("5/minute")
 async def admin_login(req: AdminLoginRequest, request: Request):
-    admin_password = os.environ.get("ADMIN_PASSWORD", "123456")
-    if req.password == admin_password:
+    admin_password = os.environ.get("ADMIN_PASSWORD")
+    if not admin_password:
+        logger.error("ADMIN_PASSWORD is not set in .env")
+        raise HTTPException(status_code=500, detail="Admin panel is not configured")
+    hashed = AuthService.hash_password(admin_password)
+    if AuthService.verify_password(req.password, hashed):
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"is_admin": True}, expires_delta=access_token_expires
@@ -46,7 +58,8 @@ async def get_tariffs(request: Request, admin: bool = Depends(verify_admin_token
             "position_step_rate": float(settings.get("position_step_rate", 0.05)),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch tariffs: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class UpdateTariffsRequest(BaseModel):
@@ -78,7 +91,8 @@ async def update_tariffs(
 
         return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to update tariffs: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/admin/users")
@@ -93,7 +107,8 @@ async def get_users(request: Request, admin: bool = Depends(verify_admin_token))
 
         return {"success": True, "users": users}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch users: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class UpdateUserRequest(BaseModel):
@@ -112,7 +127,8 @@ async def update_user(
 
         return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to update user %s: %s", req.id, e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/admin/sites")
@@ -127,7 +143,8 @@ async def get_sites(request: Request, admin: bool = Depends(verify_admin_token))
 
         return {"success": True, "sites": sites}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch sites: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/admin/payments")
@@ -142,7 +159,8 @@ async def get_payments(request: Request, admin: bool = Depends(verify_admin_toke
 
         return {"success": True, "payments": payments}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch payments: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/admin/logs")
@@ -154,10 +172,10 @@ async def get_logs(request: Request, admin: bool = Depends(verify_admin_token)):
 
     try:
         with open(log_file, "r", encoding="utf-8") as f:
-            # Read last 1000 lines or just read all
             lines = f.readlines()
             logs = "".join(lines[-1000:]) if len(lines) > 1000 else "".join(lines)
 
-        return {"success": True, "logs": logs}
+        return {"success": True, "logs": logs[:50000]}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to read logs: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")

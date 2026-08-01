@@ -1,4 +1,8 @@
+import logging
+
 from services.xmlriver_client import XmlriverClient
+
+logger = logging.getLogger(__name__)
 
 
 def prefetch_for_clustering(
@@ -17,8 +21,10 @@ def prefetch_for_clustering(
             on_progress(i + 1, total)
 
     if fetched < total:
-        print(f"⚠️ Prefetch: {fetched}/{total} ключей в кэше, {total - fetched} запрошено из API")
+        logger.warning(
+            "Prefetch: %s/%s ключей в кэше, %s запрошено из API", fetched, total, total - fetched
+        )
     else:
-        print(f"✓ Prefetch: все {total} ключей в кэше")
+        logger.info("Prefetch: все %s ключей в кэше", total)
 
     return fetched

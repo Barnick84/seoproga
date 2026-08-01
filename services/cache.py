@@ -1,8 +1,11 @@
 # services/cache.py
 import json
+import logging
 from datetime import datetime, timedelta
 
 from config import Config
+
+logger = logging.getLogger(__name__)
 
 
 class SERPCache:
@@ -16,16 +19,21 @@ class SERPCache:
         elif hasattr(self._conn, "ping"):
             try:
                 self._conn.ping(reconnect=True)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("SERPCache connection ping failed, reconnecting lazily: %s", e)
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+                self._conn = Config.get_conn()
         return self._conn
 
     def close(self) -> None:
         if self._conn:
             try:
                 self._conn.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("SERPCache close ignored error: %s", e)
             self._conn = None
 
     def _make_key(self, keyword: str, engine: str, region: int) -> str:
@@ -43,19 +51,22 @@ class SERPCache:
                 return json.loads(urls)
         return None
 
-    def set(self, cache_key: str, urls: list[str], engine: str = "", region: int = 0):
+    def set(self, cache_key: str, urls: list[str], engine: str = "", region: int = 0) -> None:
         key = cache_key if "|" in cache_key else self._make_key(cache_key, engine, region)
         conn = self._get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT 1 FROM serp_cache WHERE cache_key=%s", (key,))
-        if cur.fetchone():
+        urls_json = json.dumps(urls)
+        now = datetime.now()
+        if Config.DB_TYPE == "postgresql":
             cur.execute(
-                "UPDATE serp_cache SET urls=%s, fetched_at=%s WHERE cache_key=%s",
-                (json.dumps(urls), datetime.now(), key),
+                "INSERT INTO serp_cache (cache_key, urls, fetched_at) VALUES (%s, %s, %s) "
+                "ON CONFLICT (cache_key) DO UPDATE SET urls = EXCLUDED.urls, fetched_at = EXCLUDED.fetched_at",
+                (key, urls_json, now),
             )
         else:
             cur.execute(
-                "INSERT INTO serp_cache (cache_key, urls, fetched_at) VALUES (%s, %s, %s)",
-                (key, json.dumps(urls), datetime.now()),
+                "INSERT INTO serp_cache (cache_key, urls, fetched_at) VALUES (%s, %s, %s) "
+                "ON DUPLICATE KEY UPDATE urls = VALUES(urls), fetched_at = VALUES(fetched_at)",
+                (key, urls_json, now),
             )
         conn.commit()

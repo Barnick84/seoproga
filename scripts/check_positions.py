@@ -11,47 +11,7 @@ bootstrap()
 from config import Config
 from services.xmlriver_client import XmlriverClient
 from utils.helpers import extract_domain
-
-
-def check_target(client, query, engine, device, region, clean_target_domain):
-    found_pos = 0
-    found_url = ""
-
-    # Fetch SERP page by page (up to 10 pages)
-    for page in range(10):
-        try:
-            serp_urls = client.fetch_serp(
-                query,
-                engine=engine,
-                device=device,
-                region=region,
-                top_n=10,
-                page=page,
-                use_cache=False,
-            )
-            if not serp_urls:
-                break
-
-            page_pos = 0
-            for url in serp_urls:
-                page_pos += 1
-                extracted = extract_domain(url)
-                if extracted == clean_target_domain or extracted.endswith(
-                    "." + clean_target_domain
-                ):
-                    found_pos = (page * 10) + page_pos
-                    found_url = url
-                    break
-
-            if found_pos > 0:
-                break
-
-            time.sleep(1)
-        except Exception as e:
-            print(f"Error checking {engine}/{device}: {e}", file=sys.stderr)
-            break
-
-    return found_pos, found_url
+from utils.position_checker import check_target
 
 
 def check_positions_task(

@@ -1,3 +1,4 @@
+import logging
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -6,23 +7,22 @@ from typing import Optional
 import jwt
 from fastapi import Depends, Header, HTTPException
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
-_DEFAULT_SECRET = secrets.token_urlsafe(32)
-SECRET_KEY = os.environ.get("JWT_SECRET", _DEFAULT_SECRET)
-if os.environ.get("JWT_SECRET") is None:
-    _unset = not os.path.exists(".env")
-    if _unset:
-        import warnings
+logger = logging.getLogger(__name__)
 
-        warnings.warn(
-            "JWT_SECRET not set. Using random ephemeral secret. "
-            "All sessions will be invalidated on server restart. "
-            "Set JWT_SECRET in .env for persistent sessions.",
-            stacklevel=2,
-        )
+limiter = Limiter(key_func=get_remote_address)
+
+JWT_SECRET = os.environ.get("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET must be set in .env. "
+        "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+    )
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", 120))  # 2h default
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", 120))
 
 
 class TokenData(BaseModel):
@@ -38,15 +38,20 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire, "jti": secrets.token_urlsafe(16)})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)
 
 
 def _is_token_revoked(jti: str) -> bool:
-    try:
-        from config import Config
+    """Return True if token is revoked OR if revocation status cannot be verified (fail-closed)."""
+    from config import Config
 
+    try:
         conn = Config.get_conn()
+    except Exception as e:
+        logger.error("Failed to connect to DB for token revocation check: %s", e)
+        return True
+
+    try:
         cur = conn.cursor()
         try:
             cur.execute(
@@ -54,17 +59,27 @@ def _is_token_revoked(jti: str) -> bool:
                 (jti, datetime.now()),
             )
             return cur.fetchone() is not None
+        except Exception as e:
+            logger.error("Failed to check token revocation for jti=%s: %s", jti, e)
+            return True
         finally:
             conn.close()
-    except Exception:
+    except Exception as e:
+        logger.error("Token revocation check inaccessible, treating as revoked: %s", e)
+        return True
+
+
+def revoke_token(jti: str, exp: int) -> bool:
+    """Persist revocation. Returns False if persistence failed (token remains valid)."""
+    from config import Config
+
+    try:
+        conn = Config.get_conn()
+    except Exception as e:
+        logger.error("Failed to connect to DB for token revocation: %s", e)
         return False
 
-
-def revoke_token(jti: str, exp: int) -> None:
     try:
-        from config import Config
-
-        conn = Config.get_conn()
         cur = conn.cursor()
         try:
             expires_at = datetime.fromtimestamp(exp, tz=timezone.utc).replace(tzinfo=None)
@@ -73,10 +88,16 @@ def revoke_token(jti: str, exp: int) -> None:
                 (jti, expires_at),
             )
             conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            logger.error("Failed to revoke token jti=%s: %s", jti, e)
+            return False
         finally:
             conn.close()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("Token revocation inaccessible: %s", e)
+        return False
 
 
 async def get_current_user(authorization: Optional[str] = Header(None)) -> TokenData:
@@ -92,7 +113,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Token
         raise HTTPException(status_code=401, detail="Invalid authorization format")
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
         user_id: int | None = payload.get("user_id")
         username: str | None = payload.get("username")
         jti: str = payload.get("jti", "")
@@ -100,12 +121,11 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Token
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
         if jti and _is_token_revoked(jti):
             raise HTTPException(status_code=401, detail="Token has been revoked")
-        token_data = TokenData(user_id=user_id, username=username, jti=jti)
-        return token_data
-    except jwt.ExpiredSignatureError as e:
-        raise HTTPException(status_code=401, detail="Token has expired") from e
-    except jwt.PyJWTError as e:
-        raise HTTPException(status_code=401, detail="Could not validate credentials") from e
+        return TokenData(user_id=user_id, username=username, jti=jti)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
 
 
 async def verify_admin_token(authorization: Optional[str] = Header(None)) -> bool:
@@ -119,22 +139,22 @@ async def verify_admin_token(authorization: Optional[str] = Header(None)) -> boo
         token = authorization
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
         jti: str = payload.get("jti", "")
         if jti and _is_token_revoked(jti):
             raise HTTPException(status_code=401, detail="Token has been revoked")
         if not payload.get("is_admin"):
-            raise HTTPException(status_code=401, detail="Unauthorized admin access")
+            raise HTTPException(status_code=403, detail="Unauthorized admin access")
         return True
-    except jwt.ExpiredSignatureError as e:
-        raise HTTPException(status_code=401, detail="Token has expired") from e
-    except jwt.PyJWTError as e:
-        raise HTTPException(status_code=401, detail="Could not validate admin credentials") from e
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Could not validate admin credentials")
 
 
 async def verify_domain_ownership(
     domain: str,
-    current_user: TokenData = Depends(get_current_user),  # noqa: B008
+    current_user: TokenData = Depends(get_current_user),
 ) -> str:
     from utils.db import get_db_cursor
     from utils.helpers import extract_domain

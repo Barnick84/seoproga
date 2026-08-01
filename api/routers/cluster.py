@@ -1,18 +1,17 @@
 import asyncio
 import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from api.dependencies import TokenData, get_current_user, verify_domain_ownership
-from config import Config
 from utils.db import get_db_cursor
 from utils.helpers import extract_domain
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["Cluster"])
-
-
-# --- Models ---
 
 
 class DomainRequest(BaseModel):
@@ -98,9 +97,6 @@ class SeoHistoryGenerateRequest(BaseModel):
     seo_plan: str
 
 
-# --- Helpers ---
-
-
 def _get_settings(cur):
     try:
         cur.execute("SELECT `key`, `value` FROM settings")
@@ -110,7 +106,9 @@ def _get_settings(cur):
         return {}
 
 
-# --- Mappings ---
+def _check_domain(cur, user_id: int, domain: str) -> bool:
+    cur.execute("SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (user_id, domain))
+    return cur.fetchone() is not None
 
 
 @router.get("/api/mappings")
@@ -129,23 +127,17 @@ async def get_mappings(
             mappings = {r["cluster_id"]: r["target_url"] for r in rows}
             return {"success": True, "mappings": mappings}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch mappings: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/save-mapping-manual")
 async def save_mapping_manual(
     req: MappingManualRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -171,16 +163,9 @@ async def save_mapping_manual(
 async def set_cluster_target_url(
     req: TargetUrlRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -201,9 +186,6 @@ async def set_cluster_target_url(
                 (current_user.user_id, domain, req.clusterId, req.target_url),
             )
         return {"success": True}
-
-
-# --- Cluster Analysis ---
 
 
 @router.get("/api/analysis")
@@ -231,23 +213,17 @@ async def get_cluster_analysis(
                     analysis[r["cluster_id"]] = r["analysis_data"]
             return {"success": True, "analysis": analysis}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch cluster analysis: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/cluster/run-seo-analysis")
 async def run_cluster_seo_analysis(
     req: RunSeoAnalysisRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -260,10 +236,8 @@ async def run_cluster_seo_analysis(
         )
         return result
     except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-# --- Cluster Names / Metadata ---
+        logger.error("SEO analysis failed: %s", e)
+        return {"success": False, "error": "SEO analysis failed"}
 
 
 @router.get("/api/cluster-names")
@@ -290,23 +264,17 @@ async def get_cluster_names(
                 }
             return {"success": True, "names": names}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch cluster names: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/update-cluster-name")
 async def update_cluster_name(
     req: ClusterNameRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -333,16 +301,9 @@ async def update_cluster_name(
 async def toggle_cluster_favorite(
     req: ToggleRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -371,16 +332,9 @@ async def toggle_cluster_favorite(
 async def toggle_cluster_pinned(
     req: ToggleRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -409,16 +363,9 @@ async def toggle_cluster_pinned(
 async def update_pinned_order(
     req: PinnedOrderRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -442,9 +389,6 @@ async def update_pinned_order(
         return {"success": True}
 
 
-# --- Cluster LSI ---
-
-
 @router.get("/api/cluster-lsi")
 async def get_cluster_lsi(
     clusterId: str,
@@ -461,23 +405,17 @@ async def get_cluster_lsi(
             rows = cur.fetchall()
             return {"success": True, "keywords": rows}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch LSI: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/cluster/remove-lsi")
 async def remove_cluster_lsi(
     req: RemoveLsiRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -490,23 +428,13 @@ async def remove_cluster_lsi(
         return {"success": True}
 
 
-# --- Cluster management ---
-
-
 @router.post("/api/disband-cluster")
 async def disband_cluster(
     req: ClusterIdRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -539,16 +467,9 @@ async def disband_cluster(
 async def update_keyword_text(
     req: UpdateKeywordTextRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -565,16 +486,9 @@ async def update_keyword_text(
 async def create_cluster_by_url(
     req: CreateClusterByUrlRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -587,23 +501,17 @@ async def create_cluster_by_url(
         )
         return result
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        logger.error("Create cluster by URL failed: %s", e)
+        return {"success": False, "error": "Failed to create cluster from URL"}
 
 
 @router.post("/api/collect-keywords-for-cluster")
 async def collect_keywords_for_cluster(
     req: CollectKeywordsRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -621,10 +529,8 @@ async def collect_keywords_for_cluster(
         )
         return result
     except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-# --- SEO History ---
+        logger.error("Collect keywords failed: %s", e)
+        return {"success": False, "error": "Failed to collect keywords"}
 
 
 @router.get("/api/seo-history/dates")
@@ -647,7 +553,8 @@ async def get_seo_history_dates(
             dates = [str(r["date"]) for r in rows]
             return {"success": True, "dates": dates}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch SEO history dates: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/seo-history/plan")
@@ -671,23 +578,17 @@ async def get_seo_history_plan(
                 return {"success": False, "error": "No history found"}
             return {"success": True, "history": row}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch SEO history plan: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/seo-history/generate")
 async def generate_seo_history(
     req: SeoHistoryGenerateRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -700,26 +601,17 @@ async def generate_seo_history(
         )
         return result
     except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-# --- Structure ---
+        logger.error("Generate SEO history failed: %s", e)
+        return {"success": False, "error": "Failed to generate SEO plan"}
 
 
 @router.post("/api/cluster/generate-structure")
 async def generate_cluster_structure(
     req: GenerateStructureRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -732,23 +624,17 @@ async def generate_cluster_structure(
         )
         return result
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        logger.error("Generate structure failed: %s", e)
+        return {"success": False, "error": "Failed to generate structure"}
 
 
 @router.post("/api/cluster/save-structure")
 async def save_cluster_structure(
     req: SaveStructureRequest, current_user: TokenData = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
-
-    from utils.helpers import extract_domain
-
     domain = extract_domain(req.domain)
     with get_db_cursor(dictionary=False) as (conn, cur):
-        cur.execute(
-            "SELECT 1 FROM sites WHERE user_id = %s AND domain = %s", (current_user.user_id, domain)
-        )
-        if not cur.fetchone():
+        if not _check_domain(cur, current_user.user_id, domain):
             raise HTTPException(
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
@@ -760,9 +646,6 @@ async def save_cluster_structure(
             (current_user.user_id, domain, req.clusterId, req.structure),
         )
         return {"success": True}
-
-
-# --- Yandex Webmaster helpers ---
 
 
 @router.get("/api/fetch-wm-queries")
@@ -777,7 +660,8 @@ async def fetch_wm_queries(
         result = await asyncio.to_thread(fetch_yandex_queries_task, domain, current_user.user_id)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Fetch WM queries failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/get-wm-hosts")
@@ -786,12 +670,13 @@ async def get_wm_hosts(current_user: TokenData = Depends(get_current_user)):
         with get_db_cursor(dictionary=True) as (conn, cur):
             cur.execute("SELECT yandex_token FROM users WHERE id = %s", (current_user.user_id,))
             row = cur.fetchone()
-            token = row["yandex_token"] if row and row["yandex_token"] else Config.YANDEX_TOKEN
+            token = row["yandex_token"] if row and row["yandex_token"] else ""
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to get WM hosts: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     if not token:
-        return {"success": False, "error": "Yandex token not found"}
+        return {"success": False, "error": "Yandex token not found. Add it in settings."}
 
     try:
         from services.yandex_webmaster import YandexWebmasterClient
@@ -800,10 +685,8 @@ async def get_wm_hosts(current_user: TokenData = Depends(get_current_user)):
         hosts = client.list_hosts()
         return {"success": True, "hosts": hosts}
     except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-# --- Competitor Analysis Single ---
+        logger.error("WM hosts fetch failed: %s", e)
+        return {"success": False, "error": "Failed to fetch Yandex Webmaster hosts"}
 
 
 @router.get("/api/run-competitor-analysis-single")
@@ -821,10 +704,8 @@ async def run_competitor_analysis_single(
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# --- Run clustering (non-streaming) ---
+        logger.error("Competitor analysis failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/run-clustering")
@@ -839,7 +720,8 @@ async def run_clustering(
         result = await asyncio.to_thread(run_clustering_task, domain, current_user.user_id, 0)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Clustering failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class MoveKeywordsRequest(BaseModel):

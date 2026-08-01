@@ -1,4 +1,4 @@
-# config.py
+import json
 import os
 
 from dotenv import load_dotenv
@@ -17,16 +17,16 @@ class Config:
 
     PG_PASS = os.getenv("PG_PASSWORD", "")
 
-    MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+    MYSQL_HOST = os.getenv("MYSQL_HOST", "")
     MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
     MYSQL_DB = os.getenv("MYSQL_DBNAME", "seo_auto")
     MYSQL_USER = os.getenv("MYSQL_USER", "root")
     MYSQL_PASS = os.getenv("MYSQL_PASSWORD", "")
 
     SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", 0.4))
-    SERP_TOP_N = 10
+    SERP_TOP_N = int(os.getenv("SERP_TOP_N", 10))
     CONTENT_ANALYSIS_COMPETITORS = int(os.getenv("CONTENT_ANALYSIS_COMPETITORS", 15))
-    CACHE_TTL_DAYS = 7
+    CACHE_TTL_DAYS = int(os.getenv("CACHE_TTL_DAYS", 7))
     XMLRIVER_REQUEST_DELAY = float(os.getenv("XMLRIVER_REQUEST_DELAY", 1.5))
 
     PG_HOST = os.getenv("PG_HOST", "localhost")
@@ -34,10 +34,8 @@ class Config:
     PG_DB = os.getenv("PG_DB", "seo_auto")
     PG_USER = os.getenv("PG_USER", "postgres")
 
-    CACHE_DB_PATH = "data/serp_cache.db"
     _raw_mysql_host = os.getenv("MYSQL_HOST", "")
     _raw_mysql_pass = os.getenv("MYSQL_PASSWORD", "")
-    USE_SQLITE = not (PG_PASS or _raw_mysql_pass or _raw_mysql_host)
     DB_TYPE = "postgresql" if PG_PASS else ("mysql" if _raw_mysql_host else "sqlite")
 
     MIRATEXT_API_KEY = os.getenv("MIRATEXT_API_KEY", "")
@@ -51,83 +49,18 @@ class Config:
     LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", 0.2))
     LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", 8192))
 
-    EXCLUDED_DOMAINS = [
-        "yandex.ru",
-        "avito.ru",
-        "ya.ru",
-        "cian.ru",
-        "2gis.ru",
-        "vk.com",
-        "superjob.ru",
-        "hh.ru",
-        "youtube.com",
-        "tutu.ru",
-        "wikipedia.org",
-        "travelata.ru",
-        "dzen.ru",
-        "ok.ru",
-        "academic.ru",
-        "otzovik.com",
-        "irecommend.ru",
-        "ozon.ru",
-        "t.me",
-        "citilink.ru",
-        "mvideo.ru",
-        "dns-shop.ru",
-        "wildberries.ru",
-        "mail.ru",
-        "sravni.ru",
-        "aliexpress.ru",
-        "auto.ru",
-        "drom.ru",
-        "drive2.ru",
-        "youla.ru",
-        "google.com",
-        "zoon.ru",
-        "gosuslugi.ru",
-        "rambler.ru",
-        "gismeteo.ru",
-        "google.ru",
-        "pikabu.ru",
-        "prodoctorov.ru",
-        "domclick.ru",
-        "profi.ru",
-        "yell.ru",
-        "rutube.ru",
-        "tripadvisor.ru",
-        "flamp.ru",
-        "spr.ru",
-        "yelp.com",
-        "tulp.ru",
-        "apoi.ru",
-        "vseotzyvy.ru",
-        "kupilskazal.ru",
-        "imho24.ru",
-        "otzyv.com",
-        "spasibovsem.ru",
-        "sites.reviews",
-        "price.ru",
-        "pulscen.ru",
-        "tiu.ru",
-        "aport.ru",
-        "4geo.ru",
-        "rosfirm.ru",
-        "maxi-karta.ru",
-        "spravka.me",
-        "allinform.ru",
-        "spravker.ru",
-        "orgpage.ru",
-        "ypag.ru",
-        "foursquare.com",
-        "all.biz",
-        "altergeo.ru",
-        "gmstar.ru",
-        "toster.ru",
-        "ask.fm",
-        "twoo.com",
-        "thequestion.ru",
-        "genon.ru",
-    ]
+    EXCLUDED_DOMAINS: list[str] = []
+
+    @classmethod
+    def get_excluded_domains(cls) -> list[str]:
+        if not cls.EXCLUDED_DOMAINS:
+            path = os.path.join(os.path.dirname(__file__), "data", "excluded_domains.json")
+            try:
+                with open(path, encoding="utf-8") as f:
+                    cls.EXCLUDED_DOMAINS = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                cls.EXCLUDED_DOMAINS = []
+        return cls.EXCLUDED_DOMAINS
 
     @classmethod
     def get_pg_dsn(cls):
@@ -196,13 +129,13 @@ class Config:
     def validate(cls, mode: str = "xmlriver"):
         if mode == "xmlriver":
             if not cls.XMLRIVER_USER or not cls.XMLRIVER_KEY:
-                raise ValueError("❌ Не заданы XMLRIVER_USER или XMLRIVER_KEY в .env")
+                raise ValueError("Не заданы XMLRIVER_USER или XMLRIVER_KEY в .env")
         elif mode == "yandex":
             if not cls.YANDEX_TOKEN or not cls.YANDEX_SITE:
-                raise ValueError("❌ Не заданы YANDEX_OAUTH_TOKEN или YANDEX_SITE_URL в .env")
+                raise ValueError("Не заданы YANDEX_OAUTH_TOKEN или YANDEX_SITE_URL в .env")
         elif mode == "miratext":
             if not cls.MIRATEXT_API_KEY:
-                raise ValueError("❌ Не задан MIRATEXT_API_KEY в .env")
+                raise ValueError("Не задан MIRATEXT_API_KEY в .env")
             if not cls.OPENAI_API_KEY:
-                raise ValueError("❌ Не задан OPENAI_API_KEY в .env")
+                raise ValueError("Не задан OPENAI_API_KEY в .env")
         return True

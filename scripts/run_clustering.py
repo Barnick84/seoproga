@@ -28,9 +28,11 @@ def run_clustering_task(
         conn = Config.get_conn()
         if Config.DB_TYPE == "postgresql":
             import psycopg2.extras
+
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         else:
             import pymysql.cursors
+
             cur = conn.cursor(pymysql.cursors.DictCursor)
 
         # 1. Get existing clusters
@@ -74,8 +76,10 @@ def run_clustering_task(
         unclustered_keywords = [r["query"] for r in cur.fetchall()]
 
         if not unclustered_keywords:
+            result = {"success": True, "message": "No new keywords to cluster"}
+            tm.set_result(result)
             tm.set_status("completed")
-            return {"success": True, "message": "No new keywords to cluster"}
+            return result
 
         tm.update_progress(5)
         if on_progress:
@@ -129,8 +133,10 @@ def run_clustering_task(
 
         conn.commit()
 
+        result = {"success": True, "count": len(all_clusters)}
+        tm.set_result(result)
         tm.set_status("completed")
-        return {"success": True, "count": len(all_clusters)}
+        return result
 
     except Exception as e:
         tm.set_status("failed", str(e))

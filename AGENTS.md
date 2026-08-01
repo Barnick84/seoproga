@@ -121,8 +121,8 @@ seo-auto-cluster/
 ├── services/
 │   ├── clustering.py      # SERP similarity + Jaccard
 │   ├── cache.py           # MySQL SERP cache (lazy conn)
-│   ├── xmlriver_client.py # XMLRiver API
-│   ├── yandex_webmaster.py# Yandex WM API
+│   ├── xmlriver_client.py # XMLRiver API (requests.Session, lazy init)
+│   ├── yandex_webmaster.py# Yandex WM API (HTTP timeout 30s)
 │   ├── semantic_core.py   # PostgreSQL storage
 │   ├── miratext_client.py # Miratext API
 │   ├── seo_agent.py       # OpenAI LLM agent
@@ -130,9 +130,9 @@ seo-auto-cluster/
 │   └── page_content_manager.py
 ├── utils/
 │   ├── bootstrap.py   # Script entry: chdir, sys.path, stdout fix
-│   └── helpers.py
-├── scripts/  # 26 scripts, all use bootstrap()
-└── tests/
+│   └── helpers.py     # extract_domain, clean_url, safe_divide, safe_print
+├── scripts/  # 27 scripts, all use bootstrap()
+└── tests/    # 10 test modules (incl. xmlriver, yandex, miratext)
 ```
 
 ---
@@ -167,6 +167,8 @@ seo-auto-cluster/
 4. Resource leaks — use `with` for all DB connections
 5. Blocking sync calls — use `aiohttp` for async
 6. URL encoding — XMLRiver needs `&` → `%26`
+7. Minus-words bulk update — always use `IN (...)` not loop per keyword
+8. XmlriverClient uses lazy session — don't access `.session` before `__init__`
 
 ---
 

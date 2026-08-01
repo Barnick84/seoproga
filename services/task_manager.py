@@ -1,8 +1,11 @@
 # services/task_manager.py
 import json
+import logging
 from datetime import datetime
 
 from config import Config
+
+logger = logging.getLogger(__name__)
 
 
 class TaskManager:
@@ -23,7 +26,7 @@ class TaskManager:
                 pass
             self._conn = None
 
-    def update_progress(self, progress: int, result: dict = None) -> None:
+    def update_progress(self, progress: int, result: dict | None = None) -> None:
         if not self.task_id:
             return
         try:
@@ -41,7 +44,23 @@ class TaskManager:
                 )
             conn.commit()
         except Exception as e:
-            print(f"TaskManager.update_progress error: {e}")
+            logger.warning("TaskManager.update_progress error: %s", e)
+            self.close()
+
+    def set_result(self, result: dict) -> None:
+        """Persist the task result in the tasks table."""
+        if not self.task_id:
+            return
+        try:
+            conn = self._get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE tasks SET result = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                (json.dumps(result), self.task_id),
+            )
+            conn.commit()
+        except Exception as e:
+            logger.warning("TaskManager.set_result error: %s", e)
             self.close()
 
     def update_payload_partial(self, updates: dict) -> None:
@@ -63,10 +82,10 @@ class TaskManager:
             )
             conn.commit()
         except Exception as e:
-            print(f"TaskManager.update_payload_partial error: {e}")
+            logger.warning("TaskManager.update_payload_partial error: %s", e)
             self.close()
 
-    def set_status(self, status: str, error: str = None) -> None:
+    def set_status(self, status: str, error: str | None = None) -> None:
         if not self.task_id:
             return
         try:
@@ -90,7 +109,7 @@ class TaskManager:
                 )
             conn.commit()
         except Exception as e:
-            print(f"TaskManager.set_status error: {e}")
+            logger.warning("TaskManager.set_status error: %s", e)
             self.close()
         finally:
             if status in ("completed", "failed"):

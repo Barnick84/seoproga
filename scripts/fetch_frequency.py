@@ -1,25 +1,14 @@
 # nodejs-app/scripts/fetch_frequency.py
 import json
-import os
 import sys
 import time
 
 import requests
 
 from utils.bootstrap import bootstrap
+from utils.helpers import safe_print
 
 bootstrap()
-
-
-def safe_print(*args, **kwargs):
-    try:
-        print(*args, **kwargs)
-    except BrokenPipeError:
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(devnull, sys.stdout.fileno())
-        sys.exit(0)
-    except Exception:
-        pass
 
 
 from config import Config
@@ -178,8 +167,10 @@ def fetch_frequency_task(
             time.sleep(Config.XMLRIVER_REQUEST_DELAY)
 
         conn.commit()
+        result = {"success": True, "processed": processed, "updated": updated}
+        tm.set_result(result)
         tm.set_status("completed")
-        return {"success": True, "processed": processed, "updated": updated}
+        return result
 
     except Exception as e:
         conn.rollback()

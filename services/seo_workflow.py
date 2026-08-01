@@ -2,7 +2,9 @@
 """Full SEO workflow: Yandex WM -> Clustering -> Page Mapping -> Miratext -> LLM"""
 
 import json
+import logging
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -17,8 +19,36 @@ from services.page_content_manager import PageContentManager
 from services.semantic_core import SemanticCoreManager
 from services.seo_agent import SEOAgent
 from services.xmlriver_client import XmlriverClient
+from utils.db import get_db_cursor
+
+logger = logging.getLogger(__name__)
 
 SQLITE_DB = "data/seo_workflow.db"
+
+
+def _placeholder() -> str:
+    return "?" if Config.DB_TYPE == "sqlite" else "%s"
+
+
+@contextmanager
+def _get_cursor(commit: bool = False):
+    if Config.DB_TYPE == "sqlite":
+        conn = sqlite3.connect(SQLITE_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        try:
+            yield cur
+            if commit:
+                conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            cur.close()
+            conn.close()
+    else:
+        with get_db_cursor(dictionary=True, commit=commit) as (_conn, cur):
+            yield cur
 
 
 class SEOWorkflow:
@@ -27,9 +57,8 @@ class SEOWorkflow:
         self._ensure_tables()
 
     def _ensure_tables(self):
-        if Config.USE_SQLITE:
-            conn = sqlite3.connect(SQLITE_DB)
-            conn.execute("""
+        if Config.DB_TYPE == "sqlite":
+            ddl = """
                 CREATE TABLE IF NOT EXISTS page_cluster_mapping (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     page_url TEXT NOT NULL,
@@ -43,14 +72,9 @@ class SEOWorkflow:
                     updated_at TIMESTAMP,
                     UNIQUE(page_url, cluster_id)
                 )
-            """)
-            conn.commit()
-            conn.close()
-        else:
-            import psycopg2
-
-            dsn = Config.get_pg_dsn()
-            create_sql = """
+            """
+        elif Config.DB_TYPE == "postgresql":
+            ddl = """
                 CREATE TABLE IF NOT EXISTS page_cluster_mapping (
                     id SERIAL PRIMARY KEY,
                     page_url TEXT NOT NULL,
@@ -65,10 +89,24 @@ class SEOWorkflow:
                     UNIQUE(page_url, cluster_id)
                 );
             """
-            with psycopg2.connect(dsn) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(create_sql)
-                conn.commit()
+        else:
+            ddl = """
+                CREATE TABLE IF NOT EXISTS page_cluster_mapping (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    page_url VARCHAR(2048) NOT NULL,
+                    cluster_id INT NOT NULL,
+                    keywords JSON,
+                    status VARCHAR(32) DEFAULT 'pending',
+                    miratext_task_id VARCHAR(128),
+                    llm_version_id INT,
+                    error_message TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    UNIQUE KEY uq_page_cluster (page_url(255), cluster_id)
+                )
+            """
+        with _get_cursor(commit=True) as cur:
+            cur.execute(ddl)
 
     def get_cluster_keywords(self, user_id: int) -> List[Dict]:
         from services.yandex_webmaster import YandexWebmasterClient
@@ -76,14 +114,14 @@ class SEOWorkflow:
         client = YandexWebmasterClient(Config.YANDEX_TOKEN, user_id=user_id)
         raw_queries = client.fetch_queries_recent(Config.YANDEX_SITE)
         if not raw_queries:
-            print("No queries from Yandex Webmaster")
+            logger.info("No queries from Yandex Webmaster")
             return []
 
         saved = client.save_queries_to_db(raw_queries)
-        print(f"Saved {saved} queries to DB")
+        logger.info("Saved %s queries to DB", saved)
 
         keywords = client.get_unique_queries_for_clustering(Config.YANDEX_SITE)
-        print(f"Unique keywords: {len(keywords)}")
+        logger.info("Unique keywords: %s", len(keywords))
 
         if not keywords:
             return []
@@ -102,7 +140,7 @@ class SEOWorkflow:
                 }
             )
         manager.save_clusters(db_clusters, user_id=user_id, site_url=Config.YANDEX_SITE)
-        print(f"Created {len(db_clusters)} semantic clusters")
+        logger.info("Created %s semantic clusters", len(db_clusters))
 
         return clusters
 
@@ -114,7 +152,7 @@ class SEOWorkflow:
 
             links = []
             for a in soup.find_all("a", href=True):
-                href = a.get("href", "")
+                href = str(a.get("href", ""))
                 if href.startswith("/") or site_url in href:
                     if href.startswith("/"):
                         full_url = site_url.rstrip("/") + href
@@ -124,10 +162,10 @@ class SEOWorkflow:
                         links.append(full_url)
 
             links = links[:30]
-            print(f"Found {len(links)} pages on site")
+            logger.info("Found %s pages on site", len(links))
             return links
         except Exception as e:
-            print(f"Error fetching site: {e}")
+            logger.warning("Error fetching site: %s", e)
             return []
 
     def map_clusters_to_pages(self, clusters: List[Dict]) -> List[Dict]:
@@ -135,7 +173,7 @@ class SEOWorkflow:
         xmlriver_client = XmlriverClient(cache=cache)
 
         site_url = Config.YANDEX_SITE
-        print(f"Fetching pages from {site_url}...")
+        logger.info("Fetching pages from %s...", site_url)
 
         links = self._fetch_site_links(site_url)
 
@@ -169,53 +207,77 @@ class SEOWorkflow:
 
         return mappings
 
-    def _save_mapping(self, page_url: str, cluster_id: int, keywords: List[str]):
+    def _save_mapping(self, page_url: str, cluster_id: int, keywords: List[str]) -> None:
         keywords_json = json.dumps(keywords)
-        if Config.USE_SQLITE:
-            conn = sqlite3.connect(SQLITE_DB)
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO page_cluster_mapping (page_url, cluster_id, keywords, status)
-                VALUES (?, ?, ?, 'pending')
-            """,
-                (page_url, cluster_id, keywords_json),
+        ph = _placeholder()
+        if Config.DB_TYPE == "sqlite":
+            sql = (
+                "INSERT OR IGNORE INTO page_cluster_mapping (page_url, cluster_id, keywords, status) "
+                f"VALUES ({ph}, {ph}, {ph}, 'pending')"
             )
-            conn.commit()
-            conn.close()
+        elif Config.DB_TYPE == "postgresql":
+            sql = (
+                "INSERT INTO page_cluster_mapping (page_url, cluster_id, keywords, status) "
+                f"VALUES ({ph}, {ph}, {ph}, 'pending') "
+                "ON CONFLICT (page_url, cluster_id) DO NOTHING"
+            )
         else:
-            import psycopg2
+            sql = (
+                "INSERT IGNORE INTO page_cluster_mapping (page_url, cluster_id, keywords, status) "
+                f"VALUES ({ph}, {ph}, {ph}, 'pending')"
+            )
+        with _get_cursor(commit=True) as cur:
+            cur.execute(sql, (page_url, cluster_id, keywords_json))
 
-            with psycopg2.connect(Config.get_pg_dsn()) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
-                        INSERT INTO page_cluster_mapping (page_url, cluster_id, keywords, status)
-                        VALUES (%s, %s, %s, 'pending')
-                        ON CONFLICT (page_url, cluster_id) DO NOTHING
-                    """,
-                        (page_url, cluster_id, keywords_json),
-                    )
-                conn.commit()
+    def _process_mapping(
+        self, mapping: Dict, pm: PageContentManager, miratext: MiratextClient, agent: SEOAgent
+    ) -> bool:
+        page_url = mapping["page_url"]
+        keywords = mapping["keywords"]
+
+        try:
+            logger.info("Processing: %s", page_url)
+
+            editable, non_editable = pm.fetch_and_parse_page(page_url)
+            pm.save_page(page_url, editable_html=editable, non_editable_html=non_editable)
+            logger.info("   Page saved")
+
+            logger.info("   Analyzing with Miratext...")
+            miratext_data = miratext.analyze(editable, keywords)
+
+            logger.info("   Optimizing with LLM...")
+            new_editable = agent.rewrite_page(page_url, editable, keywords, miratext_data)
+
+            pm.save_version(page_url, new_editable, keywords)
+            full_html = pm.merge_html(new_editable, non_editable)
+            pm.save_page(page_url, full_html=full_html, editable_html=new_editable)
+
+            self._update_mapping_status(page_url, mapping["cluster_id"], "saved")
+            logger.info("   Done!")
+            return True
+
+        except Exception as e:
+            logger.warning("   Error: %s", e)
+            self._update_mapping_status(page_url, mapping["cluster_id"], "failed", str(e))
+            return False
 
     def run_full_workflow(self, user_id: int):
-        print("=" * 50)
-        print("Starting FULL SEO workflow")
-        print("=" * 50)
+        logger.info("Starting FULL SEO workflow")
 
-        print("\n[1/4] Getting keywords from Yandex Webmaster...")
+        logger.info("[1/4] Getting keywords from Yandex Webmaster...")
         clusters = self.get_cluster_keywords(user_id=user_id)
         if not clusters:
-            print("No clusters created")
+            logger.info("No clusters created")
             return
 
-        print("\n[2/4] Mapping clusters to pages...")
+        logger.info("[2/4] Mapping clusters to pages...")
         mappings = self.map_clusters_to_pages(clusters)
 
         if not mappings:
-            print("No page mappings found")
+            logger.info("No page mappings found")
             return
 
-        print("\n[3/4] Fetching and saving page content, analyzing, optimizing...")
+        logger.info("[3/4] Fetching and saving page content, analyzing, optimizing...")
 
         pm = PageContentManager()
         miratext = MiratextClient()
@@ -223,37 +285,10 @@ class SEOWorkflow:
 
         processed = 0
         for mapping in mappings:
-            page_url = mapping["page_url"]
-            keywords = mapping["keywords"]
-
-            try:
-                print(f"\nProcessing: {page_url}")
-
-                editable, non_editable = pm.fetch_and_parse_page(page_url)
-                pm.save_page(page_url, editable_html=editable, non_editable_html=non_editable)
-                print("   Page saved")
-
-                print("   Analyzing with Miratext...")
-                miratext_data = miratext.analyze(editable, keywords)
-
-                print("   Optimizing with LLM...")
-                new_editable = agent.rewrite_page(page_url, editable, keywords, miratext_data)
-
-                pm.save_version(page_url, new_editable, keywords)
-                full_html = pm.merge_html(new_editable, non_editable)
-                pm.save_page(page_url, full_html=full_html, editable_html=new_editable)
-
-                self._update_mapping_status(page_url, mapping["cluster_id"], "saved")
+            if self._process_mapping(mapping, pm, miratext, agent):
                 processed += 1
-                print("   Done!")
 
-            except Exception as e:
-                print(f"   Error: {e}")
-                self._update_mapping_status(page_url, mapping["cluster_id"], "failed", str(e))
-
-        print("\n" + "=" * 50)
-        print(f"Workflow complete! Processed: {processed}/{len(mappings)}")
-        print("=" * 50)
+        logger.info("Workflow complete! Processed: %s/%s", processed, len(mappings))
 
     def _update_mapping_status(
         self,
@@ -261,75 +296,34 @@ class SEOWorkflow:
         cluster_id: int,
         status: str,
         error: Optional[str] = None,
-    ):
-        if Config.USE_SQLITE:
-            conn = sqlite3.connect(SQLITE_DB)
-            conn.execute(
-                """
-                UPDATE page_cluster_mapping
-                SET status = ?, error_message = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE page_url = ? AND cluster_id = ?
-            """,
+    ) -> None:
+        ph = _placeholder()
+        with _get_cursor(commit=True) as cur:
+            cur.execute(
+                f"UPDATE page_cluster_mapping "
+                f"SET status = {ph}, error_message = {ph}, updated_at = CURRENT_TIMESTAMP "
+                f"WHERE page_url = {ph} AND cluster_id = {ph}",
                 (status, error, page_url, cluster_id),
             )
-            conn.commit()
-            conn.close()
-        else:
-            import psycopg2
-
-            with psycopg2.connect(Config.get_pg_dsn()) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
-                        UPDATE page_cluster_mapping
-                        SET status = %s, error_message = %s, updated_at = NOW()
-                        WHERE page_url = %s AND cluster_id = %s
-                    """,
-                        (status, error, page_url, cluster_id),
-                    )
-                conn.commit()
 
     def get_mappings(self) -> List[Dict]:
-        if Config.USE_SQLITE:
-            conn = sqlite3.connect(SQLITE_DB)
-            conn.row_factory = sqlite3.Row
-            cur = conn.execute("""
+        with _get_cursor() as cur:
+            cur.execute(
+                """
                 SELECT id, page_url, cluster_id, keywords, status, error_message
                 FROM page_cluster_mapping
                 ORDER BY created_at
-            """)
+                """
+            )
             rows = cur.fetchall()
-            conn.close()
-            return [
-                {
-                    "id": r[0],
-                    "page_url": r[1],
-                    "cluster_id": r[2],
-                    "keywords": r[3],
-                    "status": r[4],
-                    "error": r[5],
-                }
-                for r in rows
-            ]
-        else:
-            import psycopg2
-
-            with psycopg2.connect(Config.get_pg_dsn()) as conn:
-                with conn.cursor() as cur:
-                    cur.execute("""
-                        SELECT id, page_url, cluster_id, keywords, status, error_message
-                        FROM page_cluster_mapping
-                        ORDER BY created_at
-                    """)
-                    rows = cur.fetchall()
-            return [
-                {
-                    "id": r[0],
-                    "page_url": r[1],
-                    "cluster_id": r[2],
-                    "keywords": r[3],
-                    "status": r[4],
-                    "error": r[5],
-                }
-                for r in rows
-            ]
+        return [
+            {
+                "id": r["id"],
+                "page_url": r["page_url"],
+                "cluster_id": r["cluster_id"],
+                "keywords": r["keywords"],
+                "status": r["status"],
+                "error": r["error_message"],
+            }
+            for r in rows
+        ]

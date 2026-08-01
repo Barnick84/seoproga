@@ -1,0 +1,14 @@
+.venv
+.venv/
+__pycache__
+*.pyc
+.env
+.git
+.gitignore
+.mypy_cache
+.pytest_cache
+.ruff_cache
+data/
+results/
+server.log
+node_modules

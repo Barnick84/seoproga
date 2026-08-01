@@ -1,7 +1,7 @@
 import asyncio
 import json
+import logging
 import re
-import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -16,6 +16,8 @@ from config import Config
 from services.xmlriver_client import XmlriverClient
 from utils.constants import STOP_WORDS
 from utils.helpers import extract_domain
+
+logger = logging.getLogger(__name__)
 
 _morph = None
 
@@ -322,7 +324,7 @@ class CustomAnalyzer:
             try:
                 target_data = self.analyze_content(raw_html, target_url)
             except Exception as e:
-                print(f"[ERROR] Error analyzing provided raw_html: {e}", file=sys.stderr)
+                logger.error("Error analyzing provided raw_html: %s", e)
         if not target_data:
             try:
                 fetch_url = target_url
@@ -335,7 +337,7 @@ class CustomAnalyzer:
                         fetch_url = target_url.replace(parsed.netloc, puny_netloc)
                 except Exception:
                     pass
-                print(f"[INFO] Fetching target {fetch_url}", file=sys.stderr)
+                logger.info("Fetching target %s", fetch_url)
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -349,7 +351,7 @@ class CustomAnalyzer:
                     resp.encoding = resp.apparent_encoding
                 target_data = self.analyze_content(resp.text, target_url)
             except Exception as e:
-                print(f"[ERROR] Error fetching target {target_url}: {e}", file=sys.stderr)
+                logger.error("Error fetching target %s: %s", target_url, e)
                 target_data = self.analyze_content("<html></html>", target_url)
         return target_data
 
@@ -365,7 +367,7 @@ class CustomAnalyzer:
             try:
                 if not url.startswith("http"):
                     url = "https://" + url
-                print(f"   Analyzing {url}...", file=sys.stderr)
+                logger.info("   Analyzing %s...", url)
                 async with session.get(
                     url,
                     timeout=aiohttp.ClientTimeout(total=15),
@@ -375,7 +377,7 @@ class CustomAnalyzer:
                     text = await response.text(errors="replace")
                     return self.analyze_content(text, url)
             except Exception as e:
-                print(f"   [WARN] Error analyzing {url}: {e}", file=sys.stderr)
+                logger.warning("   Error analyzing %s: %s", url, e)
                 return None
 
         async def _fetch_all(urls: List[str]) -> List[Dict]:
@@ -594,11 +596,11 @@ class CustomAnalyzer:
         raw_html: str | None = None,
         competitor_urls: List[str] | None = None,
     ) -> Dict[str, Any]:
-        print(f"[INFO] Starting analysis for {target_url}", file=sys.stderr)
+        logger.info("Starting analysis for %s", target_url)
 
         target_data = self._fetch_target_content(target_url, raw_html)
         comp_urls, competitor_weights = self._resolve_competitors(keywords, competitor_urls)
-        print(f"[INFO] Found {len(comp_urls)} competitors", file=sys.stderr)
+        logger.info("Found %s competitors", len(comp_urls))
 
         comp_results = self._fetch_competitors_data(comp_urls)
         aligned_weights = self._align_competitor_weights(

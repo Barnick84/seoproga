@@ -1,5 +1,7 @@
 import asyncio
 import json
+import logging
+import threading
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -7,6 +9,8 @@ from fastapi.responses import StreamingResponse
 
 from api.dependencies import TokenData, get_current_user, verify_domain_ownership
 from utils.db import get_db_cursor
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Positions"])
 
@@ -39,7 +43,8 @@ async def get_position_clusters(
             )
         return {"success": True, "clusters": clusters}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch position clusters: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/positions/check")
@@ -58,7 +63,8 @@ async def check_positions(
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to check positions: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/positions/history")
@@ -111,44 +117,52 @@ async def get_positions_history(
             "dates": sorted(dates_set, reverse=True),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch positions history: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 async def positions_streaming_process(task_func, *args):
     queue = asyncio.Queue()
     loop = asyncio.get_running_loop()
+    cancel_event = threading.Event()
 
     def on_progress(msg):
-        # Handle dicts for rich progress updates (like check_all_positions)
+        if cancel_event.is_set():
+            return
         if isinstance(msg, dict):
             payload = {"type": "progress"}
             payload.update(msg)
             loop.call_soon_threadsafe(queue.put_nowait, payload)
         else:
-            # Simple string messages (like check_positions)
             loop.call_soon_threadsafe(queue.put_nowait, {"type": "progress", "message": str(msg)})
 
     def wrapped_task():
         try:
             res = task_func(*args, on_progress=on_progress)
-            loop.call_soon_threadsafe(queue.put_nowait, {"type": "done", "result": res})
+            if not cancel_event.is_set():
+                loop.call_soon_threadsafe(queue.put_nowait, {"type": "done", "result": res})
         except Exception as e:
-            loop.call_soon_threadsafe(queue.put_nowait, {"type": "error", "message": str(e)})
+            if not cancel_event.is_set():
+                loop.call_soon_threadsafe(queue.put_nowait, {"type": "error", "message": str(e)})
 
-    # Send an initial connection keepalive immediately
     yield f"data: {json.dumps({'type': 'progress', 'message': 'PROGRESS: 0', 'pct': 0, 'done': 0, 'total': 0})}\n\n"
 
     task = asyncio.create_task(asyncio.to_thread(wrapped_task))
 
-    while True:
-        try:
-            item = await asyncio.wait_for(queue.get(), timeout=120)
-            yield f"data: {json.dumps(item)}\n\n"
-            if item["type"] in ("done", "error"):
+    try:
+        while True:
+            try:
+                item = await asyncio.wait_for(queue.get(), timeout=120)
+                yield f"data: {json.dumps(item)}\n\n"
+                if item["type"] in ("done", "error"):
+                    break
+            except asyncio.TimeoutError:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Process timeout'})}\n\n"
                 break
-        except asyncio.TimeoutError:
-            yield f"data: {json.dumps({'type': 'error', 'message': 'Process timeout'})}\n\n"
-            break
+    finally:
+        cancel_event.set()
+        if not task.done():
+            task.cancel()
 
 
 @router.get("/api/positions/run-stream")
@@ -199,4 +213,5 @@ async def check_cluster_positions(
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to check cluster positions: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")

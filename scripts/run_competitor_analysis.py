@@ -37,8 +37,10 @@ def run_competitor_analysis_task(
         mappings = cur.fetchall()
 
         if not mappings:
-            tm.set_status("completed", "No mappings found")
-            return {"success": True, "message": "No mappings found"}
+            result = {"success": True, "message": "No mappings found"}
+            tm.set_result(result)
+            tm.set_status("completed")
+            return result
 
         analyzer = CustomAnalyzer()
         results_count = 0
@@ -106,8 +108,10 @@ def run_competitor_analysis_task(
                 print(f"Error analyzing cluster {cid}: {e}", file=sys.stderr)
                 continue
 
+        result = {"success": True, "count": results_count}
+        tm.set_result(result)
         tm.set_status("completed")
-        return {"success": True, "count": results_count}
+        return result
 
     except Exception as e:
         tm.set_status("failed", str(e))

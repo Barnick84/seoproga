@@ -53,7 +53,7 @@
 3. cluster → SEO analysis → cluster_analysis (MySQL, JSON)
 4. cluster → generate_seo_plan → cluster_seo_history (MySQL)
 5. Miratext → MiratextClient → SEOAgent (LLM) → rewritten HTML
-6. FastAPI → MySQL tasks → worker.py (daemon) → spawn scripts → TaskManager.update_progress()
+6. FastAPI → MySQL tasks (INSERT pending + JSON payload) → worker.py (daemon) → spawn scripts → TaskManager.update_progress()/set_result() → frontend polls `/api/tasks/{id}` или SSE-стрим из tasks.progress
 ```
 
 ---
@@ -68,7 +68,11 @@ seo-auto-cluster/
 ├── streamlit_app.py            # Streamlit дашборд (альтернативный UI)
 ├── ARCH.md                     # Этот файл
 ├── AGENTS.md                   # Инструкции для AI-агента
+├── pyproject.toml               # Ruff/Mypy/pytest конфигурация (--timeout=120)
 ├── requirements.txt            # Python зависимости
+├── Dockerfile                  # Образ API (uvicorn api.main:app, HEALTHCHECK /health)
+├── .dockerignore               # Исключения для docker build
+├── .pre-commit-config.yaml     # Pre-commit хуки (ruff, trailing-whitespace, eof)
 ├── docker-compose.yml          # MySQL 8.0 для прода
 ├── .env                        # Секреты (токены, пароли) — в .gitignore
 ├── yandex_geo.csv              # CSV-справочник регионов Яндекса
@@ -82,17 +86,19 @@ seo-auto-cluster/
 │   ├── page_content_manager.py # Управление контентом страниц (PostgreSQL)
 │   ├── semantic_core.py        # Хранение сем. ядра (PostgreSQL)
 │   ├── seo_agent.py            # LLM-агент (OpenAI/Hydra)
-│   ├── seo_workflow.py         # Оркестратор полного SEO-цикла
+│   ├── seo_workflow.py         # Оркестратор полного SEO-цикла (SQLite/MySQL/PG через utils.db)
 │   ├── task_manager.py         # Менеджер прогресса задач (MySQL)
 │   ├── worker.py               # Фоновый воркер задач (с поддержкой threading.Lock)
 │   ├── serp_collector.py       # Prefetch SERP с прогрессом
-│   ├── xmlriver_client.py      # Клиент XMLRiver API (rate limiting 1.5с)
+│   ├── xmlriver_client.py      # Клиент XMLRiver API (rate limiting 1.5с, retry + jitter)
 │   └── yandex_webmaster.py     # Клиент Яндекс.Вебмастер API v4
 │
 ├── utils/
-│   ├── bootstrap.py             # Единая точка входа скриптов (chdir, sys.path, stdout)
-│   ├── retry.py                 # Декоратор with_retry (exponential backoff)
-│   └── helpers.py               # Утилиты: extract_domain, clean_url, safe_divide
+│   ├── bootstrap.py            # Единая точка входа скриптов (chdir, sys.path, stdout)
+│   ├── db.py                   # get_db_cursor — единый контекстный менеджер БД (commit/rollback/close)
+│   ├── helpers.py              # Утилиты: extract_domain, clean_url, safe_divide, safe_print
+│   ├── position_checker.py     # Общий check_target() для проверки позиций в SERP
+│   └── retry.py                # Декоратор with_retry (exponential backoff)
 │
 ├── api/                        # FastAPI веб-сервер
 │   ├── main.py                 # Главная точка входа (uvicorn api.main:app)
@@ -140,9 +146,14 @@ seo-auto-cluster/
 │   └── page_content.sql         # DDL для таблиц контента
 │
 ├── tests/                       # Тесты (pytest)
+│   ├── conftest.py               # Общий fixture mock_db (мок Config.get_conn)
 │   ├── test_clustering.py        # SERP similarity + merge
 │   ├── test_custom_analyzer.py   # Лемматизация, n-граммы, метрики
+│   ├── test_xmlriver_client.py   # XMLRiver client с mocked HTTP
+│   ├── test_yandex_webmaster.py  # Yandex Webmaster client с mocked HTTP
+│   ├── test_miratext_client.py   # Miratext client с mocked HTTP
 │   ├── test_seo_agent.py         # Pydantic-модели Structure/StructureItem
+│   ├── test_helpers.py           # Утилиты helpers (extract_domain, clean_url, safe_divide)
 │   ├── test_pipeline_retry.py    # Retry-механизм шагов, completed_steps
 │   ├── test_worker.py            # Воркер: fetch_and_schedule, run_task
 │   ├── test_auth.py              # Аутентификация (hash, register, login)
@@ -165,9 +176,12 @@ seo-auto-cluster/
 
 ### 4.3 `xmlriver_client.py` — XMLRiver API
 **Назначение:** Получение топа выдачи Яндекса/Google через API xmlriver.com с учетом Rate limiting (1.5с) и Exponential Backoff (коды 500 и 111).
+**Оптимизация:** Использует `requests.Session()` для переиспользования HTTP-соединений (ленивая инициализация).
+**Ретраи:** Повторяемые ошибки выбрасываются как `XmlriverRetryableError` и обрабатываются в `_fetch_with_retries` с экспоненциальной паузой и джиттером (`random.uniform(0.8, 1.2)`). Фатальные ошибки — `ValueError`, без повторов.
 
 ### 4.4 `yandex_webmaster.py` — Яндекс.Вебмастер API v4
 **Назначение:** Загрузка поисковых запросов из Яндекс.Вебмастера со встроенным биллингом за парсинг ключей и позиций.
+**Особенности:** Все HTTP-вызовы имеют timeout 30с.
 
 ### 4.7 `seo_agent.py` — LLM-агент
 **Назначение:** SEO-оптимизация контента через LLM (OpenAI / Hydra AI `gpt-4o-mini`). Генерирует идеальную структуру (Pydantic модели) и переписывает HTML-текст.
@@ -177,14 +191,22 @@ seo-auto-cluster/
 **Асинхронность:** Анализ конкурентов выполняется полностью асинхронно через `aiohttp` и `asyncio.gather`, заменяя старые блокирующие пулы потоков для максимальной скорости.
 
 ### 4.11 `task_manager.py` — Менеджер задач
-**Назначение:** Обновление статуса (running/completed/failed) и прогресса (%) фоновых задач в БД MySQL.
+**Назначение:** Обновление статуса (running/completed/failed), прогресса (%) и результата (`set_result`) фоновых задач в БД MySQL. Прогресс пишется скриптами, поэтому frontend/SSE может читать его из `tasks` без ин-процессных потоков.
 
 ### 4.12 `worker.py` — Фоновый воркер
 **Назначение:** Демон, опрашивающий таблицу MySQL `tasks` раз в 2 секунды для запуска фоновых скриптов.
-**Конкурентность:** Использует `threading.Lock()` для предотвращения состояния гонки (race conditions) при параллельной обработке задач. Задачи переводятся в статус `scheduled` через атомарные SQL-запросы (`UPDATE ... WHERE status='pending'`).
+**Конкурентность:** Использует `SELECT ... FOR UPDATE SKIP LOCKED` для атомарного получения и блокировки задач за один запрос. Поддерживает signal handler (SIGTERM/SIGINT) для корректного завершения дочерних процессов. Задачи с кодом возврата != 0 автоматически перезапускаются до 3 раз.
+**Диспетчеризация (единая модель):** Все долгие задачи (кластеризация, маппинг, частотность, конкурентный анализ, SEO-пайплайн) ставятся в таблицу `tasks` со статусом `pending` и JSON-пейлоадом. Воркер подхватывает их и запускает скрипт subprocess'ом. SSE-эндпоинты FastAPI не запускают задачи ин-процессно, а лишь стримят прогресс из `tasks.progress`/`tasks.result` (`_stream_task_progress`).
 
 ### 4.13 `bootstrap.py` — Точка входа скриптов
 **Назначение:** Единый загрузчик окружения. Вычисляет корень проекта, меняет рабочую директорию и настраивает UTF-8 для stdout. Позволяет вызывать Python-скрипты из любого места консистентно.
+
+### 4.14 `seo_workflow.py` — Оркестратор полного SEO-цикла
+**Назначение:** Yandex WM → кластеризация → маппинг кластеров на страницы → Miratext + LLM переписывание контента.
+**База данных:** Таблица `page_cluster_mapping` поддерживается для SQLite/PostgreSQL/MySQL (DDL в `_ensure_tables`). Доступ унифицирован через `utils.db.get_db_cursor` (для SQLite — локальный `_get_cursor` с `sqlite3.Row`); SQL отличается только плейсхолдерами (`?`/`%s`) и синтаксисом `INSERT OR IGNORE` / `INSERT IGNORE` / `ON CONFLICT DO NOTHING`.
+
+### 4.15 `utils/position_checker.py` — Проверка позиций в SERP
+**Назначение:** Общий `check_target()` для поиска позиции сайта в выдаче (до 10 страниц по 10 URL), используемый скриптами `check_positions.py` и `check_all_positions.py`.
 
 ---
 
@@ -202,7 +224,7 @@ seo-auto-cluster/
 - Маршрутизация (Routers): Разделение логики по доменам (`auth.py`, `sites.py`, `analysis.py`).
 - Зависимости (Dependencies): Проверка авторизации через `get_current_user`.
 - Static Files: Прямая раздача папки `api/public/` с помощью `StaticFiles`.
-- Задачи: Эндпоинты в `analysis.py` больше не блокируют браузер, а ставят задачу в таблицу `tasks` для `worker.py`, после чего фронтенд осуществляет polling.
+- Задачи: Эндпоинты в `analysis.py` не блокируют браузер — они ставят задачу в таблицу `tasks` (статус `pending`, JSON-пейлоад) для `worker.py`. Фронтенд осуществляет polling `/api/tasks/{id}`; для кластеризации/маппинга сохранён SSE-контракт (`progress`/`done`/`error`), стриминг из `tasks.progress`/`tasks.result`.
 
 ---
 
@@ -238,6 +260,7 @@ seo-auto-cluster/
 - `page_types`: Пользовательские типы страниц (название, иконка FontAwesome, цвет бейджа, описание шаблона).
 - `serp_cache`: Кэш поисковой выдачи для XMLRiver (UNIQUE cache_key).
 - `tasks`: Очередь фоновых задач (статус, прогресс, ошибки).
+- `page_cluster_mapping`: Маппинг «кластер → страница» для полного SEO-воркфлоу (SQLite/MySQL/PG, доступ через `utils.db`).
 - `billing_history`: История списаний/пополнений баланса.
 
 ---

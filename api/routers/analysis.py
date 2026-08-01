@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,49 +8,86 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from api.dependencies import TokenData, get_current_user, verify_domain_ownership
+from services.billing import BillingService, InsufficientFundsError
 from utils.db import get_db_cursor
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Analysis"])
 
-# In-memory tracking of running analysis processes (user_id:domain -> bool)
-running_analyses = set()
+
+def _sse_event(data: dict) -> str:
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-async def run_streaming_process(task_func, *args):
-    queue = asyncio.Queue()
-    loop = asyncio.get_running_loop()
+def _sse_error_response(message: str, **extra) -> StreamingResponse:
+    payload = {"type": "error", "message": message, **extra}
 
-    def on_progress(msg: str):
-        loop.call_soon_threadsafe(queue.put_nowait, {"type": "progress", "message": msg})
+    async def stream():
+        yield _sse_event(payload)
 
-    def wrapped_task():
+    return StreamingResponse(stream(), media_type="text/event-stream")
+
+
+def _enqueue_task(user_id: int, task_type: str, payload: dict) -> int:
+    """Insert a task into the tasks queue for the worker daemon to pick up."""
+    with get_db_cursor(commit=True, dictionary=True) as (conn, cur):
+        cur.execute(
+            "INSERT INTO tasks (user_id, task_type, status, progress, payload) "
+            "VALUES (%s, %s, 'pending', 0, %s)",
+            (user_id, task_type, json.dumps(payload, ensure_ascii=False)),
+        )
+        return cur.lastrowid
+
+
+def _fetch_task(task_id: int) -> dict | None:
+    with get_db_cursor(dictionary=True) as (conn, cur):
+        cur.execute("SELECT status, progress, result, error FROM tasks WHERE id = %s", (task_id,))
+        return cur.fetchone()
+
+
+async def _stream_task_progress(task_id: int, poll_interval: float = 2.0, timeout: float = 3600.0):
+    """SSE generator that polls task progress from the DB and replays it.
+
+    Keeps the frontend SSE contract (progress/done/error) while the actual
+    work runs in the worker daemon. Emits the final result on completion.
+    """
+    yield _sse_event({"type": "progress", "message": "PROGRESS: 0"})
+    last_progress = -1
+    elapsed = 0.0
+    while elapsed < timeout:
         try:
-            res = task_func(*args, on_progress=on_progress)
-            loop.call_soon_threadsafe(queue.put_nowait, {"type": "done", "result": res})
+            task = await asyncio.to_thread(_fetch_task, task_id)
         except Exception as e:
-            loop.call_soon_threadsafe(queue.put_nowait, {"type": "error", "message": str(e)})
+            logger.exception("Failed to poll task %s", task_id)
+            yield _sse_event({"type": "error", "message": f"Task status unavailable: {e}"})
+            return
+        if not task:
+            yield _sse_event({"type": "error", "message": "Task not found"})
+            return
 
-    # Send an initial connection keepalive immediately
-    yield f"data: {json.dumps({'type': 'progress', 'message': 'PROGRESS: 0'})}\n\n"
+        status = task["status"]
+        progress = task["progress"] or 0
+        if progress != last_progress:
+            last_progress = progress
+            yield _sse_event({"type": "progress", "message": f"PROGRESS: {progress}"})
 
-    task = asyncio.create_task(asyncio.to_thread(wrapped_task))
+        if status == "completed":
+            result = task.get("result")
+            result_data = json.loads(result) if isinstance(result, str) else (result or {})
+            yield _sse_event({"type": "done", "result": result_data})
+            return
+        if status == "failed":
+            yield _sse_event({"type": "error", "message": task.get("error") or "Task failed"})
+            return
 
-    while True:
-        try:
-            item = await asyncio.wait_for(queue.get(), timeout=120)
-            yield f"data: {json.dumps(item)}\n\n"
-            if item["type"] in ("done", "error"):
-                break
-        except asyncio.TimeoutError:
-            yield f"data: {json.dumps({'type': 'error', 'message': 'Process timeout or inactivity'})}\n\n"
-            break
+        await asyncio.sleep(poll_interval)
+        elapsed += poll_interval
 
-    # ensure task finishes/cleanup if possible, though it's a background thread
-    if not task.done():
-        pass
+    yield _sse_event({"type": "error", "message": "Task timed out"})
 
 
-def get_system_settings(cur):
+def get_system_settings(cur) -> dict:
     try:
         cur.execute("SELECT `key`, `value` FROM settings")
         rows = cur.fetchall()
@@ -61,46 +99,8 @@ def get_system_settings(cur):
             "position_step_rate": float(settings.get("position_step_rate", 0.05)),
         }
     except Exception as e:
-        import logging
-
-        logging.error(f"Failed to fetch system settings: {e}")
+        logger.error("Failed to fetch system settings: %s", e)
         raise HTTPException(status_code=500, detail="Failed to load system billing settings.")
-
-
-def check_and_deduct_balance(conn, cur, user_id, amount, description):
-    try:
-        conn.begin()
-        cur.execute(
-            "UPDATE users SET balance = balance - %s WHERE id = %s AND balance >= %s",
-            (amount, user_id, amount),
-        )
-
-        if cur.rowcount == 0:
-            cur.execute("SELECT balance FROM users WHERE id = %s", (user_id,))
-            row = cur.fetchone()
-            if not row:
-                raise ValueError("User not found")
-            balance = float(row["balance"])
-            raise ValueError(
-                json.dumps(
-                    {
-                        "error": "INSUFFICIENT_FUNDS",
-                        "message": f"Недостаточно средств. Требуется: {amount:.2f} ₽, доступно: {balance:.2f} ₽",
-                        "required": amount,
-                        "available": balance,
-                        "missing": amount - balance,
-                    }
-                )
-            )
-
-        cur.execute(
-            "INSERT INTO billing_history (user_id, amount, description, type) VALUES (%s, %s, %s, %s)",
-            (user_id, amount, description, "charge"),
-        )
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        raise e
 
 
 @router.get("/api/run-clustering-stream")
@@ -122,46 +122,28 @@ async def run_clustering_stream(
             if kw_count > 0:
                 cost = kw_count * settings["clustering_rate"]
                 try:
-                    check_and_deduct_balance(
-                        conn,
-                        cur,
+                    BillingService.deduct_balance(
                         current_user.user_id,
                         cost,
                         f"Кластеризация {kw_count} запросов ({domain})",
+                        operation_type="charge",
                     )
+                except InsufficientFundsError as e:
+                    return _sse_error_response(e.to_dict()["message"], **e.to_dict())
                 except ValueError as e:
-                    err_msg = str(e)
-                    if "INSUFFICIENT_FUNDS" in err_msg:
-                        err_data = json.loads(err_msg)
+                    return _sse_error_response(str(e))
 
-                        async def stream_insufficient():
-                            yield f"data: {json.dumps({'type': 'error', **err_data})}\n\n"
-
-                        return StreamingResponse(
-                            stream_insufficient(), media_type="text/event-stream"
-                        )
-                    else:
-
-                        async def stream_err():
-                            yield f"data: {json.dumps({'type': 'error', 'message': err_msg})}\n\n"
-
-                        return StreamingResponse(stream_err(), media_type="text/event-stream")
-
+        task_id = _enqueue_task(
+            current_user.user_id,
+            "clustering",
+            {"domain": domain, "user_id": current_user.user_id},
+        )
+    except HTTPException:
+        raise
     except Exception as exc:
-        err_msg = str(exc)
+        return _sse_error_response(str(exc))
 
-        async def stream_err2():
-            yield f"data: {json.dumps({'type': 'error', 'message': err_msg})}\n\n"
-
-        return StreamingResponse(stream_err2(), media_type="text/event-stream")
-
-    # We will yield events using StreamingResponse
-    from scripts.run_clustering import run_clustering_task
-
-    return StreamingResponse(
-        run_streaming_process(run_clustering_task, domain, current_user.user_id, 0),
-        media_type="text/event-stream",
-    )
+    return StreamingResponse(_stream_task_progress(task_id), media_type="text/event-stream")
 
 
 @router.get("/api/run-mapping-stream")
@@ -169,12 +151,16 @@ async def run_mapping_stream(
     domain: str = Depends(verify_domain_ownership),
     current_user: TokenData = Depends(get_current_user),
 ):
-    from scripts.run_mapping import run_mapping_task
+    try:
+        task_id = _enqueue_task(
+            current_user.user_id,
+            "mapping",
+            {"domain": domain, "user_id": current_user.user_id},
+        )
+    except Exception as exc:
+        return _sse_error_response(str(exc))
 
-    return StreamingResponse(
-        run_streaming_process(run_mapping_task, domain, current_user.user_id, None, 0),
-        media_type="text/event-stream",
-    )
+    return StreamingResponse(_stream_task_progress(task_id), media_type="text/event-stream")
 
 
 class MappingRequest(BaseModel):
@@ -196,12 +182,19 @@ async def run_mapping(req: MappingRequest, current_user: TokenData = Depends(get
                 status_code=403, detail="Forbidden: You do not have access to this domain."
             )
 
-    from scripts.run_mapping import run_mapping_task
-
     try:
-        result = await asyncio.to_thread(run_mapping_task, domain, current_user.user_id, None, 0)
-        return result
+        task_id = _enqueue_task(
+            current_user.user_id,
+            "mapping",
+            {"domain": domain, "user_id": current_user.user_id},
+        )
+        return {"success": True, "task_id": task_id}
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.exception(
+            "run_mapping failed for user_id=%s domain=%s", current_user.user_id, domain
+        )
         return {"success": False, "error": str(e)}
 
 
@@ -210,8 +203,14 @@ async def get_analysis_status(
     domain: str = Depends(verify_domain_ownership),
     current_user: TokenData = Depends(get_current_user),
 ):
-    analysis_key = f"{current_user.user_id}:{domain}"
-    return {"running": analysis_key in running_analyses}
+    with get_db_cursor(dictionary=True) as (conn, cur):
+        cur.execute(
+            "SELECT id FROM tasks WHERE user_id = %s AND task_type = 'competitor_analysis' "
+            "AND status IN ('pending', 'scheduled', 'running') "
+            "ORDER BY id DESC LIMIT 1",
+            (current_user.user_id,),
+        )
+        return {"running": cur.fetchone() is not None}
 
 
 @router.get("/api/run-competitor-analysis-stream")
@@ -219,23 +218,20 @@ async def run_competitor_analysis_stream(
     domain: str = Depends(verify_domain_ownership),
     current_user: TokenData = Depends(get_current_user),
 ):
-    analysis_key = f"{current_user.user_id}:{domain}"
-
-    if analysis_key in running_analyses:
-        raise HTTPException(status_code=409, detail="Analysis already running for this domain")
-
-    running_analyses.add(analysis_key)
-
-    def wrapped_task():
-        from scripts.run_competitor_analysis import run_competitor_analysis_task
-
-        try:
-            run_competitor_analysis_task(domain, current_user.user_id)
-        finally:
-            running_analyses.discard(analysis_key)
-
-    asyncio.create_task(asyncio.to_thread(wrapped_task))
-    return {"success": True, "message": "Analysis started"}
+    try:
+        task_id = _enqueue_task(
+            current_user.user_id,
+            "competitor_analysis",
+            {"domain": domain, "user_id": current_user.user_id},
+        )
+        return {"success": True, "task_id": task_id}
+    except Exception as e:
+        logger.exception(
+            "run_competitor_analysis failed for user_id=%s domain=%s",
+            current_user.user_id,
+            domain,
+        )
+        return {"success": False, "error": str(e)}
 
 
 @router.get("/api/run-frequency-stream")
@@ -250,32 +246,26 @@ async def run_frequency_stream(
 ):
     try:
         cluster_id_int = int(clusterId) if clusterId else 0
-
-        with get_db_cursor() as (conn, cur):
-            cur.execute(
-                "INSERT INTO tasks (user_id, task_type, status, created_at, started_at) VALUES (%s, %s, 'running', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                (current_user.user_id, "frequency"),
-            )
-            task_id = cur.lastrowid
-            conn.commit()
-
-        def wrapped_task():
-            from scripts.fetch_frequency import fetch_frequency_task
-
-            fetch_frequency_task(
-                domain=domain,
-                user_id=current_user.user_id,
-                device=device,
-                region=region,
-                mode=mode,
-                min_freq=minFrequency,
-                task_id=task_id,
-                cluster_id=cluster_id_int,
-            )
-
-        asyncio.create_task(asyncio.to_thread(wrapped_task))
+        task_id = _enqueue_task(
+            current_user.user_id,
+            "frequency",
+            {
+                "domain": domain,
+                "user_id": current_user.user_id,
+                "device": device,
+                "region": region,
+                "mode": mode,
+                "minFrequency": minFrequency,
+                "clusterId": cluster_id_int,
+            },
+        )
         return {"success": True, "task_id": task_id}
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.exception(
+            "run_frequency failed for user_id=%s domain=%s", current_user.user_id, domain
+        )
         return {"success": False, "error": str(e)}
 
 
@@ -297,7 +287,8 @@ async def get_task_status(
     except Exception as e:
         if isinstance(e, HTTPException):
             raise
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to get task status: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/api/frequency-task-status")
@@ -316,7 +307,8 @@ async def get_frequency_task_status(
                 return {"success": False, "error": "Task not found"}
             return {"success": True, "task": task}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to get frequency task status: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class FullPipelineRequest(BaseModel):
@@ -364,7 +356,12 @@ async def run_full_pipeline(
             task_id = cur.lastrowid
             conn.commit()
         return {"success": True, "task_id": task_id}
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.exception(
+            "run_full_pipeline failed for user_id=%s domain=%s", current_user.user_id, domain
+        )
         return {"success": False, "error": str(e)}
 
 
@@ -400,5 +397,12 @@ async def get_active_pipeline_status(
                 ):
                     return {"success": True, "task": task}
             return {"success": True, "task": None}
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.exception(
+            "get_active_pipeline_status failed for user_id=%s domain=%s",
+            current_user.user_id,
+            clean_domain,
+        )
         return {"success": False, "error": str(e)}

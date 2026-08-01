@@ -1,9 +1,12 @@
 # services/clustering.py
+import logging
 from collections import defaultdict
 from typing import Dict, List
 
 from config import Config
 from services.xmlriver_client import XmlriverClient
+
+logger = logging.getLogger(__name__)
 
 
 def serp_similarity(urls_a: List[str], urls_b: List[str]) -> float:
@@ -64,7 +67,7 @@ def cluster_keywords(
     keywords: List[str],
     client: XmlriverClient,
     threshold: float | None = None,
-    initial_clusters: List[Dict] = None,
+    initial_clusters: List[Dict] | None = None,
     skip_cache_miss: bool = False,
 ) -> List[Dict]:
     threshold = threshold or Config.SIMILARITY_THRESHOLD
@@ -101,7 +104,9 @@ def cluster_keywords(
             next_id += 1
 
     if skipped:
-        print(f"⚠️ Кластеризация: {skipped}/{len(keywords)} ключей пропущено (пустой SERP)")
+        logger.warning(
+            "Кластеризация: %s/%s ключей пропущено (пустой SERP)", skipped, len(keywords)
+        )
 
     clusters.sort(key=lambda x: len(x["keywords"]), reverse=True)
     return clusters

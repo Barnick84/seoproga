@@ -1,4 +1,5 @@
 # services/yandex_webmaster.py
+import logging
 import math
 from datetime import datetime, timedelta
 from typing import Dict, List
@@ -6,6 +7,8 @@ from typing import Dict, List
 import requests
 
 from config import Config
+
+logger = logging.getLogger(__name__)
 
 
 class YandexWebmasterClient:
@@ -16,16 +19,17 @@ class YandexWebmasterClient:
         self.session.headers.update(
             {"Authorization": f"OAuth {token}", "Content-Type": "application/json"}
         )
+        self._timeout = 30
         self.user_id = user_id
 
     def _get_user_id(self) -> str:
-        resp = self.session.get(f"{self.BASE_URL}/user")
+        resp = self.session.get(f"{self.BASE_URL}/user", timeout=self._timeout)
         resp.raise_for_status()
         return resp.json()["user_id"]
 
     def list_hosts(self) -> List[Dict]:
         y_user_id = self._get_user_id()
-        resp = self.session.get(f"{self.BASE_URL}/user/{y_user_id}/hosts")
+        resp = self.session.get(f"{self.BASE_URL}/user/{y_user_id}/hosts", timeout=self._timeout)
         resp.raise_for_status()
         return resp.json().get("hosts", [])
 
@@ -39,7 +43,7 @@ class YandexWebmasterClient:
             url = url[:-4]
         elif url.endswith(":80"):
             url = url[:-3]
-        
+
         # Always use Unicode for comparison
         try:
             if url.startswith("xn--"):
@@ -75,7 +79,7 @@ class YandexWebmasterClient:
         }
 
         url = f"{self.BASE_URL}/user/{y_user_id}/hosts/{host_id}/search-queries/popular"
-        resp = self.session.get(url, params=params)
+        resp = self.session.get(url, params=params, timeout=self._timeout)
 
         if resp.status_code == 404:
             return []
@@ -103,7 +107,8 @@ class YandexWebmasterClient:
                 "new": settings.get("position_new_rate", 0.25),
                 "step": settings.get("position_step_rate", 0.05),
             }
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to load position rates from settings, using defaults: %s", e)
             return {"new": 0.25, "step": 0.05}
         finally:
             conn.close()

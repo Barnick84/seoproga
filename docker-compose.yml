@@ -1,10 +1,9 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
     container_name: seo_auto_mysql
-    restart: always
+    restart: unless-stopped
+    env_file: .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: seo_auto
@@ -12,11 +11,75 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - internal
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+
+  app:
+    build: .
+    image: seo-auto-cluster:latest
+    container_name: seo_auto_app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - internal
+    command: uvicorn api.main:app --host 0.0.0.0 --port 3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  worker:
+    build: .
+    image: seo-auto-cluster:latest
+    container_name: seo_auto_worker
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - internal
+    command: python services/worker.py
+
+  nginx:
+    image: nginx:alpine
+    container_name: seo_auto_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/usr/share/nginx/html:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  internal:
+    driver: bridge
 
 volumes:
   mysql_data:

@@ -7,12 +7,13 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
-limiter = Limiter(key_func=get_remote_address)
+from api.dependencies import limiter
 
 from api.routers import (
     admin,
@@ -37,8 +38,9 @@ class JSONFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        if hasattr(record, "request_id"):
-            log_entry["request_id"] = record.request_id
+        request_id = getattr(record, "request_id", None)
+        if request_id:
+            log_entry["request_id"] = request_id
         if record.exc_info and record.exc_info[0]:
             log_entry["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_entry, ensure_ascii=False)
@@ -62,7 +64,45 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS middleware
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "font-src 'self' https://cdnjs.cloudflare.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self'"
+    )
+    return response
+
+
+@app.middleware("http")
+async def structured_logging_middleware(request: Request, call_next):
+    request_id = str(uuid.uuid4())[:8]
+    request.state.request_id = request_id
+    start_time = time.time()
+
+    response = await call_next(request)
+
+    process_time = time.time() - start_time
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time"] = f"{process_time:.4f}"
+
+    logger.info(
+        f"{request.method} {request.url.path} {response.status_code} {process_time:.4f}s",
+        extra={"request_id": request_id},
+    )
+    return response
+
+
+# CORS
 origins_raw = os.getenv("CORS_ORIGINS", "")
 if not origins_raw:
     raise RuntimeError(
@@ -79,36 +119,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.middleware("http")
-async def structured_logging_middleware(request: Request, call_next):
-    request_id = str(uuid.uuid4())[:8]
-    request.state.request_id = request_id
-    start_time = time.time()
-
-    response = await call_next(request)
-
-    process_time = time.time() - start_time
-    response.headers["X-Request-ID"] = request_id
-    response.headers["X-Process-Time"] = f"{process_time:.4f}"
-
-    extra = logging.LogRecord(
-        name=__name__,
-        level=logging.INFO,
-        pathname="",
-        lineno=0,
-        msg="",
-        args=(),
-        exc_info=None,
-    )
-    extra.request_id = request_id
-    logger.info(
-        f"{request.method} {request.url.path} {response.status_code} {process_time:.4f}s",
-        extra={"request_id": request_id},
-    )
-    return response
-
-
 # Include routers
 app.include_router(health.router)
 app.include_router(users.router)
@@ -122,7 +132,6 @@ app.include_router(structure.router)
 app.include_router(wordstat.router)
 app.include_router(positions.router)
 
-# Mount public static files if the directory exists
 public_dir = os.path.join(os.path.dirname(__file__), "public")
 if os.path.exists(public_dir):
     app.mount("/", StaticFiles(directory=public_dir, html=True), name="public")

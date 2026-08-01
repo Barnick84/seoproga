@@ -1,13 +1,15 @@
+import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from api.dependencies import TokenData, get_current_user
-from config import Config
 from services.yandex_webmaster import YandexWebmasterClient
 from utils.db import get_db_cursor
 from utils.helpers import extract_domain
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Sites"])
 
@@ -42,7 +44,8 @@ async def get_sites(current_user: TokenData = Depends(get_current_user)):
             ]
             return SitesListResponse(sites=sites, count=len(sites))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch sites: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/check-domain")
@@ -52,12 +55,13 @@ async def check_domain(req: SiteDomainRequest, current_user: TokenData = Depends
         with get_db_cursor(dictionary=True) as (conn, cur):
             cur.execute("SELECT yandex_token FROM users WHERE id = %s", (current_user.user_id,))
             row = cur.fetchone()
-            token = row["yandex_token"] if row and row["yandex_token"] else Config.YANDEX_TOKEN
+            token = row["yandex_token"] if row else ""
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch yandex token: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     if not token:
-        return {"linked": False, "error": "No Yandex token found"}
+        return {"linked": False, "error": "Add your Yandex token in settings first"}
 
     try:
         client = YandexWebmasterClient(token, current_user.user_id)
@@ -82,17 +86,17 @@ async def add_site(req: SiteDomainRequest, current_user: TokenData = Depends(get
                     "success": False,
                     "message": "Этот сайт уже привязан к другому пользователю",
                 }
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("Failed to check domain ownership: %s", e)
 
     # 2. Check if domain is linked to WM
     with get_db_cursor(dictionary=True) as (conn, cur):
         cur.execute("SELECT yandex_token FROM users WHERE id = %s", (current_user.user_id,))
         row = cur.fetchone()
-        token = row["yandex_token"] if row and row["yandex_token"] else Config.YANDEX_TOKEN
+        token = row["yandex_token"] if row and row["yandex_token"] else ""
 
     if not token:
-        return {"success": False, "message": "No Yandex token found"}
+        return {"success": False, "message": "Add your Yandex token in settings first"}
 
     try:
         client = YandexWebmasterClient(token, current_user.user_id)
@@ -121,4 +125,5 @@ async def add_site(req: SiteDomainRequest, current_user: TokenData = Depends(get
             site_id = cur.lastrowid
             return {"success": True, "id": site_id, "domain": domain}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to add site: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")

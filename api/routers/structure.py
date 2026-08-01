@@ -1,7 +1,6 @@
 # api/routers/structure.py
 import json
 import logging
-import uuid
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -18,6 +17,7 @@ router = APIRouter(tags=["Structure"])
 
 
 # --- Models ---
+
 
 class SaveStructureRequest(BaseModel):
     site_url: str
@@ -45,21 +45,19 @@ class PageTypeUpdateRequest(BaseModel):
 
 # --- Endpoints ---
 
+
 @router.get("/api/site-structure")
-async def get_site_structure(
-    site_url: str,
-    current_user: TokenData = Depends(get_current_user)
-):
+async def get_site_structure(site_url: str, current_user: TokenData = Depends(get_current_user)):
     domain = extract_domain(site_url)
     with get_db_cursor(dictionary=True) as (conn, cur):
         cur.execute(
             "SELECT structure_json, updated_at FROM site_structure WHERE user_id = %s AND site_url = %s",
-            (current_user.user_id, domain)
+            (current_user.user_id, domain),
         )
         row = cur.fetchone()
         if not row:
             return {"exists": False, "structure": []}
-        
+
         try:
             struct_data = json.loads(row["structure_json"])
         except Exception:
@@ -68,18 +66,17 @@ async def get_site_structure(
         return {
             "exists": True,
             "structure": struct_data,
-            "updated_at": str(row["updated_at"]) if row.get("updated_at") else None
+            "updated_at": str(row["updated_at"]) if row.get("updated_at") else None,
         }
 
 
 @router.post("/api/site-structure/save")
 async def save_site_structure(
-    req: SaveStructureRequest,
-    current_user: TokenData = Depends(get_current_user)
+    req: SaveStructureRequest, current_user: TokenData = Depends(get_current_user)
 ):
     domain = extract_domain(req.site_url)
     json_str = json.dumps(req.structure, ensure_ascii=False)
-    
+
     with get_db_cursor(commit=True) as (conn, cur):
         if Config.DB_TYPE == "postgresql":
             cur.execute(
@@ -88,7 +85,7 @@ async def save_site_structure(
                 VALUES (%s, %s, %s)
                 ON CONFLICT (user_id, site_url) DO UPDATE SET structure_json = EXCLUDED.structure_json, updated_at = NOW()
                 """,
-                (current_user.user_id, domain, json_str)
+                (current_user.user_id, domain, json_str),
             )
         else:
             cur.execute(
@@ -97,7 +94,7 @@ async def save_site_structure(
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE structure_json = VALUES(structure_json)
                 """,
-                (current_user.user_id, domain, json_str)
+                (current_user.user_id, domain, json_str),
             )
 
     return {"success": True, "message": "Структура сайта успешно сохранена"}
@@ -105,15 +102,14 @@ async def save_site_structure(
 
 @router.post("/api/site-structure/generate")
 async def generate_site_structure(
-    req: GenerateStructureRequest,
-    current_user: TokenData = Depends(get_current_user)
+    req: GenerateStructureRequest, current_user: TokenData = Depends(get_current_user)
 ):
     domain = extract_domain(req.site_url)
 
     # 1. Fetch clusters and mapped URLs for the site
     clusters = []
     existing_structure = []
-    
+
     with get_db_cursor(dictionary=True) as (conn, cur):
         # Fetch clusters
         cur.execute(
@@ -126,7 +122,7 @@ async def generate_site_structure(
             WHERE q.user_id = %s AND q.site_url = %s AND q.minus_word = 0 AND q.clustered > 0
             GROUP BY q.clustered, n.cluster_name, m.target_url
             """,
-            (current_user.user_id, domain)
+            (current_user.user_id, domain),
         )
         cluster_rows = cur.fetchall()
 
@@ -134,18 +130,20 @@ async def generate_site_structure(
             cid = str(r["cluster_id"])
             name = r["cluster_name"] or r["main_kw"]
             target_url = r["target_url"] or ""
-            clusters.append({
-                "cluster_id": cid,
-                "name": name,
-                "target_url": target_url,
-                "keywords_count": r["kw_count"]
-            })
+            clusters.append(
+                {
+                    "cluster_id": cid,
+                    "name": name,
+                    "target_url": target_url,
+                    "keywords_count": r["kw_count"],
+                }
+            )
 
         # Fetch existing structure if mode is incremental
         if req.mode == "incremental":
             cur.execute(
                 "SELECT structure_json FROM site_structure WHERE user_id = %s AND site_url = %s",
-                (current_user.user_id, domain)
+                (current_user.user_id, domain),
             )
             ex_row = cur.fetchone()
             if ex_row and ex_row.get("structure_json"):
@@ -155,7 +153,10 @@ async def generate_site_structure(
                     existing_structure = []
 
     if not clusters:
-        raise HTTPException(status_code=400, detail="На сайте отсутствуют кластеры запросов. Сначала выполните кластеризацию.")
+        raise HTTPException(
+            status_code=400,
+            detail="На сайте отсутствуют кластеры запросов. Сначала выполните кластеризацию.",
+        )
 
     # Build LLM Prompt
     system_prompt = """Ты senior SEO-архитектор. Твоя задача — построить идеальную структуру сайта на основе поисковых кластеров.
@@ -180,7 +181,9 @@ async def generate_site_structure(
 """
 
     user_prompt = f"САЙТ: {domain}\n"
-    user_prompt += f"КЛАСТЕРЫ ДЛЯ РАЗМЕЩЕНИЯ:\n{json.dumps(clusters, ensure_ascii=False, indent=2)}\n"
+    user_prompt += (
+        f"КЛАСТЕРЫ ДЛЯ РАЗМЕЩЕНИЯ:\n{json.dumps(clusters, ensure_ascii=False, indent=2)}\n"
+    )
 
     if req.mode == "incremental" and existing_structure:
         user_prompt += f"\nТЕКУЩАЯ СТРУКТУРА СУЩЕСТВУЕТ:\n{json.dumps(existing_structure, ensure_ascii=False, indent=2)}\nДобавь только недостающие кластеры в существующие разделы."
@@ -193,11 +196,11 @@ async def generate_site_structure(
             model=Config.LLM_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
             temperature=0.2,
             max_tokens=4096,
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
         )
 
         raw_content = response.choices[0].message.content or ""
@@ -229,7 +232,6 @@ async def generate_site_structure(
         else:
             struct_res = []
 
-
         # Save generated structure
         json_str = json.dumps(struct_res, ensure_ascii=False)
         with get_db_cursor(commit=True) as (conn, cur):
@@ -240,7 +242,7 @@ async def generate_site_structure(
                     VALUES (%s, %s, %s)
                     ON CONFLICT (user_id, site_url) DO UPDATE SET structure_json = EXCLUDED.structure_json, updated_at = NOW()
                     """,
-                    (current_user.user_id, domain, json_str)
+                    (current_user.user_id, domain, json_str),
                 )
             else:
                 cur.execute(
@@ -249,48 +251,73 @@ async def generate_site_structure(
                     VALUES (%s, %s, %s)
                     ON DUPLICATE KEY UPDATE structure_json = VALUES(structure_json)
                     """,
-                    (current_user.user_id, domain, json_str)
+                    (current_user.user_id, domain, json_str),
                 )
 
         return {"success": True, "structure": struct_res}
 
     except Exception as e:
         logger.error(f"Error generating structure: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка при генерации структуры через LLM: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Ошибка при генерации структуры через LLM: {str(e)}"
+        )
 
 
 # --- Page Types Endpoints ---
 
 DEFAULT_PAGE_TYPES = [
-    {"name": "Главная", "icon": "fa-home", "color": "#10b981", "template_description": "Главная страница сайта"},
-    {"name": "Категория", "icon": "fa-folder", "color": "#f59e0b", "template_description": "Раздел каталога или категорий услуг"},
-    {"name": "Услуга", "icon": "fa-concierge-bell", "color": "#8b5cf6", "template_description": "Посадочная страница отдельной услуги"},
-    {"name": "Информационная", "icon": "fa-newspaper", "color": "#3b82f6", "template_description": "Статья, новость или гайд"},
-    {"name": "Карточка товара", "icon": "fa-box", "color": "#ec4899", "template_description": "Страница конкретного товара"}
+    {
+        "name": "Главная",
+        "icon": "fa-home",
+        "color": "#10b981",
+        "template_description": "Главная страница сайта",
+    },
+    {
+        "name": "Категория",
+        "icon": "fa-folder",
+        "color": "#f59e0b",
+        "template_description": "Раздел каталога или категорий услуг",
+    },
+    {
+        "name": "Услуга",
+        "icon": "fa-concierge-bell",
+        "color": "#8b5cf6",
+        "template_description": "Посадочная страница отдельной услуги",
+    },
+    {
+        "name": "Информационная",
+        "icon": "fa-newspaper",
+        "color": "#3b82f6",
+        "template_description": "Статья, новость или гайд",
+    },
+    {
+        "name": "Карточка товара",
+        "icon": "fa-box",
+        "color": "#ec4899",
+        "template_description": "Страница конкретного товара",
+    },
 ]
 
+
 @router.get("/api/page-types")
-async def get_page_types(
-    current_user: TokenData = Depends(get_current_user)
-):
+async def get_page_types(current_user: TokenData = Depends(get_current_user)):
     with get_db_cursor(dictionary=True) as (conn, cur):
         cur.execute(
             "SELECT id, name, icon, color, template_description FROM page_types WHERE user_id = %s ORDER BY id ASC",
-            (current_user.user_id,)
+            (current_user.user_id,),
         )
         rows = cur.fetchall()
-        
+
         # If user has no custom page types, return defaults
         if not rows:
             return {"types": DEFAULT_PAGE_TYPES}
-            
+
         return {"types": rows}
 
 
 @router.post("/api/page-types")
 async def create_page_type(
-    req: PageTypeCreateRequest,
-    current_user: TokenData = Depends(get_current_user)
+    req: PageTypeCreateRequest, current_user: TokenData = Depends(get_current_user)
 ):
     with get_db_cursor(commit=True) as (conn, cur):
         cur.execute(
@@ -298,16 +325,14 @@ async def create_page_type(
             INSERT INTO page_types (user_id, name, icon, color, template_description)
             VALUES (%s, %s, %s, %s, %s)
             """,
-            (current_user.user_id, req.name, req.icon, req.color, req.template_description)
+            (current_user.user_id, req.name, req.icon, req.color, req.template_description),
         )
     return {"success": True, "message": "Тип страницы успешно создан"}
 
 
 @router.put("/api/page-types/{type_id}")
 async def update_page_type(
-    type_id: int,
-    req: PageTypeUpdateRequest,
-    current_user: TokenData = Depends(get_current_user)
+    type_id: int, req: PageTypeUpdateRequest, current_user: TokenData = Depends(get_current_user)
 ):
     with get_db_cursor(commit=True) as (conn, cur):
         cur.execute(
@@ -315,19 +340,22 @@ async def update_page_type(
             UPDATE page_types SET name = %s, icon = %s, color = %s, template_description = %s
             WHERE id = %s AND user_id = %s
             """,
-            (req.name, req.icon, req.color, req.template_description, type_id, current_user.user_id)
+            (
+                req.name,
+                req.icon,
+                req.color,
+                req.template_description,
+                type_id,
+                current_user.user_id,
+            ),
         )
     return {"success": True, "message": "Тип страницы обновлён"}
 
 
 @router.delete("/api/page-types/{type_id}")
-async def delete_page_type(
-    type_id: int,
-    current_user: TokenData = Depends(get_current_user)
-):
+async def delete_page_type(type_id: int, current_user: TokenData = Depends(get_current_user)):
     with get_db_cursor(commit=True) as (conn, cur):
         cur.execute(
-            "DELETE FROM page_types WHERE id = %s AND user_id = %s",
-            (type_id, current_user.user_id)
+            "DELETE FROM page_types WHERE id = %s AND user_id = %s", (type_id, current_user.user_id)
         )
     return {"success": True, "message": "Тип страницы удалён"}

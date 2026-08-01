@@ -7,19 +7,9 @@ import requests
 from bs4 import BeautifulSoup
 
 from utils.bootstrap import bootstrap
+from utils.helpers import safe_print
 
 bootstrap()
-
-
-def safe_print(*args, **kwargs):
-    try:
-        print(*args, **kwargs)
-    except BrokenPipeError:
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(devnull, sys.stdout.fileno())
-        sys.exit(0)
-    except Exception:
-        pass
 
 
 from config import Config

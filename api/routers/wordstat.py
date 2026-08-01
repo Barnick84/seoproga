@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from api.dependencies import TokenData, get_current_user
 from utils.db import get_db_cursor
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Wordstat"])
 
@@ -32,7 +36,8 @@ async def get_wordstat_settings(current_user: TokenData = Depends(get_current_us
                 r["is_default"] = bool(r["is_default"])
             return {"success": True, "settings": rows}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch wordstat settings: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/wordstat-settings")
@@ -61,7 +66,8 @@ async def create_wordstat_setting(
             )
             return {"success": True, "id": cur.lastrowid}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to create wordstat setting: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.delete("/api/wordstat-settings/{setting_id}")
@@ -77,7 +83,8 @@ async def delete_wordstat_setting(
             )
             return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to delete wordstat setting: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 YANDEX_GEO = [

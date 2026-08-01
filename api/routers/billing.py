@@ -42,7 +42,8 @@ async def get_billing_history(current_user: TokenData = Depends(get_current_user
 
         return {"success": True, "billing": billing, "payments": payments}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch billing history: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/api/create-payment")
@@ -102,11 +103,13 @@ async def create_payment(
 
     except Exception as e:
         logger.error(f"Payment creation error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Payment creation failed")
 
 
-@router.post("/payment-suceful")
-@router.post("/payment-suceful/")
+@router.post("/payment-succesful")
+@router.post("/payment-succesful/")
+@router.post("/payment-successful")
+@router.post("/payment-successful/")
 async def payment_successful(
     request: Request,
     InvId: str = Form(None),
@@ -190,13 +193,15 @@ async def payment_successful(
         return HTMLResponse(content="Internal Server Error", status_code=500)
 
 
-@router.get("/suceful")
-@router.get("/suceful/")
-async def suceful_page():
-    return RedirectResponse(url="/public/suceful.html")
+@router.get("/successful")
+@router.get("/successful/")
+async def successful_page():
+    return RedirectResponse(url="/public/successful.html")
 
 
-@router.get("/errore")
-@router.get("/errore/")
-async def errore_page():
-    return RedirectResponse(url="/public/errore.html")
+@router.get("/error")
+@router.get("/error/")
+@router.get("/error-old")
+@router.get("/error-old/")
+async def error_page():
+    return RedirectResponse(url="/public/error.html")

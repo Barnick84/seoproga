@@ -10,43 +10,7 @@ bootstrap()
 from config import Config
 from services.xmlriver_client import XmlriverClient
 from utils.helpers import extract_domain
-
-
-def check_target(
-    client: XmlriverClient,
-    query: str,
-    engine: str,
-    device: str,
-    region: int,
-    clean_target_domain: str,
-) -> tuple[int, str]:
-    found_pos = 0
-    found_url = ""
-    for page in range(10):
-        try:
-            serp_urls = client.fetch_serp(
-                query,
-                engine=engine,
-                device=device,
-                region=region,
-                top_n=10,
-                page=page,
-                use_cache=False,
-            )
-            if not serp_urls:
-                break
-            for page_pos, url in enumerate(serp_urls, start=1):
-                if clean_target_domain in extract_domain(url):
-                    found_pos = page * 10 + page_pos
-                    found_url = url
-                    break
-            if found_pos > 0:
-                break
-            time.sleep(1)
-        except Exception as e:
-            print(f"Error {engine}/{device}: {e}", file=sys.stderr)
-            break
-    return found_pos, found_url
+from utils.position_checker import check_target
 
 
 def check_all_positions_task(
