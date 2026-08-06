@@ -106,6 +106,12 @@ async def generate_site_structure(
 ):
     domain = extract_domain(req.site_url)
 
+    if not Config.OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="OPENAI_API_KEY не настроен. Пожалуйста, укажите API ключ в настройках/окружении.",
+        )
+
     # 1. Fetch clusters and mapped URLs for the site
     clusters = []
     existing_structure = []
@@ -117,9 +123,9 @@ async def generate_site_structure(
             SELECT q.clustered as cluster_id, MIN(q.query) as main_kw, COUNT(*) as kw_count,
                    n.cluster_name, m.target_url
             FROM yandex_queries q
-            LEFT JOIN cluster_names n ON q.clustered = CAST(n.cluster_id AS CHAR) AND q.user_id = n.user_id AND q.site_url = n.site_url
-            LEFT JOIN cluster_mappings m ON q.clustered = CAST(m.cluster_id AS CHAR) AND q.user_id = m.user_id AND q.site_url = m.site_url
-            WHERE q.user_id = %s AND q.site_url = %s AND q.minus_word = 0 AND q.clustered > 0
+            LEFT JOIN cluster_names n ON CAST(q.clustered AS CHAR(255)) = CAST(n.cluster_id AS CHAR(255)) AND q.user_id = n.user_id AND q.site_url = n.site_url
+            LEFT JOIN cluster_mappings m ON CAST(q.clustered AS CHAR(255)) = CAST(m.cluster_id AS CHAR(255)) AND q.user_id = m.user_id AND q.site_url = m.site_url
+            WHERE q.user_id = %s AND q.site_url = %s AND q.minus_word = 0 AND q.clustered IS NOT NULL AND q.clustered != 0 AND CAST(q.clustered AS CHAR(255)) != '' AND CAST(q.clustered AS CHAR(255)) != '0'
             GROUP BY q.clustered, n.cluster_name, m.target_url
             """,
             (current_user.user_id, domain),
@@ -192,16 +198,28 @@ async def generate_site_structure(
 
     try:
         client = OpenAI(api_key=Config.OPENAI_API_KEY, base_url=Config.BASE_URL)
-        response = client.chat.completions.create(
-            model=Config.LLM_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.2,
-            max_tokens=4096,
-            response_format={"type": "json_object"},
-        )
+        try:
+            response = client.chat.completions.create(
+                model=Config.LLM_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.2,
+                max_tokens=4096,
+                response_format={"type": "json_object"},
+            )
+        except Exception as api_err:
+            logger.warning(f"Failed with response_format json_object, retrying without: {api_err}")
+            response = client.chat.completions.create(
+                model=Config.LLM_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.2,
+                max_tokens=4096,
+            )
 
         raw_content = response.choices[0].message.content or ""
         cleaned = raw_content.strip()

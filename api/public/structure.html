@@ -206,10 +206,13 @@
 
         async function loadPageTypes() {
             try {
-                const res = await authFetch('/api/page-types');
-                if (res && res.types) {
-                    pageTypes = res.types;
-                    renderPageTypesList();
+                const response = await authFetch('/api/page-types');
+                if (response && response.ok) {
+                    const data = await response.json();
+                    if (data && data.types) {
+                        pageTypes = data.types;
+                        renderPageTypesList();
+                    }
                 }
             } catch (e) {
                 console.error('Error loading page types:', e);
@@ -278,10 +281,14 @@
             };
 
             try {
-                if (id) {
-                    await authFetch(`/api/page-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-                } else {
+                const response = id ?
+                    await authFetch(`/api/page-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) }) :
                     await authFetch('/api/page-types', { method: 'POST', body: JSON.stringify(payload) });
+                if (response) {
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(data.detail || data.message || 'Ошибка сохранения типа страницы');
+                    }
                 }
                 await loadPageTypes();
                 resetPageTypeForm();
@@ -293,7 +300,13 @@
         async function deletePageType(id) {
             if (!confirm('Удалить этот тип страницы?')) return;
             try {
-                await authFetch(`/api/page-types/${id}`, { method: 'DELETE' });
+                const response = await authFetch(`/api/page-types/${id}`, { method: 'DELETE' });
+                if (response) {
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(data.detail || data.message || 'Ошибка удаления типа страницы');
+                    }
+                }
                 await loadPageTypes();
             } catch (err) {
                 showStatus('Ошибка при удалении типа страницы: ' + err.message, 'error');
@@ -308,10 +321,16 @@
             document.getElementById('treeRoot').innerHTML = '';
 
             try {
-                const res = await authFetch(`/api/site-structure?site_url=${encodeURIComponent(currentDomain)}`);
+                const response = await authFetch(`/api/site-structure?site_url=${encodeURIComponent(currentDomain)}`);
                 document.getElementById('treeLoading').style.display = 'none';
+                if (!response) return;
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || data.message || 'Ошибка загрузки структуры');
+                }
                 
-                let struct = res ? res.structure : null;
+                let struct = data ? data.structure : null;
                 if (typeof struct === 'string') {
                     try { struct = JSON.parse(struct); } catch(e) {}
                 }
@@ -319,7 +338,7 @@
                     struct = [struct];
                 }
 
-                if (res && res.exists && struct && struct.length > 0) {
+                if (data && data.exists && struct && struct.length > 0) {
                     currentTreeData = struct;
                     renderTree();
                 } else {
@@ -646,13 +665,19 @@
             }
 
             try {
-                await authFetch('/api/site-structure/save', {
+                const response = await authFetch('/api/site-structure/save', {
                     method: 'POST',
                     body: JSON.stringify({
                         site_url: currentDomain,
                         structure: currentTreeData
                     })
                 });
+                if (response) {
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(data.detail || data.message || 'Ошибка сохранения структуры');
+                    }
+                }
                 showStatus('Структура сайта успешно сохранена!', 'success');
             } catch (err) {
                 showStatus('Ошибка сохранения структуры: ' + err.message, 'error');
@@ -679,7 +704,7 @@
             statusBox.style.display = 'block';
 
             try {
-                const res = await authFetch('/api/site-structure/generate', {
+                const response = await authFetch('/api/site-structure/generate', {
                     method: 'POST',
                     body: JSON.stringify({
                         site_url: currentDomain,
@@ -690,7 +715,13 @@
                 statusBox.style.display = 'none';
                 closeGenerateModal();
 
-                let struct = res ? res.structure : null;
+                if (!response) return;
+                const data = await response.json();
+                if (!response.ok || (data && data.success === false)) {
+                    throw new Error(data.detail || data.message || 'Ошибка при генерации структуры');
+                }
+
+                let struct = data ? data.structure : null;
                 if (typeof struct === 'string') {
                     try { struct = JSON.parse(struct); } catch(e) {}
                 }

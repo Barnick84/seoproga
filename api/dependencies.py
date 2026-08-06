@@ -8,14 +8,19 @@ import jwt
 from dotenv import load_dotenv
 from fastapi import Depends, Header, HTTPException
 from pydantic import BaseModel
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-limiter = Limiter(key_func=get_remote_address)
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+    limiter = Limiter(key_func=get_remote_address)
+except ImportError:
+    class DummyLimiter:
+        def limit(self, *args, **kwargs):
+            return lambda func: func
+    limiter = DummyLimiter()
 
 JWT_SECRET = os.environ.get("JWT_SECRET")
 if not JWT_SECRET:
