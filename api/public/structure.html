@@ -159,6 +159,7 @@
 
     <!-- Context Menu -->
     <div id="contextMenu" class="tree-context-menu" style="display:none;">
+        <div id="contextMenuExtra" style="display:none;"></div>
         <div class="tree-context-item" onclick="ctxAddSubFolder()"><i class="fa-solid fa-folder-plus"></i> Добавить подраздел</div>
         <div class="tree-context-item" onclick="ctxAddPage()"><i class="fa-solid fa-file-circle-plus"></i> Добавить страницу</div>
         <div class="tree-context-divider"></div>
@@ -365,6 +366,15 @@
             rootEl.innerHTML = currentTreeData.map(node => renderNodeHtml(node)).join('');
         }
 
+        function getFullPageUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            const domain = currentDomain || getDomainFromUrl() || '';
+            const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+            const cleanPath = url.startsWith('/') ? url : '/' + url;
+            return cleanDomain ? `https://${cleanDomain}${cleanPath}` : cleanPath;
+        }
+
         function renderNodeHtml(node) {
             const isFolder = node.is_folder || (node.children && node.children.length > 0);
             const hasChildren = node.children && node.children.length > 0;
@@ -376,6 +386,11 @@
                 iconClass = pt.icon;
                 iconColor = pt.color;
             }
+
+            const pageUrl = getFullPageUrl(node.url);
+            const hasValidUrl = node.url && node.url !== '#';
+            const nodeTitleEsc = escapeHtml(node.title || 'Без названия');
+            const nodeUrlEsc = escapeHtml(node.url || '');
 
             return `
                 <li class="tree-node" id="node-${node.id}">
@@ -395,15 +410,25 @@
                         <i class="fa-solid ${iconClass} tree-node-icon" style="color:${iconColor}"></i>
                         
                         <span class="tree-node-title" id="title-${node.id}" onclick="selectNode('${node.id}')">
-                            ${escapeHtml(node.title || 'Без названия')}
+                            ${nodeTitleEsc}
                         </span>
 
-                        <span style="font-size:11px; color:#94a3b8;">${escapeHtml(node.url || '')}</span>
+                        ${hasValidUrl ? `
+                            <a href="${pageUrl}" target="_blank" class="tree-node-url-link" title="Открыть страницу на сайте" onclick="event.stopPropagation();">
+                                ${nodeUrlEsc} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:10px; margin-left:2px;"></i>
+                            </a>
+                        ` : `
+                            <span style="font-size:11px; color:#94a3b8;">${nodeUrlEsc}</span>
+                        `}
 
                         ${node.cluster_id ? `
-                            <span class="tree-node-cluster" title="Кластер ID: ${node.cluster_id}">
-                                <i class="fa-solid fa-diagram-project"></i> ${node.cluster_id}
-                            </span>
+                            <a href="analysis.html?domain=${encodeURIComponent(currentDomain)}&clusterId=${encodeURIComponent(node.cluster_id)}&name=${encodeURIComponent(node.title || '')}"
+                               target="_blank"
+                               class="tree-node-cluster clickable"
+                               title="Открыть SEO-анализ кластера №${node.cluster_id}"
+                               onclick="event.stopPropagation();">
+                                <i class="fa-solid fa-chart-pie"></i> Кластер №${node.cluster_id}
+                            </a>
                         ` : ''}
 
                         ${node.page_type ? `
@@ -413,6 +438,19 @@
                         ` : ''}
 
                         <div class="tree-node-actions">
+                            ${node.cluster_id ? `
+                                <a class="tree-action-btn analysis-btn" title="SEO-анализ кластера (analysis.html)" href="analysis.html?domain=${encodeURIComponent(currentDomain)}&clusterId=${encodeURIComponent(node.cluster_id)}&name=${encodeURIComponent(node.title || '')}" target="_blank" onclick="event.stopPropagation();">
+                                    <i class="fa-solid fa-chart-bar"></i>
+                                </a>
+                                <a class="tree-action-btn cluster-btn" title="Открыть кластер (cluster.html)" href="cluster.html?site=${encodeURIComponent(currentDomain)}&cluster_id=${encodeURIComponent(node.cluster_id)}" target="_blank" onclick="event.stopPropagation();">
+                                    <i class="fa-solid fa-diagram-project"></i>
+                                </a>
+                            ` : ''}
+                            ${hasValidUrl ? `
+                                <a class="tree-action-btn view-site-btn" title="Открыть страницу на сайте" href="${pageUrl}" target="_blank" onclick="event.stopPropagation();">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            ` : ''}
                             ${isFolder ? `
                                 <button class="tree-action-btn" title="Добавить подраздел" onclick="addChildFolder('${node.id}', event)"><i class="fa-solid fa-folder-plus"></i></button>
                                 <button class="tree-action-btn" title="Добавить страницу" onclick="addChildPage('${node.id}', event)"><i class="fa-solid fa-plus"></i></button>
@@ -635,11 +673,44 @@
             e.preventDefault();
             e.stopPropagation();
             selectedNodeId = id;
+
+            const node = findNodeInTree(currentTreeData, id);
+            const extraEl = document.getElementById('contextMenuExtra');
+            if (extraEl) {
+                let html = '';
+                if (node) {
+                    if (node.cluster_id) {
+                        const analysisUrl = `analysis.html?domain=${encodeURIComponent(currentDomain)}&clusterId=${encodeURIComponent(node.cluster_id)}&name=${encodeURIComponent(node.title || '')}`;
+                        const clusterUrl = `cluster.html?site=${encodeURIComponent(currentDomain)}&cluster_id=${encodeURIComponent(node.cluster_id)}`;
+                        html += `<div class="tree-context-item" onclick="window.open('${analysisUrl}', '_blank')"><i class="fa-solid fa-chart-bar" style="color:#8b5cf6;"></i> SEO-анализ кластера №${node.cluster_id}</div>`;
+                        html += `<div class="tree-context-item" onclick="window.open('${clusterUrl}', '_blank')"><i class="fa-solid fa-diagram-project" style="color:#3b82f6;"></i> Открыть кластер</div>`;
+                    }
+                    if (node.url && node.url !== '#') {
+                        const pageUrl = getFullPageUrl(node.url);
+                        html += `<div class="tree-context-item" onclick="window.open('${pageUrl}', '_blank')"><i class="fa-solid fa-arrow-up-right-from-square" style="color:#10b981;"></i> Открыть страницу на сайте</div>`;
+                    }
+                }
+                if (html) {
+                    extraEl.innerHTML = html + '<div class="tree-context-divider"></div>';
+                    extraEl.style.display = 'block';
+                } else {
+                    extraEl.innerHTML = '';
+                    extraEl.style.display = 'none';
+                }
+            }
+
             const ctx = document.getElementById('contextMenu');
             ctx.style.left = e.clientX + 'px';
             ctx.style.top = e.clientY + 'px';
             ctx.style.display = 'block';
         }
+
+        document.addEventListener('click', (e) => {
+            const ctx = document.getElementById('contextMenu');
+            if (ctx && !ctx.contains(e.target)) {
+                ctx.style.display = 'none';
+            }
+        });
 
         function ctxAddSubFolder() {
             if (selectedNodeId) addChildFolder(selectedNodeId, { stopPropagation: ()=>{} });

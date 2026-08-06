@@ -2285,6 +2285,37 @@ a.menu-tab[href^="/dashboard.html"] {
     border: 1px solid #e2e8f0;
 }
 
+.tree-node-cluster.clickable {
+    text-decoration: none;
+    background: #e0e7ff;
+    color: #4338ca;
+    border-color: #c7d2fe;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.tree-node-cluster.clickable:hover {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4338ca;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+}
+
+.tree-node-url-link {
+    font-size: 11px;
+    color: #64748b;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    transition: color 0.15s ease;
+}
+
+.tree-node-url-link:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
 .tree-node-type-badge {
     font-size: 11px;
     color: white;
@@ -2316,11 +2347,30 @@ a.menu-tab[href^="/dashboard.html"] {
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s;
+    text-decoration: none;
 }
 
 .tree-action-btn:hover {
     background: #f1f5f9;
     color: #1e293b;
+}
+
+.tree-action-btn.analysis-btn:hover {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border-color: #d8b4fe;
+}
+
+.tree-action-btn.cluster-btn:hover {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+.tree-action-btn.view-site-btn:hover {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #86efac;
 }
 
 .tree-action-btn.danger:hover {
