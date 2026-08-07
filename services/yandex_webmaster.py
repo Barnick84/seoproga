@@ -68,48 +68,96 @@ class YandexWebmasterClient:
                 return host["host_id"]
         raise ValueError(f"Сайт {site_url} не найден в Вебмастере")
 
+    def _extract_query_data(self, q: Dict) -> Dict:
+        q_text = q.get("query_text") or q.get("query") or ""
+        indicators = q.get("indicators") or {}
+
+        shows = q.get("shows")
+        if shows is None:
+            shows = q.get("hits")
+        if shows is None:
+            shows = indicators.get("TOTAL_SHOWS", 0)
+
+        clicks = q.get("clicks")
+        if clicks is None:
+            clicks = indicators.get("TOTAL_CLICKS", 0)
+
+        avg_pos = q.get("avg_position")
+        if avg_pos is None or avg_pos == 0:
+            avg_pos = (
+                indicators.get("AVG_SHOW_POSITION")
+                or indicators.get("AVG_CLICK_POSITION")
+                or 0.0
+            )
+
+        ctr = q.get("ctr")
+        if ctr is None:
+            ctr = indicators.get("CTR") or (
+                round(float(clicks) / float(shows), 4) if shows and float(shows) > 0 else 0.0
+            )
+
+        return {
+            "query_text": q_text,
+            "shows": int(shows or 0),
+            "clicks": int(clicks or 0),
+            "ctr": float(ctr or 0.0),
+            "avg_position": float(avg_pos or 0.0),
+        }
+
     def fetch_queries_recent(self, site_url: str) -> List[Dict]:
         y_user_id = self._get_user_id()
         host_id = self._get_host_id(site_url, y_user_id)
 
-        site_url = self._normalize_url(site_url)
+        normalized_site_url = self._normalize_url(site_url)
 
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=14)
+        end_date = datetime.now() - timedelta(days=2)
+        start_date = end_date - timedelta(days=30)
 
         all_queries_dict = {}
 
-        for indicator in ["TOTAL_SHOWS", "TOTAL_CLICKS"]:
-            params = {
-                "query_indicator": indicator,
-                "order_by": indicator,
-                "limit": 500,
-                "date_from": start_date.strftime("%Y-%m-%d"),
-                "date_to": end_date.strftime("%Y-%m-%d"),
-            }
+        endpoints = [
+            "/search-queries/all/with-data",
+            "/search-queries/popular",
+        ]
 
-            url = f"{self.BASE_URL}/user/{y_user_id}/hosts/{host_id}/search-queries/popular"
-            try:
-                resp = self.session.get(url, params=params, timeout=self._timeout)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    queries = data.get("queries", [])
-                    for q in queries:
-                        q_text = q.get("query_text", q.get("query", ""))
-                        if q_text:
-                            if q_text not in all_queries_dict:
-                                q["site_url"] = site_url
-                                q["period_from"] = params["date_from"]
-                                q["period_to"] = params["date_to"]
-                                all_queries_dict[q_text] = q
-                            else:
-                                existing_q = all_queries_dict[q_text]
-                                if "shows" in q:
-                                    existing_q["shows"] = max(existing_q.get("shows", 0), q.get("shows", 0))
-                                if "clicks" in q:
-                                    existing_q["clicks"] = max(existing_q.get("clicks", 0), q.get("clicks", 0))
-            except Exception as e:
-                logger.warning("Fetch Yandex queries indicator %s error: %s", indicator, e)
+        for endpoint_path in endpoints:
+            for indicator in ["TOTAL_SHOWS", "TOTAL_CLICKS"]:
+                params = {
+                    "query_indicator": indicator,
+                    "order_by": indicator,
+                    "limit": 500,
+                    "date_from": start_date.strftime("%Y-%m-%d"),
+                    "date_to": end_date.strftime("%Y-%m-%d"),
+                }
+
+                url = f"{self.BASE_URL}/user/{y_user_id}/hosts/{host_id}{endpoint_path}"
+                try:
+                    resp = self.session.get(url, params=params, timeout=self._timeout)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        queries = data.get("queries", [])
+                        for q in queries:
+                            parsed = self._extract_query_data(q)
+                            q_text = parsed["query_text"]
+                            if q_text:
+                                if q_text not in all_queries_dict:
+                                    parsed["site_url"] = normalized_site_url
+                                    parsed["period_from"] = params["date_from"]
+                                    parsed["period_to"] = params["date_to"]
+                                    all_queries_dict[q_text] = parsed
+                                else:
+                                    existing = all_queries_dict[q_text]
+                                    existing["shows"] = max(existing["shows"], parsed["shows"])
+                                    existing["clicks"] = max(existing["clicks"], parsed["clicks"])
+                                    if parsed["avg_position"] > 0:
+                                        existing["avg_position"] = parsed["avg_position"]
+                except Exception as e:
+                    logger.warning(
+                        "Fetch Yandex queries endpoint %s indicator %s error: %s",
+                        endpoint_path,
+                        indicator,
+                        e,
+                    )
 
         return list(all_queries_dict.values())
 
