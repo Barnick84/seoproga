@@ -54,11 +54,17 @@ class YandexWebmasterClient:
 
     def _get_host_id(self, site_url: str, user_id: str) -> str:
         site = self._normalize_url(site_url)
+        site_no_www = site[4:] if site.startswith("www.") else site
 
         hosts_data = self.list_hosts()
         for host in hosts_data:
             host_id_normalized = self._normalize_url(host["host_id"])
-            if site == host_id_normalized:
+            host_no_www = (
+                host_id_normalized[4:]
+                if host_id_normalized.startswith("www.")
+                else host_id_normalized
+            )
+            if site == host_id_normalized or site_no_www == host_no_www:
                 return host["host_id"]
         raise ValueError(f"Сайт {site_url} не найден в Вебмастере")
 
@@ -71,28 +77,41 @@ class YandexWebmasterClient:
         end_date = datetime.now()
         start_date = end_date - timedelta(days=14)
 
-        params = {
-            "order_by": "TOTAL_CLICKS",
-            "limit": 500,
-            "date_from": start_date.strftime("%Y-%m-%d"),
-            "date_to": end_date.strftime("%Y-%m-%d"),
-        }
+        all_queries_dict = {}
 
-        url = f"{self.BASE_URL}/user/{y_user_id}/hosts/{host_id}/search-queries/popular"
-        resp = self.session.get(url, params=params, timeout=self._timeout)
+        for indicator in ["TOTAL_SHOWS", "TOTAL_CLICKS"]:
+            params = {
+                "query_indicator": indicator,
+                "order_by": indicator,
+                "limit": 500,
+                "date_from": start_date.strftime("%Y-%m-%d"),
+                "date_to": end_date.strftime("%Y-%m-%d"),
+            }
 
-        if resp.status_code == 404:
-            return []
-        resp.raise_for_status()
-        data = resp.json()
+            url = f"{self.BASE_URL}/user/{y_user_id}/hosts/{host_id}/search-queries/popular"
+            try:
+                resp = self.session.get(url, params=params, timeout=self._timeout)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    queries = data.get("queries", [])
+                    for q in queries:
+                        q_text = q.get("query_text", q.get("query", ""))
+                        if q_text:
+                            if q_text not in all_queries_dict:
+                                q["site_url"] = site_url
+                                q["period_from"] = params["date_from"]
+                                q["period_to"] = params["date_to"]
+                                all_queries_dict[q_text] = q
+                            else:
+                                existing_q = all_queries_dict[q_text]
+                                if "shows" in q:
+                                    existing_q["shows"] = max(existing_q.get("shows", 0), q.get("shows", 0))
+                                if "clicks" in q:
+                                    existing_q["clicks"] = max(existing_q.get("clicks", 0), q.get("clicks", 0))
+            except Exception as e:
+                logger.warning("Fetch Yandex queries indicator %s error: %s", indicator, e)
 
-        queries = data.get("queries", [])
-        for q in queries:
-            q["site_url"] = site_url
-            q["period_from"] = params["date_from"]
-            q["period_to"] = params["date_to"]
-
-        return queries
+        return list(all_queries_dict.values())
 
     def _get_position_rates(self) -> Dict[str, float]:
         conn = Config.get_conn()

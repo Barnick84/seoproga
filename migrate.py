@@ -1,10 +1,10 @@
-﻿import sys
+import sys
 
-with open('nodejs-app/public/analysis.html', 'r', encoding='utf-8') as f:
+with open("api/public/analysis.html", "r", encoding="utf-8") as f:
     content = f.read()
 
 # Replace the topMenu with the new mainLayout
-old_top_menu = '''    <div class="top-menu" id="topMenu" style="display:none;">
+old_top_menu = """    <div class="top-menu" id="topMenu" style="display:none;">
         <div class="user-info">
             <div class="logo">SEO Auto Cluster</div>
             <div class="balance-display">
@@ -27,9 +27,9 @@ old_top_menu = '''    <div class="top-menu" id="topMenu" style="display:none;">
             <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
             <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
         </div>
-    </div>'''
+    </div>"""
 
-new_main_layout = '''    <div class="layout-wrapper" id="mainLayout" style="display:none;">
+new_main_layout = """    <div class="layout-wrapper" id="mainLayout" style="display:none;">
         <aside class="sidebar" id="sidebar">
             <div class="logo">SEO Auto Cluster</div>
             <div class="menu-tabs">
@@ -55,10 +55,10 @@ new_main_layout = '''    <div class="layout-wrapper" id="mainLayout" style="disp
                     <button class="btn-add" onclick="showAddSiteModal()">+ Добавить сайт</button>
                     <button class="btn-add" onclick="logout()" style="background:#555; margin-left:10px;">Выйти</button>
                 </div>
-            </header>'''
+            </header>"""
 
 # Because of line endings, let's normalise them for replacement
-content = content.replace('\r\n', '\n')
+content = content.replace("\r\n", "\n")
 
 if old_top_menu in content:
     content = content.replace(old_top_menu, new_main_layout)
@@ -66,14 +66,14 @@ if old_top_menu in content:
 else:
     print("Failed to find topMenu")
 
-old_close = '''    </div>
+old_close = """    </div>
 
-    <div id="addSiteModal" class="modal">'''
-new_close = '''        </div>
+    <div id="addSiteModal" class="modal">"""
+new_close = """        </div>
         </main>
     </div>
 
-    <div id="addSiteModal" class="modal">'''
+    <div id="addSiteModal" class="modal">"""
 
 if old_close in content:
     content = content.replace(old_close, new_close)
@@ -82,6 +82,5 @@ else:
     print("Failed to find old close block")
 
 # Save file
-with open('nodejs-app/public/analysis.html', 'w', encoding='utf-8') as f:
+with open("api/public/analysis.html", "w", encoding="utf-8") as f:
     f.write(content)
-

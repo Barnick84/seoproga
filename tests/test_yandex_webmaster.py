@@ -75,6 +75,36 @@ def test_fetch_queries_recent_returns_empty_on_404(client):
     assert queries == []
 
 
+def test_get_host_id_matches_www(client):
+    with patch.object(client, "list_hosts") as mock_list:
+        mock_list.return_value = [{"host_id": "https:www.visa7kurort.ru:443"}]
+        host_id = client._get_host_id("visa7kurort.ru", "123")
+        assert host_id == "https:www.visa7kurort.ru:443"
+
+
+def test_fetch_queries_recent_merges_indicators(client):
+    with patch.object(client.session, "get") as mock_get:
+        mock_resp1 = MagicMock()
+        mock_resp1.status_code = 200
+        mock_resp1.json.return_value = {
+            "queries": [{"query_text": "виза 7 курорт", "shows": 100, "clicks": 0}]
+        }
+        mock_resp2 = MagicMock()
+        mock_resp2.status_code = 200
+        mock_resp2.json.return_value = {
+            "queries": [{"query_text": "виза 7 курорт", "shows": 100, "clicks": 5}]
+        }
+        mock_get.side_effect = [mock_resp1, mock_resp2]
+
+        with patch.object(client, "_get_user_id", return_value="123"):
+            with patch.object(client, "_get_host_id", return_value="host1"):
+                queries = client.fetch_queries_recent("visa7kurort.ru")
+
+    assert len(queries) == 1
+    assert queries[0]["query_text"] == "виза 7 курорт"
+    assert queries[0]["clicks"] == 5
+
+
 def test_save_queries_to_db_counts_new_and_updates(client):
     mock_conn = MagicMock()
     mock_cur = MagicMock()
