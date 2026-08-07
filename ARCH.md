@@ -289,7 +289,7 @@ seo-auto-cluster/
 ### Процедура обновления:
 ```bash
 # На сервере
-cd ~/seo-auto-cluster
+cd /home/barnick/seo-auto-cluster
 git pull origin main
 
 # Обновление зависимостей (при необходимости)
